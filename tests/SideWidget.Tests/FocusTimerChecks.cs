@@ -14,7 +14,8 @@ static class FocusTimerChecks
   timer.Resume(now.AddHours(1));Check(timer.Remaining(now.AddHours(1).AddSeconds(20))==30,"resume shifts deadline");
   Check(timer.Tick(now.AddHours(2))&&timer.State.Status=="ringing","sleep catches deadline");
   timer.Dismiss();Check(timer.State.Status=="idle","dismiss timer");timer.Dismiss();Check(timer.State.Status=="idle","dismiss idempotent");
-  timer.Start("alarm",0,"11:59",now);Check(timer.State.Deadline==now.AddDays(1).AddMinutes(-1),"alarm tomorrow UTC comparison");
+  var alarmZone=TimeZoneInfo.CreateCustomTimeZone("Alarm test zone",now.Offset,"Alarm test zone","Alarm test zone");
+  timer.Start("alarm",0,"11:59",now,timeZone:alarmZone);Check(timer.State.Deadline==now.AddDays(1).AddMinutes(-1),"alarm tomorrow UTC comparison");
   timer.Start("timer",1,null,now);var restored=new FocusTimer(JsonSerializer.Deserialize<FocusTimerState>(JsonSerializer.Serialize(timer.State))!);restored.Tick(now.AddDays(1));Check(restored.State.Status=="ringing","restart overdue");
   timer.Reset();timer.Start("pomodoro",0,null,now);
   for(var cycle=1;cycle<=4;cycle++){
