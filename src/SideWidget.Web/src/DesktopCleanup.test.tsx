@@ -3,9 +3,26 @@ import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, expect, it, vi} from 'vitest';
 import {DesktopCleanup} from './DesktopCleanup';
 import {invoke} from './ui';
+import {setLocale} from './i18n';
 
 vi.mock('./ui', async importOriginal => ({...await importOriginal<typeof import('./ui')>(), nativeAvailable: true, invoke: vi.fn()}));
-afterEach(() => { cleanup(); vi.resetAllMocks(); });
+afterEach(() => { cleanup(); vi.resetAllMocks(); setLocale('ru'); });
+
+it('sends the original prompt and shows the plan in the interface language', async () => {
+ setLocale('en');
+ const base = {id: 'base', files: [], canUndo: false, hasMore: false, hasFolder: false, modelAvailable: true, answer: ''};
+ vi.mocked(invoke).mockResolvedValueOnce(base).mockResolvedValueOnce({...base, id: 'plan', answer: 'Архивы перенесу.',
+  summary: {steps: [{subject: 'Архивы', mode: 'move', folder: '備份 2026'}], selected: 1, unclear: 0}});
+ render(<DesktopCleanup/>);
+ const field = await screen.findByPlaceholderText('Sort invoices by year and leave screenshots on the desktop');
+ const prompt = '把压缩包移到文件夹「備份 2026」';
+ fireEvent.change(field, {target: {value: prompt}});
+ const applyButton = screen.getByRole('button', {name: /apply/i});
+ fireEvent.click(applyButton);
+ expect(await screen.findByText('Move Archives to “備份 2026”. Selected to move: 1.')).toBeTruthy();
+ expect(invoke).toHaveBeenCalledWith('desktop.preview', {prompt});
+ expect(invoke).not.toHaveBeenCalledWith('desktop.move', expect.anything());
+});
 
 it('opens the native folder picker for a fresh icon plan and reports the changed folder', async () => {
  const base = {id: 'base', files: [], canUndo: false, hasMore: false, hasFolder: false, modelAvailable: true, answer: ''};

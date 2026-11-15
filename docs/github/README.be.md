@@ -6,6 +6,8 @@ SideWidget — кампактная панэль для штодзённых з�
 
 SideWidget выбірае мову Windows. Калі такой мовы няма ў спісе, праграма адкрываецца па-англійску. Мову можна змяніць у меню **Налады → Мова праграмы**.
 
+SideWidget распрацоўваецца са здаровым сэнсам і з дапамогай GPT-6.1 Sol.
+
 ## Здымкі экрана
 
 <p align="center">
@@ -13,10 +15,57 @@ SideWidget выбірае мову Windows. Калі такой мовы ням�
 </p>
 
 <p align="center">
-  <img src="images/sidewidget-languages.png" width="630" alt="Выбар мовы праграмы ў наладах SideWidget">
+  <img src="images/sidewidget-commands-be.png" width="590" alt="Выбар значкоў папак у беларускай версіі SideWidget">
 </p>
 
-Здымкі зроблены ў SideWidget на Windows. На галоўнай панэлі бачны трэк, які прайграецца.
+Прайгравальнік зняты ў Windows падчас музыкі. На здымках інструментаў выкарыстаны дэманстрацыйныя даныя.
+
+## Прыклады каманд
+
+Адкрыйце **Файлы і папкі**, устаўце каманду і праверце план перад ужываннем.
+
+- **Сартаванне.** `Раскладзі рахункі па гадах, а здымкі экрана пакінь на працоўным стале`
+- **Значкі папак.** `Змяні значкі папак на працоўным стале`<br>`Змяні значок папкі на фота`
+
+[Усе дзевяць моў](../../README.md#примеры-команд)
+
+## Іншыя інструменты
+
+<details>
+<summary><strong>Калькулятар</strong></summary>
+
+Вылічыце выраз з працэнтамі і дужкамі, скапіруйце вынік або вярніцеся да разліку з гісторыі.
+
+<img src="images/sidewidget-tool-calculator.png" width="520" alt="Калькулятар">
+
+</details>
+
+<details>
+<summary><strong>QR-коды</strong></summary>
+
+Ператварыце тэкст або спасылку ў QR-код і захавайце яго ў SVG, PNG ці JPEG.
+
+<img src="images/sidewidget-tool-qr.png" width="520" alt="QR-коды">
+
+</details>
+
+<details>
+<summary><strong>Канвертар адзінак</strong></summary>
+
+Пераўтварайце адлегласці, тэмпературу і іншыя велічыні. Частыя пары можна захаваць у абраным.
+
+<img src="images/sidewidget-tool-units.png" width="520" alt="Канвертар адзінак">
+
+</details>
+
+<details>
+<summary><strong>Піпетка і колеры</strong></summary>
+
+Вазьміце колер з экрана, скапіруйце яго ў HEX, RGB ці HSL і захавайце ў палітры.
+
+<img src="images/sidewidget-tool-colors.png" width="520" alt="Піпетка і колеры">
+
+</details>
 
 ## Магчымасці
 
@@ -39,4 +88,4 @@ SideWidget выбірае мову Windows. Калі такой мовы ням�
 
 ## Дакументацыя праекта
 
-[Зборка і ўдзел у распрацоўцы](../../CONTRIBUTING.md) · [Тэхнічная даведка на рускай мове](technical.ru.md) · [Паведаміць пра памылку](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Паведаміць пра ўразлівасць](../../SECURITY.md)
+[Зборка і ўдзел у распрацоўцы](../../CONTRIBUTING.md) · [Тэхнічная даведка на рускай мове](technical.ru.md) · [Паведаміць пра памылку](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Паведаміць пра ўразлівасць](../../SECURITY.md) · [Пераклад праз Weblate](translating.md)

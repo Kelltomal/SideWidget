@@ -1,14 +1,32 @@
-import {locale, t} from './i18n';
+import {t} from './i18n';
 import {useEffect, useRef, useState, type PointerEvent} from 'react';
 import {Icon, invoke, nativeAvailable, Notice, useAction} from './ui';
 import './desktop-cleanup.css';
 
 type DesktopFile = {id: number; name: string; category: string; selected: boolean; selectable: boolean; reason?: string};
-type Preview = {id: string; files: DesktopFile[]; canUndo: boolean; hasMore: boolean; hasFolder: boolean; modelAvailable: boolean; answer: string; topics?: string[]; folderIcon?: string | null; suggestFolderIcon?: boolean; canUndoIcons?: boolean};
+type PromptSummary = {steps: {subject: string; mode: keyof typeof planMessages; folder?: string}[]; selected: number; unclear: number};
+type Preview = {id: string; files: DesktopFile[]; canUndo: boolean; hasMore: boolean; hasFolder: boolean; modelAvailable: boolean; answer: string; topics?: string[]; folderIcon?: string | null; suggestFolderIcon?: boolean; canUndoIcons?: boolean; summary?: PromptSummary};
 type Result = {count: number; issues: {name: string; message: string}[]};
 type IconResult = Result & {canUndoIcons: boolean};
 type FolderIconBatch = {id: string; folders: {id: number; name: string; icon: string}[]; hasMore: boolean;
  iconImages: Record<string, string[]>; styles: {id: number; name: string; lightPreview?: boolean}[]};
+
+const planMessages = {
+ keep: '{subject} останутся на рабочем столе.',
+ year: '{subject} разложу по годам.',
+ type: '{subject} разложу по типам.',
+ topic: 'Документы разложу по темам. Файлы с неясной темой останутся на столе.',
+ move: '{subject} перенесу в «{folder}».',
+};
+
+function promptAnswer(preview: Preview) {
+ if (!preview.summary) return t(preview.answer);
+ const {steps, selected, unclear} = preview.summary;
+ const answer = steps.map(step => t(planMessages[step.mode], {subject: t(step.subject), folder: step.folder}));
+ answer.push(selected > 0 ? t('Отмечено для переноса — {count}.', {count: selected}) : t('Для переноса пока ничего не отмечено.'));
+ if (unclear > 0) answer.push(t('Требуют проверки — {count}.', {count: unclear}));
+ return answer.join(' ');
+}
 
 export function DesktopCleanup() {
  const [preview, setPreview] = useState<Preview>();
@@ -181,14 +199,14 @@ export function DesktopCleanup() {
   {!iconRequest && <p>{t('Выберите файлы для переноса в папку «Разобранное» на рабочем столе.')}</p>}
   <label>{t('Что сделать с файлами и папками?')}
    <textarea rows={2} maxLength={2000} value={prompt} disabled={busy} aria-describedby="desktop-prompt-help"
-    onChange={event => setPrompt(event.target.value)} placeholder={locale() === 'ru' ? 'Разложи счета по годам, а скриншоты оставь на столе' : t('Введите команду на русском')}/>
+    onChange={event => setPrompt(event.target.value)} placeholder={t('Разложи счета по годам, а скриншоты оставь на столе')}/>
   </label>
   <small id="desktop-prompt-help" role={choosingIcon ? 'status' : undefined}>
    {promptHelp}
   </small>
   </>}
   </>}
-  {error && <Notice error>{error}</Notice>}
+  {error && <Notice error>{t(error)}</Notice>}
   {result && <Notice>{t({icons: 'Изменено значков: {count}.', 'undo-icons': 'Восстановлено значков: {count}.',
    move: 'Перемещено файлов: {count}.', undo: 'Возвращено файлов: {count}.'}[result.action],{count:result.data.count})}</Notice>}
   {changedFolder && <Notice>{t('Значок изменён. {path}',{path:changedFolder})}</Notice>}
@@ -272,7 +290,7 @@ export function DesktopCleanup() {
   </div>
   {!preview && busy && <Notice>{t('Разбираем файлы…')}</Notice>}
   {preview?.answer && !promptChanged && <div className="desktop-cleanup-answer" role="status">
-   <h2>{t('Ответ SideWidget')}</h2><p>{t(preview.answer)}</p>
+   <h2>{t('Ответ SideWidget')}</h2><p>{promptAnswer(preview)}</p>
   </div>}
   {preview && !preview.modelAvailable && <Notice>{documents ? t('Модель недоступна. Выберите темы вручную.') : t('Модель недоступна. Папки предложены по расширениям и правилам.')}</Notice>}
   {preview?.files.length === 0 && !iconRequest && <Notice>{documents ? t('В папке «Разобранное / Документы» нет файлов для разбора.') : t('На рабочем столе нет файлов для переноса.')}</Notice>}

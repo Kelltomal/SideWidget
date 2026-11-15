@@ -6,6 +6,8 @@ SideWidget es un panel compacto con herramientas para el día a día en Windows.
 
 SideWidget usa el idioma de Windows y, si ese idioma no está disponible, se abre en inglés. Puedes cambiarlo en **Configuración → Idioma de la aplicación**.
 
+SideWidget se desarrolla con sentido común y con la ayuda de GPT-6.1 Sol.
+
 ## Capturas de pantalla
 
 <p align="center">
@@ -13,10 +15,57 @@ SideWidget usa el idioma de Windows y, si ese idioma no está disponible, se abr
 </p>
 
 <p align="center">
-  <img src="images/sidewidget-languages.png" width="630" alt="Selector de idioma en la configuración de SideWidget">
+  <img src="images/sidewidget-commands-es.png" width="590" alt="Ordenación de archivos en SideWidget en español">
 </p>
 
-Las capturas se hicieron en SideWidget para Windows. El panel principal muestra la canción que se estaba reproduciendo.
+La captura del reproductor se hizo en Windows mientras sonaba música. Las herramientas muestran datos de ejemplo.
+
+## Ejemplos de comandos
+
+Abre **Archivos y carpetas**, pega un comando y revisa el plan antes de aplicarlo.
+
+- **Ordenar archivos.** `Ordena las facturas por año y deja las capturas de pantalla en el escritorio`
+- **Iconos de carpetas.** `Cambia los iconos de las carpetas del escritorio`<br>`Cambia el icono de la carpeta a fotos`
+
+[Los nueve idiomas](../../README.md#примеры-команд)
+
+## Más herramientas
+
+<details>
+<summary><strong>Calculadora</strong></summary>
+
+Calcula expresiones con porcentajes y paréntesis, copia el resultado o recupera un cálculo del historial.
+
+<img src="images/sidewidget-tool-calculator.png" width="520" alt="Calculadora">
+
+</details>
+
+<details>
+<summary><strong>Códigos QR</strong></summary>
+
+Convierte un texto o enlace en un código QR y guárdalo en SVG, PNG o JPEG.
+
+<img src="images/sidewidget-tool-qr.png" width="520" alt="Códigos QR">
+
+</details>
+
+<details>
+<summary><strong>Conversor de unidades</strong></summary>
+
+Convierte distancias, temperaturas y otras magnitudes. Guarda pares de unidades frecuentes.
+
+<img src="images/sidewidget-tool-units.png" width="520" alt="Conversor de unidades">
+
+</details>
+
+<details>
+<summary><strong>Cuentagotas</strong></summary>
+
+Toma un color de la pantalla, copia su valor en HEX, RGB o HSL y guárdalo en tu paleta.
+
+<img src="images/sidewidget-tool-colors.png" width="520" alt="Cuentagotas">
+
+</details>
 
 ## Funciones
 
@@ -39,4 +88,4 @@ Al iniciarse, SideWidget busca una versión estable más reciente en GitHub. Pue
 
 ## Documentación del proyecto
 
-[Compilar y contribuir](../../CONTRIBUTING.md) · [Referencia técnica en ruso](technical.ru.md) · [Informar de un fallo](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Informar de una vulnerabilidad](../../SECURITY.md)
+[Compilar y contribuir](../../CONTRIBUTING.md) · [Referencia técnica en ruso](technical.ru.md) · [Informar de un fallo](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Informar de una vulnerabilidad](../../SECURITY.md) · [Traducir con Weblate](translating.md)

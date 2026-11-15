@@ -69,7 +69,7 @@ sealed partial class Controller
                 case "shell.tooltip":Tooltip(p.GetProperty("visible").GetBoolean()?TooltipContent.Read(p):null);return new{};
                 case "settings.theme":var themed=Settings with{Theme=Text("theme",16)};themed.Validate();state.SaveSettings(themed);ThemeChanged(themed.Theme);return Snapshot();
                 case "settings.language":
-                    var language=Text("language",16);
+                    var language=Text("language",128);
                     if(language!="system"&&!DesktopLanguage.IsSupported(language))throw new CommandFault("settings","Выберите язык приложения.");
                     state.SaveSettings(Settings with{Language=language});
                     DesktopLanguage.Select(language);

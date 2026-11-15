@@ -36,6 +36,7 @@ static class DesktopFolderIcons
     public static Request? ReadRequest(string prompt)
     {
         prompt = prompt.Trim();
+        if (DesktopCommandLanguages.ReadIcon(prompt) is { } localized) return localized;
         if (SuggestPrompt.IsMatch(prompt)) return new(Icon: null);
         var match = ChangePrompt.Match(prompt);
         if (!match.Success) return null;
@@ -93,7 +94,7 @@ static class DesktopFolderIcons
         "программы" or "скрипты" => Icon.Application,
         "сервер" or "серверы" or "запуски серверов" or "скрипты и серверы" => Icon.Server,
         "логи" => Icon.Log,
-        _ => null
+        _ => category is null ? null : DesktopCommandLanguages.FolderIconAlias(category)
     };
 
     public static string StyleLabel(Style style) => style switch

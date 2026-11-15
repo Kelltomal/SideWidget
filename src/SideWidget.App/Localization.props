@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <WebLocale Include="$(MSBuildThisFileDirectory)../SideWidget.Web/src/locales/*.json" />
+    <AssemblyMetadata Include="SideWidget.WebLocales" Value="@(WebLocale->'%(Filename)')" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Assets/Locales/*.json">
+      <LogicalName>SideWidget.DesktopLocales.%(Filename)%(Extension)</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

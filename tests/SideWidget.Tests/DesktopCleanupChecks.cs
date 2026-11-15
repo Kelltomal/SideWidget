@@ -62,6 +62,7 @@ static class DesktopCleanupChecks
             RussianBenchmark(store, Directory.CreateDirectory(Path.Combine(root, "russian")).FullName);
             TopicBenchmark(store, Directory.CreateDirectory(Path.Combine(root, "topics")).FullName);
             NaturalPrompt(store, Directory.CreateDirectory(Path.Combine(root, "natural")).FullName);
+            MultilingualPrompts(store, Directory.CreateDirectory(Path.Combine(root, "multilingual")).FullName);
             TopicPrompt(store, Directory.CreateDirectory(Path.Combine(root, "topic-prompt")).FullName);
             AppPrompt(store, Directory.CreateDirectory(Path.Combine(root, "apps")).FullName);
             if (OperatingSystem.IsWindows())
@@ -431,6 +432,68 @@ static class DesktopCleanupChecks
             return Stopwatch.GetElapsedTime(start).TotalMilliseconds;
         }).Order().ToArray();
         Console.WriteLine($"PROMPTS: 5 learned variants accepted, 7 unsupported commands rejected; median {elapsed[10]:F1} ms with 5 files.");
+    }
+
+    static void MultilingualPrompts(Store store, string desktop)
+    {
+        var samples = new (string Year, string Move, string Type, string Topic, string Icons, string Photo)[]
+        {
+            ("Разложи счета по годам, а скриншоты оставь на столе", "Перенеси архивы в папку «Резерв, 2026»",
+                "Разложи файлы по типам", "Разложи документы по темам", "Поменяй значки на рабочем столе", "Поменяй значок папки на фото"),
+            ("Sort invoices by year and leave screenshots on the desktop", "Move archives into the folder ‘Резерв, 2026’",
+                "Sort files by type", "Group documents by topic", "Change desktop folder icons", "Change the folder icon to photos"),
+            ("把发票按年份整理，截图留在桌面", "将压缩包移到文件夹「Резерв, 2026」",
+                "按类型整理文件", "按主题整理文档", "更改桌面文件夹图标", "将文件夹图标改为照片"),
+            ("請求書を年別に整理して、スクリーンショットはデスクトップに残して", "アーカイブをフォルダー「Резерв, 2026」に移動して",
+                "ファイルを種類別に整理して", "文書をテーマ別に整理して", "デスクトップのフォルダーアイコンを変更して", "フォルダーアイコンを写真に変更して"),
+            ("Sortiere Rechnungen nach Jahren und lass Screenshots auf dem Desktop", "Verschiebe Archive in den Ordner „Резерв, 2026“",
+                "Sortiere Dateien nach Typ", "Gruppiere Dokumente nach Thema", "Ändere die Ordnersymbole auf dem Desktop", "Ändere das Ordnersymbol zu Fotos"),
+            ("Розклади рахунки за роками, а знімки екрана залиш на робочому столі", "Перенеси архіви в папку «Резерв, 2026»",
+                "Розсортуй файли за типами", "Розклади документи за темами", "Зміни значки папок на робочому столі", "Зміни значок папки на фото"),
+            ("Раскладзі рахункі па гадах, а здымкі экрана пакінь на працоўным стале", "Перамясці архівы ў папку «Резерв, 2026»",
+                "Адсартуй файлы па тыпах", "Раскладзі дакументы па тэмах", "Змяні значкі папак на працоўным стале", "Змяні значок папкі на фота"),
+            ("Ordena las facturas por año y deja las capturas de pantalla en el escritorio", "Mueve los archivos comprimidos a la carpeta «Резерв, 2026»",
+                "Ordena los archivos por tipo", "Agrupa los documentos por tema", "Cambia los iconos de las carpetas del escritorio", "Cambia el icono de la carpeta a fotos"),
+            ("Organize as faturas por ano e deixe as capturas de tela na área de trabalho", "Mova os arquivos compactados para a pasta “Резерв, 2026”",
+                "Organize os arquivos por tipo", "Agrupe os documentos por assunto", "Altere os ícones das pastas da área de trabalho", "Troque o ícone da pasta por fotos"),
+        };
+        File.WriteAllText(Path.Combine(desktop, "invoice 2025.txt"), "Invoice");
+        File.WriteAllText(Path.Combine(desktop, "Screenshot.png"), "");
+        File.WriteAllText(Path.Combine(desktop, "archive.zip"), "");
+        var service = new DesktopCleanup(store, desktop);
+        foreach (var sample in samples)
+        {
+            var preview = service.Preview(sample.Year);
+            Require(preview.Files.Single(f => f.Name == "invoice 2025.txt") is { Category: "Счета/2025", Selected: true }, sample.Year);
+            Require(preview.Files.Single(f => f.Name == "Screenshot.png") is { Selectable: false, Reason: "Оставить по запросу" }, sample.Year);
+            Require(service.Preview(sample.Move).Files.Single(f => f.Name == "archive.zip") is { Category: "Резерв, 2026", Selected: true }, sample.Move);
+            Require(service.Preview(sample.Type).Files.Count(f => f.Selected) == 3, sample.Type);
+            Require(service.Preview(sample.Topic).Answer.Contains("по темам"), sample.Topic);
+            Require(service.Preview(sample.Icons).SuggestFolderIcon, sample.Icons);
+            Require(service.Preview(sample.Photo).FolderIcon == "Фото", sample.Photo);
+        }
+        File.WriteAllText(Path.Combine(desktop, "明細の請求書2023.txt"), "お支払い");
+        File.WriteAllText(Path.Combine(desktop, "画面のスクリーンショット.png"), "");
+        var chinese = service.Preview("请按年份整理发票，并且别动截图");
+        Require(chinese.Files.Single(f => f.Name == "明細の請求書2023.txt") is { Selected: true, Category: "Счета/2023" },
+            "recognizes invoices in CJK filenames");
+        Require(chinese.Files.Single(f => f.Name == "画面のスクリーンショット.png") is { Selectable: false, Reason: "Оставить по запросу" },
+            "recognizes screenshots in CJK filenames independently of command language");
+        Require(service.Preview("Please, move archives into 'Research and Development'").Files.Single(f => f.Name == "archive.zip").Category ==
+            "Research and Development", "quoted folder preserves capital letters and conjunction");
+        Require(service.Preview("Organize my desktop").Summary?.Steps.Single().Mode == "type", "generic sort defaults to category grouping");
+        Require(service.Preview("Sort photos and documents by type").Summary?.Steps.Length == 2, "conjoined subjects both reach the plan");
+        var japanese = service.Preview("アーカイブをフォルダー「予備」に移動して");
+        var archive = japanese.Files.Single(f => f.Name == "archive.zip");
+        Require(File.Exists(Path.Combine(desktop, "archive.zip")) && archive.Selected, "localized command only previews before confirmation");
+        Require(service.Move(japanese.Id, [archive.Id]).Count == 1 &&
+            File.Exists(Path.Combine(service.Folder, "予備", "archive.zip")), "localized plan uses the original move pipeline");
+        Require(service.Undo().Count == 1, "localized move is reversible");
+        foreach (var invalid in new[] { "Move archives to Backup and delete screenshots", "Move archives to folder \"../outside\"",
+            "Don't sort files by type", "不要按类型整理文件", "Ordne Dateien nach Typ und lösche Screenshots",
+            "Cambia el icono de la carpeta a fotos y elimina los documentos", "Move archives to Backup and screenshots delete" })
+            Reject(() => service.Preview(invalid));
+        Console.WriteLine("PASS multilingual cleanup commands across 9 languages");
     }
 
     static void Benchmark(Store store, string desktop)

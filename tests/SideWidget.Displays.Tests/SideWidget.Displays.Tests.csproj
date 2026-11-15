@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../src/SideWidget.App/Localization.props" />
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/SideWidget.Core/SideWidget.Core.csproj" />
     <Compile Include="../../src/SideWidget.App/DesktopWindows.cs" Link="DesktopWindows.cs" />
     <Compile Include="../../src/SideWidget.App/DesktopLanguage.cs" Link="DesktopLanguage.cs" />
-    <Compile Include="../../src/SideWidget.App/DesktopStrings.cs" Link="DesktopStrings.cs" />
   </ItemGroup>
 </Project>

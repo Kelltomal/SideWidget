@@ -4,6 +4,12 @@ using SideWidget.Core;
 
 var checks=0;
 void Check(bool value,string name){if(!value)throw new Exception(name);checks++;}
+Check(DesktopLanguage.ResolveSystemLanguage("zh_Hans_CN")=="zh-CN","Weblate Chinese catalog retains existing locale");
+Check(DesktopLanguage.ResolveSystemLanguage("pt_BR")=="pt-BR","Weblate Brazilian Portuguese code resolves");
+Check(DesktopLanguage.IsSupported("de"),"web catalog is selectable on desktop");
+DesktopLanguage.Select("de");
+Check(DesktopLanguage.Text("Открыть панель")=="Panel öffnen","native catalog is embedded");
+DesktopLanguage.Select("system");
 var a=new DesktopDisplay(new("a","Экран 1",true),1,new(){Monitor=new(){Left=0,Top=0,Right=1920,Bottom=1080}});
 var b=new DesktopDisplay(new("b","Экран 2",false),2,new(){Monitor=new(){Left=-2560,Top=0,Right=0,Bottom=1440}});
 DisplayCatalog.Available=[a,b];

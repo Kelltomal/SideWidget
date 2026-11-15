@@ -22,12 +22,17 @@ sealed class DesktopPrompt
     static readonly Regex KeepUnclear = new("^(?:" + Keep + @"\s+(?:(?:вс[её]\s+)?непонятное|сомнительные(?:\s+(?:файлы|документы))?)" + Where +
         @"|(?:(?:вс[её]\s+)?непонятное|сомнительные(?:\s+(?:файлы|документы))?)\s+" + Keep + Where + ")$", Options);
 
-    sealed record Instruction(string Subject, bool Keep, bool ByYear, string? Folder, bool ByTopic = false);
+    internal sealed record Instruction(string Subject, bool Keep, bool ByYear, string? Folder, bool ByTopic = false, bool ByType = false);
     readonly List<Instruction> instructions = [];
     public bool IncludesLaunchFiles => instructions.Any(rule => rule.Subject is "Игры" or "Программы" or "Скрипты" or "Запуски серверов");
 
     public DesktopPrompt(string text)
     {
+        if (DesktopCommandLanguages.ReadSorting(text) is { } translatedRules)
+        {
+            instructions.AddRange(translatedRules);
+            return;
+        }
         var quoted = new List<string>();
         var masked = Regex.Replace(text.Trim(), "«[^»]*»|\"[^\"]*\"", match =>
         {
@@ -44,6 +49,19 @@ sealed class DesktopPrompt
             if (KeepUnclear.IsMatch(clause))
             {
                 keepUnclear = true;
+                continue;
+            }
+            var group = Regex.Match(clause,
+                "^(?:" + Move + @"\s+" + Subjects +
+                @"\s+по\s+(?:типам|типу|категориям|видам)(?:\s+файлов)?|" + Move + @"\s+" + Subjects +
+                @"\s+по\s+(?<topic>темам|тематике|содержанию)|(?:разложи|разбери|рассортируй|сортируй|сгруппируй)\s+" + Subjects + ")$", Options);
+            if (group.Success)
+            {
+                var topic = group.Groups["topic"].Success;
+                var subjectsToGroup = group.Groups["subject"].Captures.Select(capture => SubjectKey(capture.Value)).Distinct().ToArray();
+                if (topic && subjectsToGroup.Any(subject => subject != "Документы")) throw Unknown();
+                foreach (var subject in subjectsToGroup)
+                    instructions.Add(new(subject, false, false, null, topic, !topic));
                 continue;
             }
             if (TryUnderstand(clause) is { } learned)
@@ -121,6 +139,11 @@ sealed class DesktopPrompt
                 destinations.Add(topic.Folder);
                 continue;
             }
+            if (rule.ByType)
+            {
+                destinations.Add(fallback);
+                continue;
+            }
             if (!rule.ByYear)
             {
                 destinations.Add(rule.Folder!);
@@ -137,17 +160,27 @@ sealed class DesktopPrompt
         return (destinations.Single(), !launchFile, true, launchFile ? "Проверьте перед переносом" : null);
     }
 
-    public string Answer(IReadOnlyList<DesktopCleanup.FileRow> rows)
+    public DesktopCleanup.PromptSummary Summary(IReadOnlyList<DesktopCleanup.FileRow> rows)
     {
-        var plan = instructions.Distinct().Select(rule => rule.Keep
-            ? $"{rule.Subject} останутся на рабочем столе."
-            : rule.ByTopic ? "Документы разложу по темам. Файлы с неясной темой останутся на столе."
-            : rule.ByYear ? $"{rule.Subject} разложу по годам."
-            : $"{rule.Subject} перенесу в «{rule.Folder}».");
+        var steps = instructions.Distinct().Select(rule => new DesktopCleanup.PromptStep(rule.Subject,
+            rule.Keep ? "keep" : rule.ByTopic ? "topic" : rule.ByType ? "type" : rule.ByYear ? "year" : "move", rule.Folder)).ToArray();
         var selected = rows.Count(row => row.Selected);
         var unclear = rows.Count(row => !row.Selected && row.Reason is "Год не найден" or "Найдено несколько лет" or "Подходят разные папки" or "Проверьте перед переносом" or "Тема не определена уверенно");
-        return string.Join(' ', plan) + (selected > 0 ? $" Отмечено для переноса — {selected}." : " Для переноса пока ничего не отмечено.") +
-            (unclear > 0 ? $" Требуют проверки — {unclear}." : "");
+        return new(steps, selected, unclear);
+    }
+
+    public static string Answer(DesktopCleanup.PromptSummary summary)
+    {
+        var plan = summary.Steps.Select(step => step.Mode switch
+        {
+            "keep" => $"{step.Subject} останутся на рабочем столе.",
+            "topic" => "Документы разложу по темам. Файлы с неясной темой останутся на столе.",
+            "type" => $"{step.Subject} разложу по типам.",
+            "year" => $"{step.Subject} разложу по годам.",
+            _ => $"{step.Subject} перенесу в «{step.Folder}»."
+        });
+        return string.Join(' ', plan) + (summary.Selected > 0 ? $" Отмечено для переноса — {summary.Selected}." : " Для переноса пока ничего не отмечено.") +
+            (summary.Unclear > 0 ? $" Требуют проверки — {summary.Unclear}." : "");
     }
 
     static string[] Years(string text) => Year.Matches(text).Select(match => match.Value).Distinct().ToArray();
@@ -171,10 +204,12 @@ sealed class DesktopPrompt
     static bool Matches(string subject, string extension, string name, string content, string fallback) => subject switch
     {
         "Файлы" => fallback is not ("Игры" or "Программы" or "Скрипты" or "Запуски серверов"),
-        "Счета" => fallback == "Документы" && Regex.IsMatch(name + " " + content,
-            @"(?<!\p{L})(?:сч[её]т(?:а|у|ом|ов|ы)?|invoice(?:s)?|инвойс(?:ы|а)?)(?!\p{L})", Options),
-        "Скриншоты" => fallback == "Изображения" && Regex.IsMatch(name,
-            @"(?<!\p{L})(?:скриншот(?:ы)?|скрин|снимок[\s_-]+экрана|screen[\s_-]*shot(?:s)?|screen[\s_-]*capture)(?!\p{L})", Options),
+        "Счета" => fallback == "Документы" && (Regex.IsMatch(name + " " + content,
+            @"(?<!\p{L})(?:сч[её]т(?:а|у|ом|ов|ы)?|invoice(?:s)?|инвойс(?:ы|а)?)(?!\p{L})", Options) ||
+            DesktopCommandLanguages.ContainsSubject(subject, name + " " + content)),
+        "Скриншоты" => fallback == "Изображения" && (Regex.IsMatch(name,
+            @"(?<!\p{L})(?:скриншот(?:ы)?|скрин|снимок[\s_-]+экрана|screen[\s_-]*shot(?:s)?|screen[\s_-]*capture)(?!\p{L})", Options) ||
+            DesktopCommandLanguages.ContainsSubject(subject, name)),
         "Видео" => extension.ToLowerInvariant() is ".mp4" or ".mov" or ".mkv" or ".webm",
         _ => subject == fallback
     };
@@ -191,5 +226,5 @@ sealed class DesktopPrompt
             ? "Игры" : "Программы";
     }
 
-    static CommandFault Unknown() => new("desktop", "Не удалось разобрать запрос целиком. Попробуйте «Разложи счета по годам, а скриншоты оставь на столе» или «Перенеси архивы в папку Резерв».");
+    internal static CommandFault Unknown() => new("desktop", "Не удалось разобрать запрос целиком.");
 }

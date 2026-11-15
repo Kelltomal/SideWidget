@@ -18,9 +18,12 @@ public sealed class DesktopCleanup(Store store, string desktop, Func<string, str
     string DocumentsFolder => Path.Combine(Folder, "Документы");
 
     public const int PromptLimit = DesktopClassifier.PromptLimit;
+    public sealed record PromptStep(string Subject, string Mode, string? Folder);
+    public sealed record PromptSummary(PromptStep[] Steps, int Selected, int Unclear);
     public sealed record FileRow(int Id, string Name, string Category, bool Selected, bool Selectable = true, string? Reason = null, bool Shared = false);
     public sealed record PreviewResult(Guid Id, FileRow[] Files, bool CanUndo, bool HasMore, bool HasFolder, bool ModelAvailable, string Answer,
-        string[]? Topics = null, string? FolderIcon = null, bool SuggestFolderIcon = false, bool CanUndoIcons = false);
+        string[]? Topics = null, string? FolderIcon = null, bool SuggestFolderIcon = false, bool CanUndoIcons = false,
+        PromptSummary? Summary = null);
     public sealed record Issue(string Name, string Message);
     public sealed record Result(int Count, Issue[] Issues);
     public sealed record IconResult(int Count, Issue[] Issues, bool CanUndoIcons);
@@ -85,10 +88,11 @@ public sealed class DesktopCleanup(Store store, string desktop, Func<string, str
                 entries.Add(entry with { Folder = suggestion.Selectable ? suggestion.Folder : ExcludedFromPreview, Shared = sharedFile });
             }
             RememberPreview(id, new([..entries]));
+            var summary = natural?.Summary(rows);
             return new(id, [..rows], LastMove().Length > 0, files.Length > PageSize,
                 Directory.Exists(Folder), classifier?.ModelAvailable ?? true,
-                natural?.Answer(rows) ?? (string.IsNullOrWhiteSpace(prompt) ? "" : $"Применил правила. К переносу предложено файлов — {rows.Count(row => row.Selected)}."),
-                CanUndoIcons: CanUndoFolderIcons);
+                summary is not null ? DesktopPrompt.Answer(summary) : string.IsNullOrWhiteSpace(prompt) ? "" : $"Применил правила. К переносу предложено файлов — {rows.Count(row => row.Selected)}.",
+                CanUndoIcons: CanUndoFolderIcons, Summary: summary);
         }
     }
 

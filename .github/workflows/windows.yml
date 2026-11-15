@@ -45,6 +45,9 @@ jobs:
       - name: Set up local .NET SDK
         run: ./scripts/bootstrap.ps1
 
+      - name: Validate translation catalogs
+        run: node ./scripts/check-locales.mjs
+
       - name: Install web dependencies
         working-directory: src/SideWidget.Web
         run: npm ci --no-fund

@@ -6,6 +6,8 @@ SideWidget 是一款适用于 Windows 的小巧工具面板。屏幕顶部显示
 
 SideWidget 默认使用 Windows 显示语言。如果不支持该语言，则使用英语。可在**设置 → 应用语言**中切换语言。
 
+SideWidget 的开发以常识为基础，并借助 GPT-6.1 Sol。
+
 ## 界面截图
 
 <p align="center">
@@ -13,10 +15,57 @@ SideWidget 默认使用 Windows 显示语言。如果不支持该语言，则使
 </p>
 
 <p align="center">
-  <img src="images/sidewidget-languages.png" width="630" alt="SideWidget 设置中的应用语言选项">
+  <img src="images/sidewidget-commands-zh-CN.png" width="590" alt="SideWidget 简体中文文件整理界面">
 </p>
 
-截图来自 Windows 上实际运行的 SideWidget。主面板显示截图时正在播放的曲目。
+播放器截图拍摄于 Windows 正在播放音乐时。各工具的截图使用演示数据。
+
+## 指令示例
+
+打开**文件和文件夹**，粘贴指令并检查预览，再应用更改。
+
+- **整理文件.** `把发票按年份整理，截图留在桌面`
+- **文件夹图标.** `更改桌面文件夹图标`<br>`将文件夹图标改为照片`
+
+[全部九种语言](../../README.md#примеры-команд)
+
+## 更多工具
+
+<details>
+<summary><strong>计算器</strong></summary>
+
+计算带百分比和括号的表达式，复制结果或查看计算历史。
+
+<img src="images/sidewidget-tool-calculator.png" width="520" alt="计算器">
+
+</details>
+
+<details>
+<summary><strong>二维码</strong></summary>
+
+将文本或链接生成二维码，并保存为 SVG、PNG 或 JPEG。
+
+<img src="images/sidewidget-tool-qr.png" width="520" alt="二维码">
+
+</details>
+
+<details>
+<summary><strong>单位换算</strong></summary>
+
+换算距离、温度等数值，并收藏常用的单位组合。
+
+<img src="images/sidewidget-tool-units.png" width="520" alt="单位换算">
+
+</details>
+
+<details>
+<summary><strong>取色器</strong></summary>
+
+从屏幕取色，复制 HEX、RGB 或 HSL 数值，并将颜色收藏到调色板。
+
+<img src="images/sidewidget-tool-colors.png" width="520" alt="取色器">
+
+</details>
 
 ## 功能
 
@@ -39,4 +88,4 @@ SideWidget 默认使用 Windows 显示语言。如果不支持该语言，则使
 
 ## 项目文档
 
-[构建与贡献指南](../../CONTRIBUTING.md) · [技术参考（俄语）](technical.ru.md) · [报告问题](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [报告安全漏洞](../../SECURITY.md)
+[构建与贡献指南](../../CONTRIBUTING.md) · [技术参考（俄语）](technical.ru.md) · [报告问题](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [报告安全漏洞](../../SECURITY.md) · [通过 Weblate 翻译](translating.md)

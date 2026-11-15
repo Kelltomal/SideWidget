@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../src/SideWidget.App/Localization.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
@@ -24,7 +25,6 @@
     <!-- Compile the picker, but never invoke it or install hooks from this harness. -->
     <Compile Include="../../src/SideWidget.App/ScreenPicker.cs" Link="Services/ScreenPicker.cs" />
     <Compile Include="../../src/SideWidget.App/DesktopLanguage.cs" Link="Services/DesktopLanguage.cs" />
-    <Compile Include="../../src/SideWidget.App/DesktopStrings.cs" Link="Services/DesktopStrings.cs" />
     <Content Include="../../src/SideWidget.App/Assets/Native/Everything64.dll" Link="Everything64.dll" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../src/SideWidget.App/Assets/Native/Everything-SDK-LICENSE.txt" Link="Everything-SDK-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

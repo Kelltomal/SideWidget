@@ -6,6 +6,8 @@ SideWidget は、日常的に使うツールをまとめた Windows 向けのコ
 
 SideWidget は Windows の表示言語に合わせます。対応していない言語の場合は英語で起動します。**設定 → アプリの言語**で変更できます。
 
+SideWidget は常識を大切にし、GPT-6.1 Sol の支援を受けて開発しています。
+
 ## スクリーンショット
 
 <p align="center">
@@ -13,10 +15,57 @@ SideWidget は Windows の表示言語に合わせます。対応していない
 </p>
 
 <p align="center">
-  <img src="images/sidewidget-languages.png" width="630" alt="SideWidget の設定にあるアプリ言語の選択">
+  <img src="images/sidewidget-commands-ja.png" width="590" alt="日本語表示でフォルダーアイコンを選ぶ SideWidget の画面">
 </p>
 
-SideWidget を Windows で実行して撮影した画面です。メインパネルには撮影時に再生中の曲が表示されています。
+プレーヤーは Windows で音楽を再生中に撮影しました。各ツールの画面にはサンプルデータを使用しています。
+
+## 指示の例
+
+**ファイルとフォルダー**を開き、指示を貼り付けて、適用する前にプレビューを確認します。
+
+- **ファイル整理.** `請求書を年別に整理して、スクリーンショットはデスクトップに残して`
+- **フォルダーアイコン.** `デスクトップのフォルダーアイコンを変更して`<br>`フォルダーアイコンを写真に変更して`
+
+[9 言語すべての例](../../README.md#примеры-команд)
+
+## その他のツール
+
+<details>
+<summary><strong>電卓</strong></summary>
+
+パーセントや括弧を含む式を計算し、結果をコピーしたり履歴を参照したりできます。
+
+<img src="images/sidewidget-tool-calculator.png" width="520" alt="電卓">
+
+</details>
+
+<details>
+<summary><strong>QR コード</strong></summary>
+
+テキストやリンクを QR コードにして SVG、PNG、JPEG で保存できます。
+
+<img src="images/sidewidget-tool-qr.png" width="520" alt="QR コード">
+
+</details>
+
+<details>
+<summary><strong>単位変換</strong></summary>
+
+距離や温度などを変換します。よく使う単位の組み合わせはお気に入りに登録できます。
+
+<img src="images/sidewidget-tool-units.png" width="520" alt="単位変換">
+
+</details>
+
+<details>
+<summary><strong>カラーピッカー</strong></summary>
+
+画面から色を拾い、HEX、RGB、HSL でコピーしたりパレットに保存したりできます。
+
+<img src="images/sidewidget-tool-colors.png" width="520" alt="カラーピッカー">
+
+</details>
 
 ## 主な機能
 
@@ -39,4 +88,4 @@ SideWidget を Windows で実行して撮影した画面です。メインパネ
 
 ## プロジェクトのドキュメント
 
-[ビルドとコントリビュート](../../CONTRIBUTING.md) · [技術資料（ロシア語）](technical.ru.md) · [不具合を報告](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [脆弱性を報告](../../SECURITY.md)
+[ビルドとコントリビュート](../../CONTRIBUTING.md) · [技術資料（ロシア語）](technical.ru.md) · [不具合を報告](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [脆弱性を報告](../../SECURITY.md) · [Weblate で翻訳](translating.md)

@@ -6,6 +6,8 @@ SideWidget — компактная панель повседневных инс
 
 SideWidget выбирает язык Windows. Если его нет в списке, приложение открывается на английском. Язык можно сменить в **Настройках → Язык приложения**.
 
+Проект разрабатывается со здравым смыслом и с помощью GPT-6.1 Sol.
+
 ## Снимки экрана
 
 <p align="center">
@@ -13,10 +15,64 @@ SideWidget выбирает язык Windows. Если его нет в спис
 </p>
 
 <p align="center">
-  <img src="docs/github/images/sidewidget-languages.png" width="630" alt="Выбор языка приложения в настройках SideWidget">
+  <img src="docs/github/images/sidewidget-commands-ru.png" width="590" alt="Сортировка файлов в SideWidget по-русски">
 </p>
 
-Снимки сделаны в SideWidget на Windows. Главная панель показывает воспроизводимый трек.
+Плеер снят на Windows во время воспроизведения музыки. Снимки инструментов используют демонстрационные данные.
+
+## Примеры команд
+
+Откройте **Файлы и папки**, вставьте команду и проверьте план перед применением.
+
+| Язык и снимок | Сортировка | Значки папок |
+| --- | --- | --- |
+| [Русский](docs/github/images/sidewidget-commands-ru.png) | `Разложи счета по годам, а скриншоты оставь на столе` | `Поменяй значки на рабочем столе`<br>`Поменяй значок папки на фото` |
+| [English](docs/github/images/sidewidget-commands-en.png) | `Sort invoices by year and leave screenshots on the desktop` | `Change desktop folder icons`<br>`Change the folder icon to photos` |
+| [简体中文](docs/github/images/sidewidget-commands-zh-CN.png) | `把发票按年份整理，截图留在桌面` | `更改桌面文件夹图标`<br>`将文件夹图标改为照片` |
+| [日本語](docs/github/images/sidewidget-commands-ja.png) | `請求書を年別に整理して、スクリーンショットはデスクトップに残して` | `デスクトップのフォルダーアイコンを変更して`<br>`フォルダーアイコンを写真に変更して` |
+| [Deutsch](docs/github/images/sidewidget-commands-de.png) | `Sortiere Rechnungen nach Jahren und lass Screenshots auf dem Desktop` | `Ändere die Ordnersymbole auf dem Desktop`<br>`Ändere das Ordnersymbol zu Fotos` |
+| [Українська](docs/github/images/sidewidget-commands-uk.png) | `Розклади рахунки за роками, а знімки екрана залиш на робочому столі` | `Зміни значки папок на робочому столі`<br>`Зміни значок папки на фото` |
+| [Беларуская](docs/github/images/sidewidget-commands-be.png) | `Раскладзі рахункі па гадах, а здымкі экрана пакінь на працоўным стале` | `Змяні значкі папак на працоўным стале`<br>`Змяні значок папкі на фота` |
+| [Español](docs/github/images/sidewidget-commands-es.png) | `Ordena las facturas por año y deja las capturas de pantalla en el escritorio` | `Cambia los iconos de las carpetas del escritorio`<br>`Cambia el icono de la carpeta a fotos` |
+| [Português (Brasil)](docs/github/images/sidewidget-commands-pt-BR.png) | `Organize as faturas por ano e deixe as capturas de tela na área de trabalho` | `Altere os ícones das pastas da área de trabalho`<br>`Troque o ícone da pasta por fotos` |
+
+## Другие инструменты
+
+<details>
+<summary><strong>Калькулятор</strong></summary>
+
+Посчитайте выражение с процентами и скобками, скопируйте результат или вернитесь к вычислению из истории.
+
+<img src="docs/github/images/sidewidget-tool-calculator.png" width="520" alt="Калькулятор">
+
+</details>
+
+<details>
+<summary><strong>QR-коды</strong></summary>
+
+Превратите ссылку или текст в QR-код и сохраните его в SVG, PNG или JPEG.
+
+<img src="docs/github/images/sidewidget-tool-qr.png" width="520" alt="QR-коды">
+
+</details>
+
+<details>
+<summary><strong>Конвертер единиц</strong></summary>
+
+Переводите расстояния, температуру и другие величины. Частые пары можно закрепить в избранном.
+
+<img src="docs/github/images/sidewidget-tool-units.png" width="520" alt="Конвертер единиц">
+
+</details>
+
+<details>
+<summary><strong>Пипетка и цвета</strong></summary>
+
+Возьмите цвет с экрана, скопируйте его в HEX, RGB или HSL и сохраните в палитре.
+
+<img src="docs/github/images/sidewidget-tool-colors.png" width="520" alt="Пипетка и цвета">
+
+</details>
 
 ## Возможности
 
@@ -39,4 +95,4 @@ SideWidget выбирает язык Windows. Если его нет в спис
 
 ## Документация проекта
 
-[Сборка и вклад в проект](CONTRIBUTING.md) · [Техническая справка](docs/github/technical.ru.md) · [Сообщить об ошибке](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Сообщить об уязвимости](SECURITY.md)
+[Сборка и вклад в проект](CONTRIBUTING.md) · [Техническая справка](docs/github/technical.ru.md) · [Сообщить об ошибке](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Сообщить об уязвимости](SECURITY.md) · [Переводы через Weblate](docs/github/translating.md)

@@ -6,6 +6,8 @@ SideWidget is a compact panel for everyday Windows tools. A clock sits at the to
 
 SideWidget follows the Windows display language and falls back to English. You can switch languages under **Settings → App language**.
 
+SideWidget is developed with common sense and help from GPT-6.1 Sol.
+
 ## Screenshots
 
 <p align="center">
@@ -13,10 +15,57 @@ SideWidget follows the Windows display language and falls back to English. You c
 </p>
 
 <p align="center">
-  <img src="images/sidewidget-languages.png" width="630" alt="App language selector in SideWidget settings">
+  <img src="images/sidewidget-commands-en.png" width="590" alt="Sorting files in SideWidget in English">
 </p>
 
-These screenshots were taken in SideWidget on Windows. The home panel shows the track playing at capture time.
+The player was captured on Windows during music playback. Tool screenshots use sample data.
+
+## Example commands
+
+Open **Files and folders**, paste a command, and review the plan before applying it.
+
+- **Sorting.** `Sort invoices by year and leave screenshots on the desktop`
+- **Folder icons.** `Change desktop folder icons`<br>`Change the folder icon to photos`
+
+[All nine languages](../../README.md#примеры-команд)
+
+## More tools
+
+<details>
+<summary><strong>Calculator</strong></summary>
+
+Evaluate an expression with percentages and parentheses, copy the result, or recall a calculation from history.
+
+<img src="images/sidewidget-tool-calculator.png" width="520" alt="Calculator">
+
+</details>
+
+<details>
+<summary><strong>QR codes</strong></summary>
+
+Turn text or a link into a QR code and save it as SVG, PNG, or JPEG.
+
+<img src="images/sidewidget-tool-qr.png" width="520" alt="QR codes">
+
+</details>
+
+<details>
+<summary><strong>Unit converter</strong></summary>
+
+Convert distance, temperature, and other measurements. Save frequently used unit pairs.
+
+<img src="images/sidewidget-tool-units.png" width="520" alt="Unit converter">
+
+</details>
+
+<details>
+<summary><strong>Color picker</strong></summary>
+
+Pick a color from the screen, copy it as HEX, RGB, or HSL, and save it to your palette.
+
+<img src="images/sidewidget-tool-colors.png" width="520" alt="Color picker">
+
+</details>
 
 ## Features
 
@@ -39,4 +88,4 @@ At startup, SideWidget checks GitHub for a newer stable release. Update now, def
 
 ## Project documentation
 
-[Build and contribute](../../CONTRIBUTING.md) · [Technical reference in Russian](technical.ru.md) · [Report a bug](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Report a vulnerability](../../SECURITY.md)
+[Build and contribute](../../CONTRIBUTING.md) · [Technical reference in Russian](technical.ru.md) · [Report a bug](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Report a vulnerability](../../SECURITY.md) · [Translate with Weblate](translating.md)

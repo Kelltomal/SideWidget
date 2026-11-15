@@ -6,6 +6,8 @@ SideWidget ist ein kompaktes Panel mit Werkzeugen für den Windows-Alltag. Am ob
 
 SideWidget übernimmt die Sprache von Windows. Ist sie nicht verfügbar, startet die App auf Englisch. Unter **Einstellungen → App-Sprache** kannst du die Sprache wechseln.
 
+SideWidget wird mit gesundem Menschenverstand und mithilfe von GPT-6.1 Sol entwickelt.
+
 ## Screenshots
 
 <p align="center">
@@ -13,10 +15,57 @@ SideWidget übernimmt die Sprache von Windows. Ist sie nicht verfügbar, startet
 </p>
 
 <p align="center">
-  <img src="images/sidewidget-languages.png" width="630" alt="Auswahl der App-Sprache in den SideWidget-Einstellungen">
+  <img src="images/sidewidget-commands-de.png" width="590" alt="Ordnersymbole in der deutschen SideWidget-Oberfläche">
 </p>
 
-Die Screenshots stammen aus SideWidget unter Windows. Die Hauptansicht zeigt den laufenden Musiktitel.
+Der Player wurde unter Windows während der Musikwiedergabe aufgenommen. Die Werkzeugansichten zeigen Beispieldaten.
+
+## Beispielbefehle
+
+Öffne **Dateien und Ordner**, füge einen Befehl ein und prüfe den Vorschauplan vor dem Anwenden.
+
+- **Sortieren.** `Sortiere Rechnungen nach Jahren und lass Screenshots auf dem Desktop`
+- **Ordnersymbole.** `Ändere die Ordnersymbole auf dem Desktop`<br>`Ändere das Ordnersymbol zu Fotos`
+
+[Alle neun Sprachen](../../README.md#примеры-команд)
+
+## Weitere Werkzeuge
+
+<details>
+<summary><strong>Rechner</strong></summary>
+
+Berechne Ausdrücke mit Prozenten und Klammern, kopiere Ergebnisse oder rufe Rechnungen aus dem Verlauf ab.
+
+<img src="images/sidewidget-tool-calculator.png" width="520" alt="Rechner">
+
+</details>
+
+<details>
+<summary><strong>QR-Codes</strong></summary>
+
+Wandle Text oder einen Link in einen QR-Code um und speichere ihn als SVG, PNG oder JPEG.
+
+<img src="images/sidewidget-tool-qr.png" width="520" alt="QR-Codes">
+
+</details>
+
+<details>
+<summary><strong>Einheiten umrechnen</strong></summary>
+
+Rechne Entfernungen, Temperaturen und andere Größen um. Häufig genutzte Einheitenpaare lassen sich speichern.
+
+<img src="images/sidewidget-tool-units.png" width="520" alt="Einheiten umrechnen">
+
+</details>
+
+<details>
+<summary><strong>Farbpipette</strong></summary>
+
+Wähle eine Bildschirmfarbe, kopiere HEX, RGB oder HSL und speichere die Farbe in der Palette.
+
+<img src="images/sidewidget-tool-colors.png" width="520" alt="Farbpipette">
+
+</details>
 
 ## Funktionen
 
@@ -39,4 +88,4 @@ Beim Start sucht SideWidget auf GitHub nach einer stabilen Version. Du kannst so
 
 ## Projektdokumentation
 
-[Erstellen und mitwirken](../../CONTRIBUTING.md) · [Technische Dokumentation auf Russisch](technical.ru.md) · [Fehler melden](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Sicherheitslücke melden](../../SECURITY.md)
+[Erstellen und mitwirken](../../CONTRIBUTING.md) · [Technische Dokumentation auf Russisch](technical.ru.md) · [Fehler melden](https://github.com/Kelltomal/SideWidget/issues/new/choose) · [Sicherheitslücke melden](../../SECURITY.md) · [Mit Weblate übersetzen](translating.md)
