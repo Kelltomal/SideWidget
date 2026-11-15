@@ -11,7 +11,7 @@ sealed partial class Controller
         try{Timer.Tick(DateTimeOffset.Now);timerStorageError=false;}
         catch(Exception e) when(e is Microsoft.Data.Sqlite.SqliteException or IOException){
             // Keep the clock alive if storage fails; a later tick retries the transition.
-            if(!timerStorageError){timerStorageError=true;Emit("notice",new{message="Не удалось сохранить таймер. Проверьте свободное место."});}
+            if(!timerStorageError){timerStorageError=true;Emit("notice",new{message=DesktopLanguage.Text("Не удалось сохранить таймер. Проверьте свободное место.")});}
         }finally{if(before!=Timer.Items)Emit("timer.changed",Timer.Items);}
     }
     bool timerStorageError;

@@ -1,5 +1,5 @@
 namespace SideWidget.Core;
-public sealed record Preferences(int Width=444,int Height=620,int HideDelay=650,int OpenDelay=100,string Hotkey="Ctrl+Alt+Space",int Monitor=0,double Position=1,bool LargeMode=false,string[]? Order=null,string[]? Disabled=null,string Theme="dark",VisualizerOptions? Visualizer=null,string[]? DisplayIds=null,string[]? PinnedTools=null,Dictionary<string,double>? DisplayPositions=null)
+public sealed record Preferences(int Width=444,int Height=620,int HideDelay=650,int OpenDelay=100,string Hotkey="Ctrl+Alt+Space",int Monitor=0,double Position=1,bool LargeMode=false,string[]? Order=null,string[]? Disabled=null,string Theme="dark",VisualizerOptions? Visualizer=null,string[]? DisplayIds=null,string[]? PinnedTools=null,Dictionary<string,double>? DisplayPositions=null,string? Language=null)
 {
     static readonly string[] Tools=["calculator","translation","qr","currency","units","colors","diary","timer","desktop"];
     public double PositionForDisplay(string id)=>DisplayPositions?.GetValueOrDefault(id,Position)??Position;

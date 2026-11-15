@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -38,6 +37,7 @@ public sealed partial class MainWindow : Window
     bool webEditing,closing,dragging,dragMoved;
     int dragPointerX,dragWindowX;
     string? startupError;
+    string? nativeLanguage;
     long previous;
     double outsideMs;
     double scale = 1;
@@ -81,7 +81,6 @@ public sealed partial class MainWindow : Window
         else { Grid.SetRow(web,1);root.Children.Add(web);web.DefaultBackgroundColor=Color.FromArgb(255,24,26,28);web.Loaded+=async(_,_)=>await InitializeWeb(); }
         resizeGrip=new Grid{Width=24,Height=24,Background=new SolidColorBrush(Color.FromArgb(1,24,26,28)),HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Bottom};
         resizeGrip.Children.Add(new TextBlock{Text="\uE784",FontFamily=new FontFamily("Segoe Fluent Icons"),FontSize=12,Foreground=Brush("A9B1BA"),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center,IsHitTestVisible=false});
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(resizeGrip,"Изменить размер панели");
         resizeGrip.PointerPressed+=ResizePressed;resizeGrip.PointerMoved+=ResizeMoved;resizeGrip.PointerReleased+=(_,_)=>FinishResize(false);resizeGrip.PointerCaptureLost+=(_,_)=>FinishResize(false);Grid.SetRow(resizeGrip,1);root.Children.Add(resizeGrip);
         Content=root;
         InitializeTheme();
@@ -117,7 +116,7 @@ public sealed partial class MainWindow : Window
         var borderColor=unchecked((int)0xFFFFFFFE);Native.DwmSetWindowAttribute(hwnd,34,ref borderColor,4);
         InitializeAudioVisualizer();
         controller.VisualizerChanged=RefreshAudioVisualizerSettings;
-        Place(); UpdateClock();if(primaryWindow){RegisterHotkey(controller.Settings.Hotkey);AddTray();}
+        Place(); RefreshNativeLanguage();if(primaryWindow){RegisterHotkey(controller.Settings.Hotkey);AddTray();}
         pulse.Tick += async(_,_) => await Tick(); pulse.Start();
         CompositionTarget.Rendering += RenderFrame;
         Closed += (_,_) => {closing=true;compactStrip?.Dispose();StopAudioVisualizer();tooltip?.Close();CompositionTarget.Rendering-=RenderFrame;pulse.Stop();controller.Stop();if(primaryWindow){Native.UnregisterHotKey(hwnd,1);Native.Shell_NotifyIcon(2,ref tray);}if(trayIcon!=0){Native.DestroyIcon(trayIcon);trayIcon=0;}web.Close();desktop.WindowClosed(this,primaryWindow);};
@@ -134,7 +133,30 @@ public sealed partial class MainWindow : Window
         if(Environment.GetCommandLineArgs().Contains("--diagnostics"))File.WriteAllText(Path.Combine(controller.Store.DirectoryPath,"startup.json"),System.Text.Json.JsonSerializer.Serialize(new{elapsedMs=(DateTime.UtcNow-Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalMilliseconds,foregroundPreserved=Native.GetForegroundWindow()==foreground}));
     }
     static SolidColorBrush Brush(string hex) => new(Color.FromArgb(255,Convert.ToByte(hex[..2],16),Convert.ToByte(hex[2..4],16),Convert.ToByte(hex[4..],16)));
-    void UpdateClock() { var now=DateTime.Now; var ru=CultureInfo.GetCultureInfo("ru-RU"); day.Text=ru.TextInfo.ToTitleCase(now.ToString("dddd",ru)); clock.Text=now.ToString("HH:mm"); date.Text=now.ToString("d MMM",ru).TrimEnd('.'); UpdateTimerHeader(); }
+    void UpdateClock()
+    {
+        var now=DateTime.Now;
+        var culture=DesktopLanguage.Culture;
+        day.Text=culture.TextInfo.ToTitleCase(now.ToString("dddd",culture));
+        clock.Text=now.ToString("HH':'mm",culture);
+        date.Text=DesktopLanguage.HeaderDate(now,culture);
+        UpdateTimerHeader();
+    }
+    void RefreshNativeLanguage()
+    {
+        var language=DesktopLanguage.Language;
+        if(nativeLanguage==language)return;
+        nativeLanguage=language;
+        root.Language=language;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(resizeGrip,DesktopLanguage.Text("Изменить размер панели"));
+        UpdateClock();
+        compactStrip?.RefreshLanguage();
+        if(primaryWindow&&tray.Size>0)
+        {
+            tray.Tip=DesktopLanguage.Text("SideMenu — открыть или выйти");
+            Native.Shell_NotifyIcon(1,ref tray);
+        }
+    }
     Native.MonitorInfo Monitor()=>dragDisplay?.Bounds??desktop.Monitor(DisplayId);
     Preferences Placement=>resizePreview??controller.Settings;
     double PanelPosition=>dragPosition??Placement.PositionForDisplay(DisplayId);

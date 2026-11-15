@@ -38,20 +38,20 @@ public sealed partial class MainWindow
         {
             clock.FontSize=22;
             if(timerHeader!=null)Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(timerHeader,
-                ringing?"Время вышло. Нажмите, чтобы остановить сигнал":"SideWidget, "+clock.Text);
+                ringing?DesktopLanguage.Text("Время вышло. Нажмите, чтобы остановить сигнал"):"SideWidget, "+clock.Text);
             return;
         }
-        day.Text=state.Status=="paused"?"Пауза":state.Status=="ready"?"Готов к старту":state.Mode=="alarm"?"Будильник":state.Mode=="timer"?"Таймер":state.Phase=="work"?"Работа":"Перерыв";
+        day.Text=DesktopLanguage.Text(state.Status=="paused"?"Пауза":state.Status=="ready"?"Готов к старту":state.Mode=="alarm"?"Будильник":state.Mode=="timer"?"Таймер":state.Phase=="work"?"Работа":"Перерыв");
         clock.FontSize=ringing?18:22;
-        clock.Text=ringing?"Время вышло":FocusTimer.Format(controller.Timer.Remaining(DateTimeOffset.Now));
-        if(ringing)date.Text="Нажмите";
-        if(timerHeader!=null)Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(timerHeader,ringing?"Время вышло. Нажмите, чтобы остановить сигнал":$"{day.Text}, осталось {clock.Text}");
+        clock.Text=ringing?DesktopLanguage.Text("Время вышло"):FocusTimer.Format(controller.Timer.Remaining(DateTimeOffset.Now));
+        if(ringing)date.Text=DesktopLanguage.Text("Нажмите");
+        if(timerHeader!=null)Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(timerHeader,ringing?DesktopLanguage.Text("Время вышло. Нажмите, чтобы остановить сигнал"):DesktopLanguage.Text("{0}, осталось {1}",day.Text,clock.Text));
     }
     bool DismissTimerSignal()
     {
         if(controller.Timer.State.Status!="ringing")return false;
         try{controller.ChangeTimer(timer=>timer.Dismiss());outsideMs=0;UpdateClock();}
-        catch(Exception e) when(e is Microsoft.Data.Sqlite.SqliteException or IOException){SendEvent("notice",new{message="Не удалось остановить сигнал. Проверьте свободное место и повторите."});}
+        catch(Exception e) when(e is Microsoft.Data.Sqlite.SqliteException or IOException){SendEvent("notice",new{message=DesktopLanguage.Text("Не удалось остановить сигнал. Проверьте свободное место и повторите.")});}
         return true;
     }
 }

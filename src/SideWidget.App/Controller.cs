@@ -45,7 +45,7 @@ sealed partial class Controller
     public Func<IReadOnlyList<DisplayDescriptor>> Displays {get;set;}=()=>[];
     public Controller(string directory):this(new DesktopState(directory)){ownsDesktopState=true;audio.LevelChanged+=(volume,muted)=>Emit("audio.level.changed",new{volume,muted});}
     internal Controller(DesktopState shared){desktopState=shared;state=shared.Personal;Timer=shared.Timer;Launcher=shared.Launcher;Online=shared.Online;Selly=shared.Selly;audio=shared.Audio;media=shared.Media;}
-    public object Snapshot()=>new {appVersion,settings=Settings,displays=Displays(),calculatorHistory=state.CalculatorHistory,colorHistory=state.ColorHistory,unitFavorites=state.UnitFavorites,apps=state.Apps,launcherUndoAvailable=Launcher.CanUndo,drafts=new{diary=state.DiaryDraft},selly=new{configured=false,message="Подключение календаря и дневника SellyBoard требует отдельного API-доступа. Локальный черновик сохраняется на этом компьютере."}};
+    public object Snapshot()=>new {appVersion,language=DesktopLanguage.Language,systemLanguage=DesktopLanguage.SystemLanguage,settings=Settings,displays=Displays(),calculatorHistory=state.CalculatorHistory,colorHistory=state.ColorHistory,unitFavorites=state.UnitFavorites,apps=state.Apps,launcherUndoAvailable=Launcher.CanUndo,drafts=new{diary=state.DiaryDraft},selly=new{configured=false,message="Подключение календаря и дневника SellyBoard требует отдельного API-доступа. Локальный черновик сохраняется на этом компьютере."}};
     public void SavePlacement(Preferences p){state.SaveSettings(p);Emit("settings.changed",new{settings=p});}
     public async Task<object> Handle(Command c)
     {
@@ -57,7 +57,10 @@ sealed partial class Controller
                 case "bridge.ready":Ready=true;return Snapshot();case "state.get":return Snapshot();
                 case "startup.get":return new StartupService(Environment.ProcessPath!).Get();
                 case "app.share":return await ShareApplication();
-                case "updates.check":return await githubUpdates.CheckAsync(currentAppVersion);
+                case "updates.check":return await CheckUpdate();
+                case "updates.defer":return new{};
+                case "updates.skip":SkipUpdate(Text("version",32));return new{};
+                case "updates.install":await InstallUpdate(Text("version",32));return new{};
                 case "startup.set":
                     if(!p.TryGetProperty("enabled",out var startupEnabled)||startupEnabled.ValueKind is not (JsonValueKind.True or JsonValueKind.False))throw new CommandFault("schema","Укажите состояние автозапуска");
                     return new StartupService(Environment.ProcessPath!).Set(startupEnabled.GetBoolean());
@@ -65,12 +68,18 @@ sealed partial class Controller
                 case "shell.editing":Shell(p.GetProperty("value").GetBoolean()?"editing":"idle");return new{};
                 case "shell.tooltip":Tooltip(p.GetProperty("visible").GetBoolean()?TooltipContent.Read(p):null);return new{};
                 case "settings.theme":var themed=Settings with{Theme=Text("theme",16)};themed.Validate();state.SaveSettings(themed);ThemeChanged(themed.Theme);return Snapshot();
+                case "settings.language":
+                    var language=Text("language",16);
+                    if(language!="system"&&!DesktopLanguage.IsSupported(language))throw new CommandFault("settings","Выберите язык приложения.");
+                    state.SaveSettings(Settings with{Language=language});
+                    DesktopLanguage.Select(language);
+                    return Snapshot();
                 case "settings.save":
                     var settings=p.Deserialize<Preferences>(Protocol.Json)??throw new CommandFault("settings","Некорректные настройки");
                     var previousSettings=Settings;
                     settings.Validate();
                     var positionChanges=settings.DisplayPositions;
-                    settings=settings with{DisplayPositions=previousSettings.DisplayPositions};
+                    settings=settings with{DisplayPositions=previousSettings.DisplayPositions,Language=previousSettings.Language};
                     if(positionChanges is not null)
                         foreach(var entry in positionChanges)settings=settings.WithDisplayPosition(entry.Key,entry.Value);
                     SettingsChanged(settings);
@@ -97,7 +106,7 @@ sealed partial class Controller
                     if(!Guid.TryParseExact(Text("previewId",36),"D",out var iconPreviewId))
                         throw new CommandFault("schema","Примените запрос ещё раз.");
                     var folderPath=await desktopState.Cleanup.ChangeFolderIcon(iconPreviewId,PickFolder,
-                        (folder,icon)=>Confirm("Изменить значок папки?",$"{folder}\n\nНовый значок — «{icon}»."));
+                        (folder,icon)=>Confirm("Изменить значок папки?",DesktopLanguage.Text("{0}\n\nНовый значок — «{1}».",folder,DesktopLanguage.Text(icon))));
                     return new{path=folderPath,canUndoIcons=desktopState.Cleanup.CanUndoFolderIcons};
                 case "desktop.icons.preview":
                     if(!Guid.TryParseExact(Text("previewId",36),"D",out var iconRequestId))

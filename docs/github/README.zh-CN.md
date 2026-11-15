@@ -4,16 +4,19 @@
 
 SideWidget 是一款适用于 Windows 的小巧工具面板。屏幕顶部显示时钟，点击时钟即可打开面板，搜索文件、启动常用应用或使用其他工具。默认快捷键为 `Ctrl+Alt+Space`。
 
-上方列出的是文档语言。应用界面为俄语。
+SideWidget 默认使用 Windows 显示语言。如果不支持该语言，则使用英语。可在**设置 → 应用语言**中切换语言。
 
 ## 界面截图
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="带搜索、播放器和快捷工具的 SideWidget 主面板">
-  <img src="images/sidewidget-folder-icons.png" width="340" alt="在 SideWidget 中选择文件夹图标样式">
+  <img src="images/sidewidget-home.png" width="760" alt="带搜索、播放器和快捷工具的 SideWidget 主面板">
 </p>
 
-截图使用示例数据。
+<p align="center">
+  <img src="images/sidewidget-languages.png" width="630" alt="SideWidget 设置中的应用语言选项">
+</p>
+
+截图来自 Windows 上实际运行的 SideWidget。主面板显示截图时正在播放的曲目。
 
 ## 功能
 
@@ -32,7 +35,7 @@ SideWidget 是一款适用于 Windows 的小巧工具面板。屏幕顶部显示
 2. 将整个压缩包解压到本地可写入的文件夹。
 3. 运行 `SideWidget.App.exe`。压缩包已包含 .NET 和 WebView2。将应用迁移到其他电脑时，请保留完整的解压文件夹。
 
-在**设置**中可以检查 GitHub 上的最新稳定版本，并在浏览器中打开对应的发布页面。新版需手动下载。
+启动时，SideWidget 会在 GitHub 上检查是否有更新的稳定版。你可以立即更新、下次启动时提醒或跳过此版本。更新时，SideWidget 会验证 ZIP 的 SHA-256 校验值、解压文件并重新启动。也可在**设置 → 更新**中手动检查。
 
 ## 项目文档
 

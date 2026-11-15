@@ -4,16 +4,19 @@
 
 SideWidget es un panel compacto con herramientas para el día a día en Windows. Muestra un reloj en el borde superior de la pantalla. Al hacer clic en él se abre el panel con la búsqueda de archivos, las aplicaciones ancladas y otras herramientas. El atajo predeterminado es `Ctrl+Alt+Space` (Ctrl+Alt+Espacio).
 
-Los idiomas de arriba corresponden a la documentación. La interfaz de la aplicación está en ruso.
+SideWidget usa el idioma de Windows y, si ese idioma no está disponible, se abre en inglés. Puedes cambiarlo en **Configuración → Idioma de la aplicación**.
 
 ## Capturas de pantalla
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="Panel principal de SideWidget con búsqueda, reproductor y accesos rápidos a las herramientas">
-  <img src="images/sidewidget-folder-icons.png" width="340" alt="Selección del estilo de los iconos de carpeta en SideWidget">
+  <img src="images/sidewidget-home.png" width="760" alt="Panel principal de SideWidget con búsqueda, reproductor y accesos rápidos a las herramientas">
 </p>
 
-Las capturas usan datos de ejemplo.
+<p align="center">
+  <img src="images/sidewidget-languages.png" width="630" alt="Selector de idioma en la configuración de SideWidget">
+</p>
+
+Las capturas se hicieron en SideWidget para Windows. El panel principal muestra la canción que se estaba reproduciendo.
 
 ## Funciones
 
@@ -32,7 +35,7 @@ SideWidget requiere una versión compatible de Windows 10 u 11 para x64.
 2. Extrae el archivo completo en una carpeta local con permisos de escritura.
 3. Ejecuta `SideWidget.App.exe`. El ZIP incluye .NET y WebView2. Para trasladar la aplicación a otro equipo, copia toda la carpeta extraída.
 
-En **Configuración** puedes buscar la última versión estable en GitHub y abrir su página en el navegador. La nueva versión se descarga manualmente.
+Al iniciarse, SideWidget busca una versión estable más reciente en GitHub. Puedes actualizar ahora, aplazarlo hasta el próximo inicio u omitir esa versión. Al actualizar, SideWidget verifica el SHA-256 del ZIP, extrae los archivos y se reinicia. Puedes buscar actualizaciones en **Configuración → Actualizaciones**.
 
 ## Documentación del proyecto
 

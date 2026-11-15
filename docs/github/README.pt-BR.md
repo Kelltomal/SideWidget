@@ -4,16 +4,19 @@
 
 SideWidget é um painel compacto com ferramentas para o dia a dia no Windows. Um relógio fica visível no topo da tela. Clique nele para abrir a busca de arquivos, os aplicativos fixados e outras ferramentas. O atalho padrão é `Ctrl+Alt+Space` (Ctrl+Alt+Espaço).
 
-Os idiomas acima são os da documentação. A interface do aplicativo está em russo.
+O SideWidget segue o idioma de exibição do Windows. Se o idioma não estiver disponível, o aplicativo abre em inglês. Altere o idioma em **Configurações → Idioma do aplicativo**.
 
 ## Capturas de tela
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="Painel principal do SideWidget com busca, reprodutor e atalhos de ferramentas">
-  <img src="images/sidewidget-folder-icons.png" width="340" alt="Seleção do estilo dos ícones de pasta no SideWidget">
+  <img src="images/sidewidget-home.png" width="760" alt="Painel principal do SideWidget com busca, reprodutor e atalhos de ferramentas">
 </p>
 
-As capturas usam dados de exemplo.
+<p align="center">
+  <img src="images/sidewidget-languages.png" width="630" alt="Seletor de idioma nas configurações do SideWidget">
+</p>
+
+As capturas foram feitas no SideWidget para Windows. O painel principal mostra a faixa que estava tocando.
 
 ## Recursos
 
@@ -32,7 +35,7 @@ O SideWidget requer uma versão compatível do Windows 10 ou 11 para x64.
 2. Extraia todo o arquivo em uma pasta local com permissão de gravação.
 3. Execute `SideWidget.App.exe`. O ZIP inclui o .NET e o WebView2. Para transferir o aplicativo para outro computador, copie toda a pasta extraída.
 
-Em **Configurações**, você pode verificar qual é a versão estável mais recente no GitHub e abrir a página correspondente no navegador. Baixe a nova versão manualmente.
+Na inicialização, o SideWidget procura uma versão estável mais recente no GitHub. Você pode atualizar agora, adiar até a próxima inicialização ou pular essa versão. Ao atualizar, o SideWidget verifica o SHA-256 do ZIP, extrai a compilação e reinicia. Também é possível verificar manualmente em **Configurações → Atualizações**.
 
 ## Documentação do projeto
 

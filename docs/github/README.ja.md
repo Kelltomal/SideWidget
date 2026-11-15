@@ -4,16 +4,19 @@
 
 SideWidget は、日常的に使うツールをまとめた Windows 向けのコンパクトなパネルです。画面上端の時計をクリックすると、ファイル検索やピン留めしたアプリなどにアクセスできます。既定のショートカットは `Ctrl+Alt+Space` です。
 
-上記の言語一覧はドキュメントのものです。アプリの表示言語はロシア語です。
+SideWidget は Windows の表示言語に合わせます。対応していない言語の場合は英語で起動します。**設定 → アプリの言語**で変更できます。
 
 ## スクリーンショット
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="検索、プレーヤー、よく使うツールが並ぶ SideWidget のメインパネル">
-  <img src="images/sidewidget-folder-icons.png" width="340" alt="SideWidget のフォルダーアイコンのスタイル選択画面">
+  <img src="images/sidewidget-home.png" width="760" alt="検索、プレーヤー、よく使うツールが並ぶ SideWidget のメインパネル">
 </p>
 
-スクリーンショットにはサンプルデータを使用しています。
+<p align="center">
+  <img src="images/sidewidget-languages.png" width="630" alt="SideWidget の設定にあるアプリ言語の選択">
+</p>
+
+SideWidget を Windows で実行して撮影した画面です。メインパネルには撮影時に再生中の曲が表示されています。
 
 ## 主な機能
 
@@ -32,7 +35,7 @@ SideWidget は、日常的に使うツールをまとめた Windows 向けのコ
 2. ZIP 全体を書き込み可能なローカルフォルダーに展開します。
 3. `SideWidget.App.exe` を起動します。ZIP には .NET と WebView2 が含まれます。別の PC に移す場合は、展開したフォルダーごとコピーしてください。
 
-**設定**から GitHub の最新安定版を確認し、ブラウザーでリリースページを開けます。新しいバージョンは手動でダウンロードします。
+起動時に GitHub で新しい安定版を確認します。今すぐ更新、次回起動時に再通知、このバージョンをスキップ、のいずれかを選べます。更新時は ZIP の SHA-256 を確認して展開し、SideWidget が再起動します。**設定 → 更新**からも手動で確認できます。
 
 ## プロジェクトのドキュメント
 

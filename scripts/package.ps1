@@ -5,7 +5,8 @@ $release=if($ReleaseDirectory){[IO.Path]::GetFullPath($ReleaseDirectory)}else{Jo
 foreach($file in @('SideWidget.App.exe','Web/index.html','Web/fonts/MedeoSansVariable.woff2','Web/fonts/MedeoMonoVariable.woff2','Assets/Fonts/MedeoSans.ttf','Assets/Icons/sidemenu.ico','Licenses/Medeo-OFL.txt','Everything64.dll','Licenses/Everything-SDK-LICENSE.txt')) {
     if(!(Test-Path -LiteralPath (Join-Path $release $file))) {throw "Release incomplete: $file. Run scripts/build.ps1."}
 }
-$archive=if($OutputArchive){[IO.Path]::GetFullPath($OutputArchive)}else{Join-Path $root 'artifacts/SideWidget-0.2.0-win-x64.zip'}
+$version=([xml](Get-Content -LiteralPath (Join-Path $root 'Directory.Build.props') -Raw)).Project.PropertyGroup.Version
+$archive=if($OutputArchive){[IO.Path]::GetFullPath($OutputArchive)}else{Join-Path $root "artifacts/SideWidget-$version-win-x64.zip"}
 $dotnet=Join-Path $root '.tools/dotnet/dotnet.exe'
 $output=& $dotnet run --project (Join-Path $root 'tools/SideWidget.Distribution') -c Release -- share $release (Split-Path $archive -Parent)
 if($LASTEXITCODE){throw 'Portable archive verification failed'}

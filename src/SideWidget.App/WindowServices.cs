@@ -28,11 +28,11 @@ public sealed partial class MainWindow
     void Shell(string action)
     {
         switch(action){case "interactive":EnterInteractive();break;case "editing":webEditing=true;break;case "idle":webEditing=false;break;case "pin":motion.Pinned=!motion.Pinned;SendEvent("panel",new{expanded=true,pinned=motion.Pinned});break;case "collapse":Collapse();break;}
-        motion.Editing=webEditing||dialogCount>0;
+        motion.Editing=webEditing||dialogCount>0||startupUpdateOffer is not null;
     }
     internal void CheckFullscreen(nint foreground,Native.Rect monitor)
     {
-        if(dialogCount>0||dragging||resizing)return;
+        if(dialogCount>0||dragging||resizing||startupUpdateOffer is not null)return;
         var wasCovered=compactPanel.Covered;
         compactPanel.ObserveWindow(true,CoversDisplay(foreground,monitor));
         if(wasCovered!=compactPanel.Covered)UpdateCompactSurface();
@@ -70,6 +70,7 @@ public sealed partial class MainWindow
     internal void RefreshSharedSettings()
     {
         if(closing)return;
+        RefreshNativeLanguage();
         RefreshAudioVisualizerSettings();ApplyTheme();Place();
         if(motion.State!=PanelState.Collapsed){motion.Target(true,MaximumHeight(),true);ApplyGeometry();}
         UpdateCompactSurface();
@@ -110,7 +111,7 @@ public sealed partial class MainWindow
     void AddTray()
     {
         if(trayIcon==0)trayIcon=Native.LoadImage(0,Path.Combine(AppContext.BaseDirectory,"Assets","Icons","sidemenu.ico"),1,Native.GetSystemMetrics(49),Native.GetSystemMetrics(50),0x10);
-        tray=new(){Size=(uint)Marshal.SizeOf<Native.NotifyIcon>(),Hwnd=hwnd,Id=1,Flags=7,Callback=0x8001,Icon=trayIcon!=0?trayIcon:Native.LoadIcon(0,new nint(32512)),Tip="SideMenu — открыть или выйти",Info="",InfoTitle=""};
+        tray=new(){Size=(uint)Marshal.SizeOf<Native.NotifyIcon>(),Hwnd=hwnd,Id=1,Flags=7,Callback=0x8001,Icon=trayIcon!=0?trayIcon:Native.LoadIcon(0,new nint(32512)),Tip=DesktopLanguage.Text("SideMenu — открыть или выйти"),Info="",InfoTitle=""};
         Native.Shell_NotifyIcon(0,ref tray);
     }
     nint WindowProcedure(nint window,uint message,nuint wParam,nint lParam,nuint id,nuint data)
@@ -134,11 +135,11 @@ public sealed partial class MainWindow
             if((int)lParam==0x0205)
             {
                 var menu=Native.CreatePopupMenu();
-                Native.AppendMenu(menu,0,1,"Открыть панель");
-                Native.AppendMenu(menu,0,2,motion.Pinned?"Открепить":"Закрепить");
-                Native.AppendMenu(menu,0,4,"Перезапустить");
-                Native.AppendMenu(menu,0,5,"Запустить новую сборку");
-                Native.AppendMenu(menu,0,3,"Выйти");
+                Native.AppendMenu(menu,0,1,DesktopLanguage.Text("Открыть панель"));
+                Native.AppendMenu(menu,0,2,DesktopLanguage.Text(motion.Pinned?"Открепить":"Закрепить"));
+                Native.AppendMenu(menu,0,4,DesktopLanguage.Text("Перезапустить"));
+                Native.AppendMenu(menu,0,5,DesktopLanguage.Text("Запустить новую сборку"));
+                Native.AppendMenu(menu,0,3,DesktopLanguage.Text("Выйти"));
                 Native.GetCursorPos(out var point);
                 Native.SetForegroundWindow(hwnd);
                 var selected=Native.TrackPopupMenu(menu,0x100|0x2,point.X,point.Y,0,hwnd,0);
@@ -182,7 +183,7 @@ public sealed partial class MainWindow
         }
         catch(Exception e)
         {
-            var error=new TextBlock{Text="Не удалось запустить интерфейс WebView2.\nРаспакуйте полную сборку SideWidget в локальную папку, доступную для записи. Сохраните папку WebView2Runtime рядом с приложением.\n\nТип ошибки: "+e.GetType().Name,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(16),Foreground=Brush("F2F4F5")};Grid.SetRow(error,1);root.Children.Add(error);
+            var error=new TextBlock{Text=DesktopLanguage.Text("Не удалось запустить интерфейс WebView2.\nРаспакуйте полную сборку SideWidget в локальную папку, доступную для записи. Сохраните папку WebView2Runtime рядом с приложением.\n\nТип ошибки: {0}",e.GetType().Name),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(16),Foreground=Brush("F2F4F5")};Grid.SetRow(error,1);root.Children.Add(error);
         }
     }
     async Task Message(string origin,string json)
@@ -191,7 +192,11 @@ public sealed partial class MainWindow
         try{command=Protocol.Parse(origin,json);
             if(command.ActionId=="shell.homeReady")
             {
-                if(controller.Ready)RecordOpening("home.ready");
+                if(controller.Ready)
+                {
+                    RecordOpening("home.ready");
+                    _ = MaybeShowStartupUpdate();
+                }
             }
             else if(command.ActionId=="shell.searchFocused")
             {
@@ -205,19 +210,24 @@ public sealed partial class MainWindow
             {
                 var data=await controller.Handle(command);
                 Send(new{protocolVersion=1,requestId=command.RequestId,status="result",data});
-                if(command.ActionId is "settings.save" or "settings.theme" or "visualizer.settings" or "history.add" or "history.delete" or "history.clear" or "color.remember" or "units.favorite" or "diary.draft" or "apps.undo" or "apps.add" or "apps.pickWindow" or "apps.icon" or "apps.remove" or "apps.rename" or "apps.reorder")desktop.Synchronize(this);
+                if(command.ActionId is "settings.save" or "settings.theme" or "settings.language" or "visualizer.settings" or "history.add" or "history.delete" or "history.clear" or "color.remember" or "units.favorite" or "diary.draft" or "apps.undo" or "apps.add" or "apps.pickWindow" or "apps.icon" or "apps.remove" or "apps.rename" or "apps.reorder")desktop.Synchronize(this);
+                if(command.ActionId is "updates.skip" or "updates.defer")
+                {
+                    startupUpdateOffer=null;
+                    motion.Editing=webEditing||dialogCount>0;
+                }
                 if(command.ActionId=="bridge.ready")
                 {
                     SendEvent("panel",new{expanded=motion.State!=PanelState.Collapsed,pinned=motion.Pinned});
                     SendSearchFocus();
-                    if(startupError!=null)SendEvent("notice",new{message=startupError});
+                    if(startupError!=null)SendEvent("notice",new{message=DesktopLanguage.Text(startupError)});
                 }
                 return;
             }
             Send(new{protocolVersion=1,requestId=command.RequestId,status="result",data=new{}});
         }
-        catch(CommandFault e){if(command!=null)Send(new{protocolVersion=1,requestId=command.RequestId,status="error",error=new{code=e.Code,message=e.Message}});}
-        catch(Exception){if(command!=null)Send(new{protocolVersion=1,requestId=command.RequestId,status="error",error=new{code="internal",message="Не удалось выполнить действие. Проверьте параметры и повторите действие."}});}
+        catch(CommandFault e){if(command!=null)Send(new{protocolVersion=1,requestId=command.RequestId,status="error",error=new{code=e.Code,message=DesktopLanguage.Text(e.Message)}});}
+        catch(Exception){if(command!=null)Send(new{protocolVersion=1,requestId=command.RequestId,status="error",error=new{code="internal",message=DesktopLanguage.Text("Не удалось выполнить действие. Проверьте параметры и повторите действие.")}});}
     }
     void Send(object value){if(!closing&&web.CoreWebView2!=null&&web.Source?.GetLeftPart(UriPartial.Authority)==Protocol.Origin)web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(value,Protocol.Json));}
     void SendEvent(string type,object data)=>Send(new{protocolVersion=1,type,sequence=++sequence,time=DateTimeOffset.UtcNow,data});
@@ -247,7 +257,7 @@ public sealed partial class MainWindow
     async Task<bool> Confirm(string title,string text)
     {
         await dialogs.WaitAsync();dialogCount++;motion.Editing=true;OpenInteractive(true);
-        try{var dialog=new ContentDialog{XamlRoot=root.XamlRoot,FontFamily=new Microsoft.UI.Xaml.Media.FontFamily("ms-appx:///Assets/Fonts/MedeoSans.ttf#Medeo Sans"),Title=title,Content=new ScrollViewer{MaxHeight=320,Content=new TextBlock{Text=text,TextWrapping=TextWrapping.Wrap,FontSize=14}},PrimaryButtonText="Подтвердить",CloseButtonText="Отмена",DefaultButton=ContentDialogButton.Close,RequestedTheme=ElementTheme.Dark};return await ShowNativeDialog(dialog)==ContentDialogResult.Primary;}
+        try{var dialog=new ContentDialog{XamlRoot=root.XamlRoot,FontFamily=new Microsoft.UI.Xaml.Media.FontFamily("ms-appx:///Assets/Fonts/MedeoSans.ttf#Medeo Sans"),Title=DesktopLanguage.Text(title),Content=new ScrollViewer{MaxHeight=320,Content=new TextBlock{Text=DesktopLanguage.Text(text),TextWrapping=TextWrapping.Wrap,FontSize=14}},PrimaryButtonText=DesktopLanguage.Text("Подтвердить"),CloseButtonText=DesktopLanguage.Text("Отмена"),DefaultButton=ContentDialogButton.Close,RequestedTheme=ElementTheme.Dark};return await ShowNativeDialog(dialog)==ContentDialogResult.Primary;}
         finally{dialogCount--;motion.Editing=webEditing||dialogCount>0;dialogs.Release();}
     }
 }

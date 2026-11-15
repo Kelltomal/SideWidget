@@ -25,7 +25,7 @@ public sealed partial class MainWindow
         }
         catch(Exception e) when(e is IOException or UnauthorizedAccessException){error="Не удалось проверить папки сборок. Проверьте доступ к ним и повторите.";}
         finally{dialogCount--;motion.Editing=webEditing||dialogCount>0;}
-        if(error is not null&&!closing)Native.MessageBox(hwnd,error,"Запустить новую сборку",0x30);
+        if(error is not null&&!closing)Native.MessageBox(hwnd,DesktopLanguage.Text(error),DesktopLanguage.Text("Запустить новую сборку"),0x30);
     }
     async Task<string?> PickApplicationFile()
     {
@@ -39,7 +39,7 @@ public sealed partial class MainWindow
         try
         {
             EnterInteractive();
-            var picker=new FolderPicker{SuggestedStartLocation=PickerLocationId.Desktop,CommitButtonText="Выбрать папку"};
+            var picker=new FolderPicker{SuggestedStartLocation=PickerLocationId.Desktop,CommitButtonText=DesktopLanguage.Text("Выбрать папку")};
             WinRT.Interop.InitializeWithWindow.Initialize(picker,hwnd);
             picker.FileTypeFilter.Add("*");
             return (await picker.PickSingleFolderAsync())?.Path;
@@ -99,7 +99,7 @@ public sealed partial class MainWindow
     async void AppDrop(object sender,DragEventArgs e)
     {
         var deferral=e.GetDeferral();dialogCount++;motion.Editing=true;
-        try{if(e.DataView.Contains(StandardDataFormats.StorageItems)){var items=await e.DataView.GetStorageItemsAsync();foreach(var item in items.Take(10))if(item is StorageFile file)await AddSelectedApplication(file.Path);}}catch(Exception ex){SendEvent("notice",new{message=ex is CommandFault?ex.Message:"Не удалось закрепить файл"});}finally{dialogCount--;motion.Editing=webEditing||dialogCount>0;deferral.Complete();}
+        try{if(e.DataView.Contains(StandardDataFormats.StorageItems)){var items=await e.DataView.GetStorageItemsAsync();foreach(var item in items.Take(10))if(item is StorageFile file)await AddSelectedApplication(file.Path);}}catch(Exception ex){SendEvent("notice",new{message=DesktopLanguage.Text(ex is CommandFault?ex.Message:"Не удалось закрепить файл")});}finally{dialogCount--;motion.Editing=webEditing||dialogCount>0;deferral.Complete();}
     }
     static void CopyText(string text){var package=new DataPackage();package.SetText(text);Clipboard.SetContent(package);Clipboard.Flush();}
     static byte[] ImageBytes(string data){var comma=data.IndexOf(',');if(comma<0||!(data.StartsWith("data:image/png;base64,")||data.StartsWith("data:image/jpeg;base64,")))throw new CommandFault("image","Ожидалось изображение PNG или JPEG");try{return Convert.FromBase64String(data[(comma+1)..]);}catch(FormatException){throw new CommandFault("image","Повреждённое изображение");}}
@@ -123,12 +123,12 @@ public sealed partial class MainWindow
         await dialogs.WaitAsync();dialogCount++;motion.Editing=true;OpenInteractive(true);
         try{
             var font=new Microsoft.UI.Xaml.Media.FontFamily("ms-appx:///Assets/Fonts/MedeoSans.ttf#Medeo Sans");
-            var key=new PasswordBox{Header="Ключ DeepL API",FontFamily=font,MaxLength=200};
-            var plan=new ComboBox{Header="Тариф API",FontFamily=font,ItemsSource=new[]{"Free","Pro"},SelectedIndex=0};
+            var key=new PasswordBox{Header=DesktopLanguage.Text("Ключ DeepL API"),FontFamily=font,MaxLength=200};
+            var plan=new ComboBox{Header=DesktopLanguage.Text("Тариф API"),FontFamily=font,ItemsSource=new[]{"Free","Pro"},SelectedIndex=0};
             var stack=new StackPanel{Spacing=12};
-            stack.Children.Add(new TextBlock{Text="Текст отправляется в DeepL только по кнопке «Перевести». Ключ хранится в Windows DPAPI.",FontFamily=font,TextWrapping=TextWrapping.Wrap});
+            stack.Children.Add(new TextBlock{Text=DesktopLanguage.Text("Текст отправляется в DeepL только по кнопке «Перевести». Ключ хранится в Windows DPAPI."),FontFamily=font,TextWrapping=TextWrapping.Wrap});
             stack.Children.Add(key);stack.Children.Add(plan);
-            var dialog=new ContentDialog{XamlRoot=root.XamlRoot,Title="Перевод DeepL",FontFamily=font,Content=stack,PrimaryButtonText="Сохранить",CloseButtonText="Отмена",IsPrimaryButtonEnabled=false,DefaultButton=ContentDialogButton.Close,RequestedTheme=ElementTheme.Dark};
+            var dialog=new ContentDialog{XamlRoot=root.XamlRoot,Title=DesktopLanguage.Text("Перевод DeepL"),FontFamily=font,Content=stack,PrimaryButtonText=DesktopLanguage.Text("Сохранить"),CloseButtonText=DesktopLanguage.Text("Отмена"),IsPrimaryButtonEnabled=false,DefaultButton=ContentDialogButton.Close,RequestedTheme=ElementTheme.Dark};
             key.PasswordChanged+=(_,_)=>dialog.IsPrimaryButtonEnabled=!string.IsNullOrWhiteSpace(key.Password);
             if(await ShowNativeDialog(dialog)==ContentDialogResult.Primary)controller.Online.ConfigureTranslation(key.Password,plan.SelectedIndex==0);
             return controller.Online.TranslationInfo();

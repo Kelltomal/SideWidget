@@ -43,12 +43,14 @@ public static class Protocol
             "selly.events"=>["start","end"],"selly.detail"=>["id","occurrence"],"selly.status"=>["id","status"],"selly.create"=>["title","day"],
             "visualizer.settings"=>["enabled","showInHeader","brightness","sensitivity","style"],
             "settings.theme"=>["theme"],
-            "app.share" or "startup.get" or "updates.check"=>[],"startup.set"=>["enabled"],
+            "settings.language"=>["language"],
+            "app.share" or "startup.get" or "updates.check" or "updates.defer"=>[],"startup.set"=>["enabled"],
+            "updates.skip" or "updates.install"=>["version"],
             "remote.get" or "remote.invite"=>[],
             "remote.configure"=>["enabled","adapterId","port","setupPort","startup"],
             "remote.setup"=>["adapterId","port","setupPort","startup"],
             "remote.decide"=>["id","approved"],"remote.revoke"=>["id"],
-            "settings.save"=>["width","height","hideDelay","openDelay","hotkey","monitor","position","largeMode","order","disabled","theme","visualizer","displayIds","pinnedTools","displayPositions"],
+            "settings.save"=>["width","height","hideDelay","openDelay","hotkey","monitor","position","largeMode","order","disabled","theme","visualizer","displayIds","pinnedTools","displayPositions","language"],
             _=>throw new CommandFault("unknown_action","Действие не поддерживается")};
         if(c.Params.EnumerateObject().Any(p=>!keys.Contains(p.Name)))throw new CommandFault("schema","Неизвестный параметр");
     }

@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import {useEffect,useId,useRef,useState} from 'react';
 import {bridge} from './bridge';
 import type {AudioSpectrumFrame,Snapshot,VisualizerOptions} from './types';
@@ -92,13 +93,13 @@ export function VisualizerSettingsPanel({value,onSaved,onPreviewSaved}:{value?:V
   finally{saving.current=false;if(mounted.current)setBusy(false);}
  }
  function commit(){if(JSON.stringify(draft.current)!==JSON.stringify(saved.current))void save(draft.current);}
- return <section className="visualizer-settings stack" aria-label="Визуализация звука">
-  <div><h2>Визуализация звука</h2><small>Реагирует на весь звук Windows. Настройки сохраняются сразу.</small></div>
-  <label className="checkbox"><input type="checkbox" checked={options.enabled} disabled={busy} onChange={event=>void save({...options,enabled:event.target.checked})}/>Включить визуализацию</label>
-  <label className="checkbox"><input type="checkbox" checked={options.showInHeader} disabled={busy} onChange={event=>void save({...options,showInHeader:event.target.checked})}/>Показывать в свёрнутом баре</label>
-  <label className="slider-label"><span>Яркость<span>{Math.round(options.brightness*100)}%</span></span><input type="range" min="0" max="100" step="1" value={Math.round(options.brightness*100)} disabled={busy} onChange={event=>assign({...options,brightness:Number(event.target.value)/100})} onPointerUp={commit} onKeyUp={commit} onBlur={commit}/></label>
-  <label className="slider-label"><span>Чувствительность<span>{options.sensitivity.toFixed(2)}×</span></span><input type="range" min="25" max="400" step="5" value={Math.round(options.sensitivity*100)} disabled={busy} onChange={event=>assign({...options,sensitivity:Number(event.target.value)/100})} onPointerUp={commit} onKeyUp={commit} onBlur={commit}/></label>
-  <label>Вид<select value={options.style} disabled={busy} onChange={event=>void save({...options,style:event.target.value as VisualizerOptions['style']})}><option value="wave">Плавная волна</option><option value="bars">Столбцы</option></select></label>
+ return <section className="visualizer-settings stack" aria-label={t("Визуализация звука")}>
+  <div><h2>{t("Визуализация звука")}</h2><small>{t("Реагирует на весь звук Windows. Настройки сохраняются сразу.")}</small></div>
+  <label className="checkbox"><input type="checkbox" checked={options.enabled} disabled={busy} onChange={event=>void save({...options,enabled:event.target.checked})}/>{t("Включить визуализацию")}</label>
+  <label className="checkbox"><input type="checkbox" checked={options.showInHeader} disabled={busy} onChange={event=>void save({...options,showInHeader:event.target.checked})}/>{t("Показывать в свёрнутом баре")}</label>
+  <label className="slider-label"><span>{t("Яркость")}<span>{Math.round(options.brightness*100)}%</span></span><input type="range" min="0" max="100" step="1" value={Math.round(options.brightness*100)} disabled={busy} onChange={event=>assign({...options,brightness:Number(event.target.value)/100})} onPointerUp={commit} onKeyUp={commit} onBlur={commit}/></label>
+  <label className="slider-label"><span>{t("Чувствительность")}<span>{options.sensitivity.toFixed(2)}×</span></span><input type="range" min="25" max="400" step="5" value={Math.round(options.sensitivity*100)} disabled={busy} onChange={event=>assign({...options,sensitivity:Number(event.target.value)/100})} onPointerUp={commit} onKeyUp={commit} onBlur={commit}/></label>
+  <label>{t("Вид")}<select value={options.style} disabled={busy} onChange={event=>void save({...options,style:event.target.value as VisualizerOptions['style']})}><option value="wave">{t("Плавная волна")}</option><option value="bars">{t("Столбцы")}</option></select></label>
   {error&&<Notice error>{error}</Notice>}
  </section>;
 }

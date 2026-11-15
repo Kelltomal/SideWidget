@@ -1,3 +1,4 @@
+import {t} from './i18n';
 export type TimerMode='timer'|'alarm'|'pomodoro';
 export type TimerState={mode:TimerMode;status:'idle'|'ready'|'running'|'paused'|'ringing';phase:'work'|'break'|'longBreak';cycle:number;deadline:string|null;remainingSeconds:number;durationSeconds:number;alarmTime:string;workMinutes:number;breakMinutes:number;longBreakMinutes:number};
 export type TimerStart={mode:TimerMode;seconds?:number;alarmTime?:string;workMinutes?:number;breakMinutes?:number;longBreakMinutes?:number};
@@ -18,18 +19,18 @@ export function restoreTimers(value:unknown):TimerEntry[]{
 export const initialTimer:TimerState={mode:'timer',status:'idle',phase:'work',cycle:0,deadline:null,remainingSeconds:0,durationSeconds:0,alarmTime:'09:00',workMinutes:25,breakMinutes:5,longBreakMinutes:15};
 export function remaining(state:TimerState,now=Date.now()){return state.status==='running'&&state.deadline?Math.max(0,Math.min(90000,Math.ceil((Date.parse(state.deadline)-now)/1000))):state.remainingSeconds;}
 export function formatTime(seconds:number){const n=Math.max(0,Math.ceil(seconds));return n>=3600?`${Math.floor(n/3600)}:${String(Math.floor(n/60)%60).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`:`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;}
-export function phaseName(state:TimerState){return state.mode==='alarm'?'Будильник':state.mode==='timer'?'Таймер':state.phase==='work'?'Работа':state.phase==='longBreak'?'Длинный перерыв':'Перерыв';}
+export function phaseName(state:TimerState){return state.mode==='alarm'?t('Будильник'):state.mode==='timer'?t('Таймер'):state.phase==='work'?t('Работа'):state.phase==='longBreak'?t('Длинный перерыв'):t('Перерыв');}
 export function startTimer(current:TimerState,input:TimerStart,now=Date.now()):TimerState{
  const workMinutes=input.mode==='pomodoro'?(input.workMinutes??25):25,breakMinutes=input.mode==='pomodoro'?(input.breakMinutes??5):5,longBreakMinutes=input.mode==='pomodoro'?(input.longBreakMinutes??15):15;
- if(!['timer','alarm','pomodoro'].includes(input.mode))throw new Error('Выберите режим таймера');
- if([workMinutes,breakMinutes,longBreakMinutes].some(n=>!Number.isInteger(n)||n<1||n>180))throw new Error('Длительность этапа: от 1 до 180 минут');
+ if(!['timer','alarm','pomodoro'].includes(input.mode))throw new Error(t('Выберите режим таймера'));
+ if([workMinutes,breakMinutes,longBreakMinutes].some(n=>!Number.isInteger(n)||n<1||n>180))throw new Error(t('Длительность этапа: от 1 до 180 минут'));
  let seconds=input.seconds??0;let deadline=new Date(now);
  if(input.mode==='alarm'){
-  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.alarmTime??''))throw new Error('Укажите время будильника в формате ЧЧ:ММ');
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.alarmTime??''))throw new Error(t('Укажите время будильника в формате ЧЧ:ММ'));
   const [hours,minutes]=input.alarmTime!.split(':').map(Number);deadline.setHours(hours,minutes,0,0);if(deadline.getTime()<=now)deadline.setDate(deadline.getDate()+1);seconds=Math.ceil((deadline.getTime()-now)/1000);
  }else{
   if(input.mode==='pomodoro')seconds=workMinutes*60;
-  if(!Number.isInteger(seconds)||seconds<1||seconds>86400)throw new Error('Длительность таймера: от 1 секунды до 24 часов');
+  if(!Number.isInteger(seconds)||seconds<1||seconds>86400)throw new Error(t('Длительность таймера: от 1 секунды до 24 часов'));
   deadline=new Date(now+seconds*1000);
  }
  return {...initialTimer,mode:input.mode,status:'running',remainingSeconds:seconds,durationSeconds:seconds,deadline:deadline.toISOString(),alarmTime:input.alarmTime??current.alarmTime,workMinutes,breakMinutes,longBreakMinutes};

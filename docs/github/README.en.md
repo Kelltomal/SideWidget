@@ -4,16 +4,19 @@
 
 SideWidget is a compact panel for everyday Windows tools. A clock sits at the top edge of the screen. Click it to open file search, pinned apps, and other tools. The default shortcut is `Ctrl+Alt+Space`.
 
-The languages listed above are for the documentation. The app’s interface is in Russian.
+SideWidget follows the Windows display language and falls back to English. You can switch languages under **Settings → App language**.
 
 ## Screenshots
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="SideWidget home panel with search, media controls and quick tools">
-  <img src="images/sidewidget-folder-icons.png" width="340" alt="Folder icon style selection in SideWidget">
+  <img src="images/sidewidget-home.png" width="760" alt="SideWidget home panel with search, media controls and quick tools">
 </p>
 
-Screenshots use sample data.
+<p align="center">
+  <img src="images/sidewidget-languages.png" width="630" alt="App language selector in SideWidget settings">
+</p>
+
+These screenshots were taken in SideWidget on Windows. The home panel shows the track playing at capture time.
 
 ## Features
 
@@ -32,7 +35,7 @@ SideWidget requires a compatible 64-bit (x64) edition of Windows 10 or 11.
 2. Extract the entire archive to a writable local folder.
 3. Run `SideWidget.App.exe`. The ZIP includes .NET and WebView2. Keep the extracted folder together when moving SideWidget to another computer.
 
-In **Settings**, you can check GitHub for the latest stable release and open its page in your browser. Download the new version manually.
+At startup, SideWidget checks GitHub for a newer stable release. Update now, defer until next launch, or skip that version. To update, SideWidget verifies the ZIP against its SHA-256 checksum, extracts the build, and restarts. You can also check manually under **Settings → Updates**.
 
 ## Project documentation
 

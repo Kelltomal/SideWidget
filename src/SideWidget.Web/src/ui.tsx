@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import {useState,type ReactNode} from 'react';
 import {bridge} from './bridge';
 import type {Invoke} from './types';
@@ -46,19 +47,19 @@ export function useAction() {
  const [error,setError]=useState(''); const [busy,setBusy]=useState(false);
  async function run<T>(work:()=>Promise<T>):Promise<T|undefined> {
   setError('');setBusy(true);
-  try{return await work();}catch(e){if(!(e instanceof Error&&'code' in e&&e.code==='cancelled'))setError(e instanceof Error?e.message:'Не удалось выполнить действие. Повторите попытку.');}
+  try{return await work();}catch(e){if(!(e instanceof Error&&'code' in e&&e.code==='cancelled'))setError(e instanceof Error?t(e.message):t("Не удалось выполнить действие. Повторите попытку."));}
   finally{setBusy(false);}
  }
  return {error,busy,run,setError};
 }
-export function CopyButton({text,label='Копировать'}:{text:string;label?:string}) {
+export function CopyButton({text,label=t("Копировать")}:{text:string;label?:string}) {
  const [copied,setCopied]=useState(false);const {error,run}=useAction();
  return <><button disabled={!text} onClick={()=>void run(async()=>{
   if(nativeAvailable)await invoke('clipboard.text',{text});else await navigator.clipboard.writeText(text);
   setCopied(true);setTimeout(()=>setCopied(false),1800);
- })}><Icon name={copied?'check':'copy'} size={15}/>{copied?'Скопировано':label}</button>{error&&<Notice error>{error}</Notice>}</>;
+ })}><Icon name={copied?'check':'copy'} size={15}/>{copied?t("Скопировано"):label}</button>{error&&<Notice error>{error}</Notice>}</>;
 }
 export function localDate(date=new Date()) {return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 export function timeLabel(seconds:number|null) {return seconds==null?'—':`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;}
-export function bytes(value:number|null|undefined) {return value==null?'Недоступно':value>=1073741824?`${(value/1073741824).toFixed(1)} ГБ`:`${(value/1048576).toFixed(1)} МБ`;}
-export function speed(value:number|null|undefined) {return value==null?'Недоступно':value>=1048576?`${(value/1048576).toFixed(1)} МБ/с`:`${(value/1024).toFixed(1)} КБ/с`;}
+export function bytes(value:number|null|undefined) {return value==null?t("Недоступно"):value>=1073741824?t("{value} ГБ",{value:(value/1073741824).toFixed(1)}):t("{value} МБ",{value:(value/1048576).toFixed(1)});}
+export function speed(value:number|null|undefined) {return value==null?t("Недоступно"):value>=1048576?t("{value} МБ/с",{value:(value/1048576).toFixed(1)}):t("{value} КБ/с",{value:(value/1024).toFixed(1)});}

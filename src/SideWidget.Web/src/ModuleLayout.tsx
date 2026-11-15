@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {Snapshot} from './types';
 import {invoke,nativeAvailable,Notice} from './ui';
@@ -19,7 +20,7 @@ export function ModuleLayout({state,setState,editing,finish,modules,renderModule
     if(nativeAvailable)await invoke('settings.save',{...settings,displayPositions:undefined});
     else localStorage.setItem('sidewidget.local.preview',JSON.stringify(current.current));
     setError('');
-   }catch(e){dirty.current=true;setError(`Не удалось сохранить порядок: ${e instanceof Error?e.message:'повторите попытку'}`);}
+   }catch(e){dirty.current=true;setError(t("Не удалось сохранить порядок: {detail}",{detail:e instanceof Error?t(e.message):t("повторите попытку")}));}
   });
  }
  callbacks.current={finish,save};
@@ -38,18 +39,18 @@ export function ModuleLayout({state,setState,editing,finish,modules,renderModule
   current.current=updated;setState(updated);dirty.current=true;save();
  }
  return <div className={`home-stack module-layout${editing?' is-editing':''}`}>
-  {editing&&<p className="layout-help">Перетащите модуль. С клавиатуры: Alt + ↑ / ↓. Порядок сохраняется сразу.</p>}
-  {error&&<Notice error>{error} <button className="quiet" onClick={save}>Повторить сохранение</button></Notice>}
+  {editing&&<p className="layout-help">{t("Перетащите модуль. С клавиатуры: Alt + ↑ / ↓. Порядок сохраняется сразу.")}</p>}
+  {error&&<Notice error>{error} <button className="quiet" onClick={save}>{t("Повторить сохранение")}</button></Notice>}
   {visible.map((id,index)=><div key={id} data-module={id} className={`layout-module${dragging===id?' is-dragging':''}`} draggable={editing}
    onDragStart={event=>{if(!editing){event.preventDefault();return;}source.current=id;setDragging(id);event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',id);}}
    onDragOver={event=>{if(editing&&source.current){event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';}}}
    onDrop={event=>{event.preventDefault();if(source.current)move(source.current,id);source.current=null;setDragging(null);}}
    onDragEnd={()=>{source.current=null;setDragging(null);save();}}>
-   {editing&&<button className="module-handle" aria-label={`Переместить: ${modules.find(([key])=>key===id)?.[1]}`} aria-describedby="layout-keyboard-help" onKeyDown={event=>{
+   {editing&&<button className="module-handle" aria-label={t("Переместить: {module}",{module:t(modules.find(([key])=>key===id)?.[1]??id)})} aria-describedby="layout-keyboard-help" onKeyDown={event=>{
     if(!event.altKey||!['ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();const target=visible[index+(event.key==='ArrowUp'?-1:1)];if(target)move(id,target);
-   }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M8 5h2m4 0h2M8 12h2m4 0h2M8 19h2m4 0h2"/></svg>{modules.find(([key])=>key===id)?.[1]}</button>}
+   }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M8 5h2m4 0h2M8 12h2m4 0h2M8 19h2m4 0h2"/></svg>{t(modules.find(([key])=>key===id)?.[1]??id)}</button>}
    <div inert={editing}>{renderModule(id)}</div>
   </div>)}
-  {editing&&<span id="layout-keyboard-help" className="layout-help">Alt + стрелка вверх или вниз перемещает модуль.</span>}
+  {editing&&<span id="layout-keyboard-help" className="layout-help">{t("Alt + стрелка вверх или вниз перемещает модуль.")}</span>}
  </div>;
 }

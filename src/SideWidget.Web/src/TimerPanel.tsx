@@ -1,3 +1,4 @@
+import {locale, t} from './i18n';
 import {useEffect,useRef,useState} from 'react';
 import {bridge} from './bridge';
 import {invoke,nativeAvailable,Notice} from './ui';
@@ -36,7 +37,7 @@ export function useFocusTimer(){
    if(nativeAvailable)next=await invoke<TimerEntry[]>(`timer.${name}`,input??(id?{id}:{}));
    else{
     if(name==='start'){
-     if(current.current.length>=100)throw new Error('Можно создать до 100 отсчётов. Удалите ненужные.');
+     if(current.current.length>=100)throw new Error(t('Можно создать до 100 отсчётов. Удалите ненужные.'));
      next=[...current.current,{id:crypto.randomUUID(),state:startTimer(initialTimer,input!)}];
     }else next=current.current.map(item=>item.id===id?{...item,state:advanceTimer(item.state,name)}:item).filter(item=>item.state.status!=='idle');
     localStorage.setItem(storageKey,JSON.stringify(next));
@@ -50,31 +51,31 @@ export function useFocusTimer(){
 export type TimerControl=ReturnType<typeof useFocusTimer>;
 export function TimerSummary({timer,open}:{timer:TimerControl;open:()=>void}){
  const active=timer.state.status!=='idle';const ringing=timer.state.status==='ringing';
- return <section className="panel timer-summary"><button className="quiet timer-summary-open" onClick={open}><strong>Таймер</strong><span>{active?`${phaseName(timer.state)} · ${ringing?'Время вышло':formatTime(remaining(timer.state,timer.now))}${timer.items.length>1?` · Всего: ${timer.items.length}`:''}`:'Будильник · Таймер · Pomodoro'}</span></button>{ringing&&<button className="timer-signal timer-summary-signal" disabled={timer.busy} onClick={()=>void timer.action('dismiss',undefined,primaryTimer(timer.items)?.id)}>Остановить сигнал</button>}{timer.error&&<Notice error>{timer.error}</Notice>}</section>;
+ return <section className="panel timer-summary"><button className="quiet timer-summary-open" onClick={open}><strong>{t('Таймер')}</strong><span>{active?`${phaseName(timer.state)} · ${ringing?t('Время вышло'):formatTime(remaining(timer.state,timer.now))}${timer.items.length>1?t(' · Всего: {count}',{count:timer.items.length}):''}`:t('Будильник · Таймер · Pomodoro')}</span></button>{ringing&&<button className="timer-signal timer-summary-signal" disabled={timer.busy} onClick={()=>void timer.action('dismiss',undefined,primaryTimer(timer.items)?.id)}>{t('Остановить сигнал')}</button>}{timer.error&&<Notice error>{t(timer.error)}</Notice>}</section>;
 }
 export function TimerPanel({timer}:{timer:TimerControl}){
  const {state,items,now,busy,error,action}=timer;
  const [mode,setMode]=useState<TimerMode>(state.mode);const [minutes,setMinutes]=useState('5');const [seconds,setSeconds]=useState('0');const [alarm,setAlarm]=useState(state.alarmTime);const [work,setWork]=useState(String(state.workMinutes));const [rest,setRest]=useState(String(state.breakMinutes));const [longRest,setLongRest]=useState(String(state.longBreakMinutes));
- const alarmDate=(()=>{const d=new Date(now);const [h,m]=alarm.split(':').map(Number);d.setHours(h,m,0,0);if(d.getTime()<=now)d.setDate(d.getDate()+1);return Number.isNaN(d.getTime())?'Укажите время':d.toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});})();
+ const alarmDate=(()=>{const d=new Date(now);const [h,m]=alarm.split(':').map(Number);d.setHours(h,m,0,0);if(d.getTime()<=now)d.setDate(d.getDate()+1);return Number.isNaN(d.getTime())?t('Укажите время'):d.toLocaleString(locale(),{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});})();
  return <div className="stack timer-page">
-  <div className="timer-modes" role="group" aria-label="Режим времени">{([['alarm','Будильник'],['timer','Таймер'],['pomodoro','Pomodoro']] as const).map(([id,label])=><button key={id} aria-pressed={mode===id} onClick={()=>setMode(id)}>{label}</button>)}</div>
+  <div className="timer-modes" role="group" aria-label={t('Режим времени')}>{([['alarm','Будильник'],['timer','Таймер'],['pomodoro','Pomodoro']] as const).map(([id,label])=><button key={id} aria-pressed={mode===id} onClick={()=>setMode(id)}>{t(label)}</button>)}</div>
   <form className="stack" noValidate onSubmit={e=>{e.preventDefault();const duration=Number(minutes)*60+Number(seconds);void action('start',{mode,seconds:minutes.trim()&&seconds.trim()&&Number.isInteger(Number(minutes))&&Number.isInteger(Number(seconds))&&Number(minutes)>=0&&Number(seconds)>=0&&Number(seconds)<=59?duration:0,alarmTime:alarm,...(mode==='pomodoro'?{workMinutes:Number(work),breakMinutes:Number(rest),longBreakMinutes:Number(longRest)}:{})});}}>
-   <h2>{mode==='alarm'?'Новый будильник':mode==='pomodoro'?'Новый Pomodoro':'Новый таймер'}</h2>
-   {mode==='timer'&&<><div className="form-row"><label>Минуты<input type="number" min="0" max="1440" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label><label>Секунды<input type="number" min="0" max="59" value={seconds} onChange={e=>setSeconds(e.target.value)}/></label></div><div className="timer-presets">{[5,15,30].map(n=><button type="button" key={n} onClick={()=>{setMinutes(String(n));setSeconds('0');}}>{n} мин</button>)}</div></>}
-   {mode==='alarm'&&<><label>Время будильника<input type="time" value={alarm} onChange={e=>setAlarm(e.target.value)}/></label><small>Ближайший сигнал: {alarmDate}</small></>}
-   {mode==='pomodoro'&&<><p>Работа и отдых без спешки. После каждого сигнала следующий этап запускаете вы.</p><div className="timer-pomodoro-fields"><label>Работа, мин<input type="number" min="1" max="180" value={work} onChange={e=>setWork(e.target.value)}/></label><label>Перерыв, мин<input type="number" min="1" max="180" value={rest} onChange={e=>setRest(e.target.value)}/></label><label>Длинный, мин<input type="number" min="1" max="180" value={longRest} onChange={e=>setLongRest(e.target.value)}/></label></div><small>Длинный перерыв — после четырёх рабочих этапов.</small></>}
-   {error&&<Notice error>{error}</Notice>}
-   <button className="primary" disabled={busy}>{mode==='alarm'?'Поставить будильник':mode==='pomodoro'?'Начать Pomodoro':'Запустить таймер'}</button>
-   <small>Сигнал без звука. Остаток времени виден в свёрнутой шапке. SideWidget должен быть запущен.</small>
+   <h2>{mode==='alarm'?t('Новый будильник'):mode==='pomodoro'?t('Новый Pomodoro'):t('Новый таймер')}</h2>
+   {mode==='timer'&&<><div className="form-row"><label>{t('Минуты')}<input type="number" min="0" max="1440" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label><label>{t('Секунды')}<input type="number" min="0" max="59" value={seconds} onChange={e=>setSeconds(e.target.value)}/></label></div><div className="timer-presets">{[5,15,30].map(n=><button type="button" key={n} onClick={()=>{setMinutes(String(n));setSeconds('0');}}>{t('{minutes} мин',{minutes:n})}</button>)}</div></>}
+   {mode==='alarm'&&<><label>{t('Время будильника')}<input type="time" value={alarm} onChange={e=>setAlarm(e.target.value)}/></label><small>{t('Ближайший сигнал: {date}',{date:alarmDate})}</small></>}
+   {mode==='pomodoro'&&<><p>{t('Работа и отдых без спешки. После каждого сигнала следующий этап запускаете вы.')}</p><div className="timer-pomodoro-fields"><label>{t('Работа, мин')}<input type="number" min="1" max="180" value={work} onChange={e=>setWork(e.target.value)}/></label><label>{t('Перерыв, мин')}<input type="number" min="1" max="180" value={rest} onChange={e=>setRest(e.target.value)}/></label><label>{t('Длинный, мин')}<input type="number" min="1" max="180" value={longRest} onChange={e=>setLongRest(e.target.value)}/></label></div><small>{t('Длинный перерыв — после четырёх рабочих этапов.')}</small></>}
+   {error&&<Notice error>{t(error)}</Notice>}
+   <button className="primary" disabled={busy}>{mode==='alarm'?t('Поставить будильник'):mode==='pomodoro'?t('Начать Pomodoro'):t('Запустить таймер')}</button>
+   <small>{t('Сигнал без звука. Остаток времени виден в свёрнутой шапке. SideWidget должен быть запущен.')}</small>
   </form>
   {items.map(({id,state},index)=>{
    const ringing=state.status==='ringing';
-   const nextLabel=state.phase==='work'?'Начать работу':state.phase==='longBreak'?'Начать длинный перерыв':'Начать перерыв';
-   return <section key={id} className="panel timer-session" aria-label={`Текущий отсчёт ${index+1}: ${phaseName(state)}`}>
-    <div className="timer-session-heading"><strong>{phaseName(state)}</strong><span>{state.mode==='pomodoro'?`Цикл ${state.phase==='work'?state.cycle+1:state.cycle} из 4`:state.mode==='alarm'?state.alarmTime:`На ${formatTime(state.durationSeconds)}`}</span></div>
-    <div className="timer-digits" aria-label="Осталось">{formatTime(remaining(state,now))}</div>
-    <p role="status">{ringing?'Время вышло':state.status==='paused'?'На паузе':state.status==='ready'?'Следующий этап готов':'Идёт отсчёт'}</p>
-    {ringing?<button className="timer-signal" disabled={busy} onClick={()=>void action('dismiss',undefined,id)}>Остановить сигнал<span>{state.mode==='pomodoro'?'Следующий этап запустите вручную':'Завершить отсчёт'}</span></button>:<div className="timer-actions">{state.status==='running'&&state.mode!=='alarm'&&<button disabled={busy} onClick={()=>void action('pause',undefined,id)}>Пауза</button>}{state.status==='paused'&&<button className="primary" disabled={busy} onClick={()=>void action('resume',undefined,id)}>Продолжить</button>}{state.status==='ready'&&<button className="primary" disabled={busy} onClick={()=>void action('resume',undefined,id)}>{nextLabel}</button>}<button className="quiet" disabled={busy} onClick={()=>void action('reset',undefined,id)}>Удалить</button></div>}
+   const nextLabel=state.phase==='work'?t('Начать работу'):state.phase==='longBreak'?t('Начать длинный перерыв'):t('Начать перерыв');
+   return <section key={id} className="panel timer-session" aria-label={t('Текущий отсчёт {index}: {phase}',{index:index+1,phase:phaseName(state)})}>
+    <div className="timer-session-heading"><strong>{phaseName(state)}</strong><span>{state.mode==='pomodoro'?t('Цикл {count} из 4',{count:state.phase==='work'?state.cycle+1:state.cycle}):state.mode==='alarm'?state.alarmTime:t('На {duration}',{duration:formatTime(state.durationSeconds)})}</span></div>
+    <div className="timer-digits" aria-label={t('Осталось')}>{formatTime(remaining(state,now))}</div>
+    <p role="status">{ringing?t('Время вышло'):state.status==='paused'?t('На паузе'):state.status==='ready'?t('Следующий этап готов'):t('Идёт отсчёт')}</p>
+    {ringing?<button className="timer-signal" disabled={busy} onClick={()=>void action('dismiss',undefined,id)}>{t('Остановить сигнал')}<span>{state.mode==='pomodoro'?t('Следующий этап запустите вручную'):t('Завершить отсчёт')}</span></button>:<div className="timer-actions">{state.status==='running'&&state.mode!=='alarm'&&<button disabled={busy} onClick={()=>void action('pause',undefined,id)}>{t('Пауза')}</button>}{state.status==='paused'&&<button className="primary" disabled={busy} onClick={()=>void action('resume',undefined,id)}>{t('Продолжить')}</button>}{state.status==='ready'&&<button className="primary" disabled={busy} onClick={()=>void action('resume',undefined,id)}>{nextLabel}</button>}<button className="quiet" disabled={busy} onClick={()=>void action('reset',undefined,id)}>{t('Удалить')}</button></div>}
    </section>;
   })}
  </div>;

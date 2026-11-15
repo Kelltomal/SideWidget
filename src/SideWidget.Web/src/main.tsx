@@ -10,7 +10,8 @@ import {Internet} from './Internet';
 import {Icon,invoke,nativeAvailable,Notice,useAction} from './ui';
 import './style.css';
 import {installMotionInput} from './motion';
-import {UpdateSettings} from './UpdateSettings';
+import {StartupUpdate,UpdateSettings} from './UpdateSettings';
+import {languageNames,locale,resolveLocale,setLocale,t,useLocale,type LanguagePreference} from './i18n';
 import {defaultVisualizer,VisualizerSettingsPanel} from './AudioVisualization';
 import {ModuleLayout} from './ModuleLayout';
 import {TimerPanel,useFocusTimer} from './TimerPanel';
@@ -25,7 +26,7 @@ const modules=[['search','Поиск'],['pinnedTools','Закреплённые 
 const defaultPinnedTools=['calculator','translation','qr'];
 const tools=[['calculator','Калькулятор','calculator'],['translation','Перевод','translate'],['qr','QR-код','qr'],['currency','Валюты','currency'],['units','Единицы','units'],['colors','Цвета','color'],['diary','Дневник','diary'],['timer','Таймер','timer'],['desktop','Файлы и папки','folder']];
 const titles:Record<string,string>={home:'',timer:'Таймер',settings:'Настройки',apps:'Приложения',music:'Музыка',audio:'Звук',calendar:'Календарь',weather:'Погода',system:'Текущие показатели ПК',quick:'Быстрые действия',...Object.fromEntries(tools.map(([id,title])=>[id,title]))};
-const defaultSettings:Settings={width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:modules.map(([id])=>id),disabled:[]};
+const defaultSettings:Settings={language:'system',width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:modules.map(([id])=>id),disabled:[]};
 const emptyState:Snapshot={settings:defaultSettings,calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''},selly:{configured:false,message:'SellyBoard не подключён. События и задачи пока недоступны.'}};
 function normalizeState(value:Snapshot):Snapshot {
  const order=[...(value.settings?.order??defaultSettings.order)];
@@ -43,6 +44,12 @@ export function App(){
  function editLayout(value:boolean){layoutEditingRef.current=value;setLayoutEditing(value);if(nativeAvailable)void invoke('shell.editing',{value}).catch(()=>{});}
  useEffect(()=>installMotionInput(document.documentElement),[]);
  const [state,setRawState]=useState<Snapshot>(readPreviewState);const [page,setPage]=useState('home');const [expanded,setExpanded]=useState(true);const [pinned,setPinned]=useState(false);const [startupError,setStartupError]=useState('');const main=useRef<HTMLElement>(null);const pageRef=useRef(page);pageRef.current=page;
+ useLocale();
+ useLayoutEffect(()=>{
+  const preference=state.settings.language;
+  const system=state.systemLanguage??(import.meta.env.MODE==='test'?locale():navigator.language);
+  setLocale(resolveLocale(preference&&preference!=='system'?preference:system));
+ },[state.settings.language,state.systemLanguage]);
  function setState(value:Snapshot){setRawState(normalizeState(value));}
  const [homeReady,setHomeReady]=useState(!nativeAvailable);
  const [searchRequest,setSearchRequest]=useState<number|null>(null);
@@ -90,34 +97,34 @@ export function App(){
  },[page]);
  useEffect(()=>{if(!nativeAvailable)try{localStorage.setItem('sidewidget.local.preview',JSON.stringify(state));}catch{setStartupError('Локальное хранилище заполнено. Скопируйте нужные данные перед закрытием.');}},[state]);
  useEffect(()=>{if(!expanded)return;const timer=setInterval(()=>setMinute(value=>value+1),60000);return()=>clearInterval(timer);},[expanded]);
- useEffect(()=>{function escape(event:KeyboardEvent){if(event.key!=='Escape'||event.defaultPrevented)return;if(pageRef.current!=='home'){event.preventDefault();go('home');}else shell('shell.collapse');}window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape);},[]);
+ useEffect(()=>{function escape(event:KeyboardEvent){if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('dialog[open]'))return;if(pageRef.current!=='home'){event.preventDefault();go('home');}else shell('shell.collapse');}window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape);},[]);
  const localProps={state,setState};
  useTheme(state.settings.theme??'dark');
  const visibleTools=tools.filter(([id])=>!state.settings.disabled.includes(id));
  const pinnedTools=state.settings.disabled.includes('tools')?[]:(state.settings.pinnedTools??defaultPinnedTools)
   .flatMap(id=>visibleTools.filter(([tool])=>tool===id));
- function toolButton([id,title,icon]:string[]){return <button key={id} onClick={()=>go(id)}><Icon name={icon} size={21}/><span>{title}</span></button>;}
+ function toolButton([id,title,icon]:string[]){return <button key={id} onClick={()=>go(id)}><Icon name={icon} size={21}/><span>{t(title)}</span></button>;}
  function homeModule(id:string){switch(id){
   case 'search':return <Search expanded={expanded&&page==='home'} inputRef={searchInput}
-   tools={state.settings.disabled.includes('tools')?[]:visibleTools.map(([id,name,icon])=>({id,name,icon}))}
+   tools={state.settings.disabled.includes('tools')?[]:visibleTools.map(([id,name,icon])=>({id,name:t(name),icon}))}
    apps={state.apps} openTool={openFromSearch}/>;
-  case 'pinnedTools':return pinnedTools.length>0&&<div role="group" aria-label="Закреплённые инструменты" className="tool-grid pinned-tools">{pinnedTools.map(toolButton)}</div>;
+  case 'pinnedTools':return pinnedTools.length>0&&<div role="group" aria-label={t("Закреплённые инструменты")} className="tool-grid pinned-tools">{pinnedTools.map(toolButton)}</div>;
   case 'apps':return <FavoriteApps {...localProps} openApps={()=>go('apps')}/>;
   case 'music':return <Music expanded={expanded} openAudio={()=>go('audio')}/>;
   case 'calendar':return <div className="day-overview"><Calendar state={state} compact open={()=>go('calendar')}/><Weather compact open={()=>go('weather')}/></div>;
   case 'tools':{
    const remaining=visibleTools.filter(tool=>state.settings.disabled.includes('pinnedTools')||!pinnedTools.includes(tool));
-   return remaining.length>0&&<section className="tool-section"><h2>Под рукой</h2><div className="tool-grid">{remaining.map(toolButton)}</div></section>;
+   return remaining.length>0&&<section className="tool-section"><h2>{t("Под рукой")}</h2><div className="tool-grid">{remaining.map(toolButton)}</div></section>;
   }
   case 'metrics':return <Metrics expanded={expanded} compact open={()=>go('system')}/>;
   case 'quick':return <QuickActions compact open={()=>go('quick')}/>;
   default:return null;
  }}
  return <div className={`app ${state.settings.largeMode?'large-mode':''}`} onPointerDown={()=>shell('shell.interactive')} onFocusCapture={event=>{if((event.target as HTMLElement).matches('input,textarea,select,button[aria-expanded="true"]'))shell('shell.editing',{value:true});}} onBlurCapture={()=>{setTimeout(()=>{const focused=document.activeElement;if(pageRef.current==='home'&&!layoutEditingRef.current&&!(focused instanceof HTMLElement&&focused.matches('input,textarea,select')))shell('shell.editing',{value:false});},0);}}>
-  <nav className="toolbar" aria-label="Управление панелью"><div className="toolbar-title">{page!=='home'&&<><button className="icon-button" onClick={()=>go('home')} aria-label="Вернуться на главную"><Icon name="back"/></button><h1>{titles[page]}</h1></>}</div><div className="toolbar-actions">{page==='home'&&<button className="icon-button" aria-label={layoutEditing?'Завершить редактирование':'Редактировать расположение'} aria-pressed={layoutEditing} onClick={()=>editLayout(!layoutEditing)}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m4 16 11-11 4 4L8 20H4Zm9-9 4 4"/></svg></button>}<button className="icon-button" aria-label={pinned?'Открепить панель':'Закрепить панель'} aria-pressed={pinned} disabled={!nativeAvailable} onClick={()=>shell('shell.pin')}><Icon name="pin" size={16}/></button><button className="icon-button" aria-label="Настройки" aria-pressed={page==='settings'} onClick={()=>go(page==='settings'?'home':'settings')}><Icon name="gear" size={17}/></button></div></nav>
+  <nav className="toolbar" aria-label={t("Управление панелью")}><div className="toolbar-title">{page!=='home'&&<><button className="icon-button" onClick={()=>go('home')} aria-label={t("Вернуться на главную")}><Icon name="back"/></button><h1>{t(titles[page])}</h1></>}</div><div className="toolbar-actions">{page==='home'&&<button className="icon-button" aria-label={t(layoutEditing?'Завершить редактирование':'Редактировать расположение')} aria-pressed={layoutEditing} onClick={()=>editLayout(!layoutEditing)}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m4 16 11-11 4 4L8 20H4Zm9-9 4 4"/></svg></button>}<button className="icon-button" aria-label={t(pinned?'Открепить панель':'Закрепить панель')} aria-pressed={pinned} disabled={!nativeAvailable} onClick={()=>shell('shell.pin')}><Icon name="pin" size={16}/></button><button className="icon-button" aria-label={t("Настройки")} aria-pressed={page==='settings'} onClick={()=>go(page==='settings'?'home':'settings')}><Icon name="gear" size={17}/></button></div></nav>
   <ButtonHelp/>
   <main ref={main}>
-   {startupError&&<Notice error>{startupError} <button className="quiet" onClick={()=>setStartupError('')}>Закрыть сообщение</button></Notice>}
+   {startupError&&<Notice error>{t(startupError)} <button className="quiet" onClick={()=>setStartupError('')}>{t("Закрыть сообщение")}</button></Notice>}
    <div className="page-content" hidden={page!=='home'}><ModuleLayout state={state} setState={setState} editing={layoutEditing} finish={()=>editLayout(false)} modules={modules} renderModule={id=>id==='search'||page==='home'?homeModule(id):null}/></div>
    <div className="page-content" key={page}>
    {page==='timer'&&<TimerPanel timer={focusTimer}/>}
@@ -128,8 +135,9 @@ export function App(){
    {page==='music'&&<Music expanded={expanded} openAudio={()=>go('audio')}/>}
    {page==='system'&&<div className="stack"><Internet expanded={expanded}/><Metrics expanded={expanded}/></div>}{page==='quick'&&<QuickActions/>}{page==='settings'&&<SettingsPage state={state} setState={setState}/>}
    </div>
-   {(page==='home'||page==='settings')&&state.appVersion&&<footer className="app-version"><small>Версия {state.appVersion}</small></footer>}
+   {(page==='home'||page==='settings')&&state.appVersion&&<footer className="app-version"><small>{t('Версия {version}',{version:state.appVersion})}</small></footer>}
   </main>
+  <StartupUpdate/>
  </div>;
 }
 export function SettingsPage({state,setState}:{state:Snapshot;setState:(state:Snapshot)=>void}) {
@@ -155,14 +163,19 @@ export function SettingsPage({state,setState}:{state:Snapshot;setState:(state:Sn
   setPositionChanges({});setSaved(true);
  });}
  async function changeTheme(theme:NonNullable<Settings['theme']>){await run(async()=>{const next=nativeAvailable?await invoke<Snapshot>('settings.theme',{theme}):{...state,settings:{...state.settings,theme}};setState(next);setSettings(current=>({...current,theme:next.settings.theme??'dark'}));});}
- return <form className="stack settings" onSubmit={e=>{e.preventDefault();void save();}}><StartupSettings/><h2 id="theme-label">Оформление</h2><div className="theme-options" role="group" aria-labelledby="theme-label">{([['dark','Тёмная'],['light','Светлая'],['system','Как в Windows']] as const).map(([theme,label])=><button type="button" key={theme} aria-pressed={(state.settings.theme??'dark')===theme} disabled={busy} onClick={()=>void changeTheme(theme)}>{label}</button>)}</div><small>Тема применяется и сохраняется сразу. «Как в Windows» следует системной теме приложений.</small><VisualizerSettingsPanel value={state.settings.visualizer??defaultVisualizer} onPreviewSaved={visualizer=>{setState({...state,settings:{...state.settings,visualizer}});setSettings(current=>({...current,visualizer}));}} onSaved={next=>{setState(next);setSettings(current=>({...current,visualizer:next.settings.visualizer}));}}/><h2>Размер и положение</h2><div className="form-row"><label>Ширина шапки, DIP<input type="number" min={360} max={900} required value={settings.width} onChange={e=>field('width',Number(e.target.value))}/></label><label>Высота, DIP<input type="number" min={360} max={1200} required value={settings.height} onChange={e=>field('height',Number(e.target.value))}/></label></div><small>При открытии ширина увеличивается на 40% с каждой стороны. У края экрана панель сдвигается внутрь.</small>
+ async function changeLanguage(language:LanguagePreference){await run(async()=>{
+  const next=nativeAvailable?await invoke<Snapshot>('settings.language',{language}):{...state,settings:{...state.settings,language}};
+  setState(next);
+  setSettings(current=>({...current,language:next.settings.language}));
+ });}
+ return <form className="stack settings" onSubmit={e=>{e.preventDefault();void save();}}><label>{t('Язык приложения')}<select value={state.settings.language??'system'} disabled={busy} onChange={event=>void changeLanguage(event.target.value as LanguagePreference)}><option value="system">{t('Язык Windows')}</option>{Object.entries(languageNames).map(([id,name])=><option key={id} value={id} lang={id}>{name}</option>)}</select></label><StartupSettings/><h2 id="theme-label">{t("Оформление")}</h2><div className="theme-options" role="group" aria-labelledby="theme-label">{([['dark','Тёмная'],['light','Светлая'],['system','Как в Windows']] as const).map(([theme,label])=><button type="button" key={theme} aria-pressed={(state.settings.theme??'dark')===theme} disabled={busy} onClick={()=>void changeTheme(theme)}>{t(label)}</button>)}</div><small>{t("Тема применяется и сохраняется сразу. «Как в Windows» следует системной теме приложений.")}</small><VisualizerSettingsPanel value={state.settings.visualizer??defaultVisualizer} onPreviewSaved={visualizer=>{setState({...state,settings:{...state.settings,visualizer}});setSettings(current=>({...current,visualizer}));}} onSaved={next=>{setState(next);setSettings(current=>({...current,visualizer:next.settings.visualizer}));}}/><h2>{t("Размер и положение")}</h2><div className="form-row"><label>{t("Ширина шапки, DIP")}<input type="number" min={360} max={900} required value={settings.width} onChange={e=>field('width',Number(e.target.value))}/></label><label>{t("Высота, DIP")}<input type="number" min={360} max={1200} required value={settings.height} onChange={e=>field('height',Number(e.target.value))}/></label></div><small>{t("При открытии ширина увеличивается на 40% с каждой стороны. У края экрана панель сдвигается внутрь.")}</small>
   <DisplaySettings settings={{...settings,displayPositions:{...settings.displayPositions,...positionChanges}}} displays={state.displays??[]} onChange={ids=>field('displayIds',ids)} onPositionChange={(id,position)=>{setSaved(false);setPositionChanges(current=>({...current,[id]:position}));}}/>
-  <label className="checkbox"><input type="checkbox" checked={settings.largeMode} onChange={e=>field('largeMode',e.target.checked)}/>Крупный текст и элементы управления</label>
-  <h2>Раскрытие</h2><div className="form-row"><label>Задержка открытия, мс<input type="number" min={0} max={2000} required value={settings.openDelay} onChange={e=>field('openDelay',Number(e.target.value))}/></label><label>Задержка скрытия, мс<input type="number" min={200} max={5000} required value={settings.hideDelay} onChange={e=>field('hideDelay',Number(e.target.value))}/></label></div><label>Горячая клавиша<input value={settings.hotkey} required maxLength={60} placeholder="Ctrl+Alt+Space" onChange={e=>field('hotkey',e.target.value)}/></label><small>Если сочетание занято, Windows вернёт ошибку при сохранении.</small>
-  <h2>Главная</h2><div className="layout-list">{order.map((id,index)=><div className="layout-row" key={id}><label className="checkbox"><input type="checkbox" checked={!settings.disabled.includes(id)} onChange={e=>enabled(id,e.target.checked)}/>{modules.find(([key])=>key===id)![1]}</label><button type="button" className="quiet" disabled={index===0} onClick={()=>move(index,-1)} aria-label={`Выше: ${id}`}>Выше</button><button type="button" className="quiet" disabled={index===order.length-1} onClick={()=>move(index,1)} aria-label={`Ниже: ${id}`}>Ниже</button></div>)}</div>
-  <h2>Инструменты на главной</h2>{tools.map(([id,title])=><label className="checkbox" key={id}><input type="checkbox" checked={!settings.disabled.includes(id)} onChange={e=>enabled(id,e.target.checked)}/>{title}</label>)}
-  <fieldset className="tool-pin-settings"><legend>Закреплённые инструменты</legend><small>Выберите до четырёх инструментов для быстрого доступа.</small>{tools.map(([id,title])=><label className="checkbox" key={id}><input type="checkbox" aria-label={`Закрепить ${title}`} checked={pinnedTools.includes(id)} disabled={!pinnedTools.includes(id)&&(pinnedTools.length>=4||settings.disabled.includes(id))} onChange={e=>field('pinnedTools',e.target.checked?[...pinnedTools,id]:pinnedTools.filter(tool=>tool!==id))}/>{title}</label>)}</fieldset>
-  {error&&<Notice error>{error}</Notice>}{saved&&<Notice>Настройки сохранены{nativeAvailable?'.':' для предпросмотра.'}</Notice>}<button className="primary" disabled={busy}>{busy?'Сохраняем…':'Сохранить настройки'}</button><button type="button" onClick={()=>{setSaved(false);setSettings(s=>({...s,order:modules.map(([id])=>id),disabled:[],pinnedTools:defaultPinnedTools}));}}>Вернуть исходную раскладку</button>
+  <label className="checkbox"><input type="checkbox" checked={settings.largeMode} onChange={e=>field('largeMode',e.target.checked)}/>{t("Крупный текст и элементы управления")}</label>
+  <h2>{t("Раскрытие")}</h2><div className="form-row"><label>{t("Задержка открытия, мс")}<input type="number" min={0} max={2000} required value={settings.openDelay} onChange={e=>field('openDelay',Number(e.target.value))}/></label><label>{t("Задержка скрытия, мс")}<input type="number" min={200} max={5000} required value={settings.hideDelay} onChange={e=>field('hideDelay',Number(e.target.value))}/></label></div><label>{t("Горячая клавиша")}<input value={settings.hotkey} required maxLength={60} placeholder="Ctrl+Alt+Space" onChange={e=>field('hotkey',e.target.value)}/></label><small>{t("Если сочетание занято, Windows вернёт ошибку при сохранении.")}</small>
+  <h2>{t("Главная")}</h2><div className="layout-list">{order.map((id,index)=><div className="layout-row" key={id}><label className="checkbox"><input type="checkbox" checked={!settings.disabled.includes(id)} onChange={e=>enabled(id,e.target.checked)}/>{t(modules.find(([key])=>key===id)![1])}</label><button type="button" className="quiet" disabled={index===0} onClick={()=>move(index,-1)} aria-label={t("Выше: {name}",{name:t(modules.find(([key])=>key===id)![1])})}>{t("Выше")}</button><button type="button" className="quiet" disabled={index===order.length-1} onClick={()=>move(index,1)} aria-label={t("Ниже: {name}",{name:t(modules.find(([key])=>key===id)![1])})}>{t("Ниже")}</button></div>)}</div>
+  <h2>{t("Инструменты на главной")}</h2>{tools.map(([id,title])=><label className="checkbox" key={id}><input type="checkbox" checked={!settings.disabled.includes(id)} onChange={e=>enabled(id,e.target.checked)}/>{t(title)}</label>)}
+  <fieldset className="tool-pin-settings"><legend>{t("Закреплённые инструменты")}</legend><small>{t("Выберите до четырёх инструментов для быстрого доступа.")}</small>{tools.map(([id,title])=><label className="checkbox" key={id}><input type="checkbox" aria-label={t("Закрепить {name}",{name:t(title)})} checked={pinnedTools.includes(id)} disabled={!pinnedTools.includes(id)&&(pinnedTools.length>=4||settings.disabled.includes(id))} onChange={e=>field('pinnedTools',e.target.checked?[...pinnedTools,id]:pinnedTools.filter(tool=>tool!==id))}/>{t(title)}</label>)}</fieldset>
+  {error&&<Notice error>{t(error)}</Notice>}{saved&&<Notice>{t(nativeAvailable?'Настройки сохранены.':'Настройки сохранены для предпросмотра.')}</Notice>}<button className="primary" disabled={busy}>{t(busy?'Сохраняем…':'Сохранить настройки')}</button><button type="button" onClick={()=>{setSaved(false);setSettings(s=>({...s,order:modules.map(([id])=>id),disabled:[],pinnedTools:defaultPinnedTools}));}}>{t("Вернуть исходную раскладку")}</button>
  <ShareSettings/><UpdateSettings/></form>;
 }
 const rootElement=document.getElementById('root');

@@ -20,7 +20,8 @@ export class Bridge {
       if(!this.host){reject(new Error('Действие доступно в нативном приложении SideWidget'));return;}
       // The native website adapter allows ten minutes for a manual CAPTCHA.
       const websiteTranslation=actionId==='translation.run'&&'provider' in params&&(params.provider==='google'||params.provider==='yandex');
-      const timer=setTimeout(()=>{this.pending.delete(id);reject(new Error('Не получен ответ приложения. Проверьте результат перед повтором.'));},websiteTranslation?12*60000:actionId==='app.share'?15*60000:180000);
+      const timeout=actionId==='updates.install'?31*60000:websiteTranslation?12*60000:actionId==='app.share'?15*60000:180000;
+      const timer=setTimeout(()=>{this.pending.delete(id);reject(new Error('Не получен ответ приложения. Проверьте результат перед повтором.'));},timeout);
       this.pending.set(id,{resolve,reject,timer});this.host.postMessage({protocolVersion:1,requestId:id,actionId,params});
     });return{id,promise};
   }

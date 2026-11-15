@@ -1,6 +1,7 @@
 export type VisualizerOptions={enabled:boolean;showInHeader:boolean;brightness:number;sensitivity:number;style:'wave'|'bars'};
 export type AudioSpectrumFrame={available:boolean;message?:string;bands:number[];rms:number;sequence:number;settings:VisualizerOptions};
 export type Settings = {
+  language?: import('./i18n').LanguagePreference|null;
   displayIds?:string[]|null;
   displayPositions?:Record<string,number>|null;
   pinnedTools?:string[]|null;
@@ -13,6 +14,8 @@ export type Calculation = {id:string; expression:string; result:string; time:str
 export type AppShortcut = {id:string; name:string; path:string; icon?:string};
 export type Snapshot = {
  appVersion?: string;
+ language?: string;
+ systemLanguage?: string;
   displays?:DisplayDescriptor[];
   settings:Settings; calculatorHistory:Calculation[]; colorHistory:string[];
   unitFavorites:{from:string;to:string}[]; apps:AppShortcut[]; drafts:{diary:string};

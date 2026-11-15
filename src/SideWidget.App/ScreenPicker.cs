@@ -46,7 +46,7 @@ public static class ScreenPicker
         private nint highlightedRoot;
         private Rect highlightedBounds;
         private bool hasHighlight;
-        private string hoverLabel = "Наведите на окно";
+        private string hoverLabel = DesktopLanguage.Text("Наведите на окно");
         private const int SampleSize = 15, Zoom = 9, LensSize = SampleSize * Zoom;
         private nint sampleDc, sampleBitmap, priorSampleBitmap;
         private uint previewPixel = uint.MaxValue;
@@ -72,7 +72,7 @@ public static class ScreenPicker
                 atom = RegisterClassExW(ref definition);
                 if (atom == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
                 // Transparent to hit testing, never activated, absent from taskbar/Alt+Tab.
-                window = CreateWindowExW(0x00080000 | 0x00000020 | 0x00000080 | 0x08000000, className, "SideWidget: выбор", 0x80000000,
+                window = CreateWindowExW(0x00080000 | 0x00000020 | 0x00000080 | 0x08000000, className, DesktopLanguage.Text("SideWidget: выбор"), 0x80000000,
                     0, 0, 320, 92, 0, 0, module, 0);
                 if (window == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
                 if (!SetLayeredWindowAttributes(window, color ? 0 : TransparentColor, 255, color ? 2u : 1u)) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -94,7 +94,7 @@ public static class ScreenPicker
                     {
                         // Four thin surfaces avoid allocating a full-screen transparent backing bitmap.
                         borders[index] = CreateWindowExW(0x00080000 | 0x00000020 | 0x00000080 | 0x08000000,
-                            className, "SideWidget: контур выбора", 0x80000000, 0, 0, 1, 1, 0, 0, module, 0);
+                            className, DesktopLanguage.Text("SideWidget: контур выбора"), 0x80000000, 0, 0, 1, 1, 0, 0, module, 0);
                         if (borders[index] == 0 || !SetLayeredWindowAttributes(borders[index], 0, 255, 2))
                             throw new Win32Exception(Marshal.GetLastWin32Error());
                     }
@@ -296,9 +296,13 @@ public static class ScreenPicker
             finally { DeleteObject(black); DeleteObject(white); }
             SetBkMode(dc, 1); SetTextColor(dc, 0x00F5F4F2);
             var oldFont = SelectObject(dc, GetStockObject(17));
-            var hex = previewPixel == uint.MaxValue ? "Недоступно" : ColorHex(previewPixel);
+            var hex = previewPixel == uint.MaxValue ? DesktopLanguage.Text("Недоступно") : ColorHex(previewPixel);
             TextOutW(dc, 204, 22, hex, hex.Length);
-            const string click = "Левая кнопка", choose = "Выбрать цвет", cancel = "Esc / правая кнопка", timeout = "Отмена · 30 с", zoom = "9×";
+            var click = DesktopLanguage.Text("Левая кнопка");
+            var choose = DesktopLanguage.Text("Выбрать цвет");
+            var cancel = DesktopLanguage.Text("Esc / правая кнопка");
+            var timeout = DesktopLanguage.Text("Отмена · 30 с");
+            const string zoom = "9×";
             TextOutW(dc, 164, 63, click, click.Length);
             TextOutW(dc, 164, 82, choose, choose.Length);
             SetTextColor(dc, 0x00BAB1A9);
@@ -335,7 +339,7 @@ public static class ScreenPicker
             }
             if (identity.Candidate is not { } selected || !IsWindow(root))
             {
-                hoverLabel = "Окно недоступно для закрепления";
+                hoverLabel = DesktopLanguage.Text("Окно недоступно для закрепления");
                 HideHighlight();
             }
             else
@@ -418,10 +422,12 @@ public static class ScreenPicker
                 var first = hoverLabel;
                 var textArea = new Rect { Left = 38, Top = 39, Right = 306, Bottom = 58 };
                 DrawTextW(dc, first, first.Length, ref textArea, 0x0020 | 0x8000 | 0x0800); // Single line, ellipsis, no '&' mnemonic.
-                const string selection = "Левая кнопка — выбрать окно";
-                TextOutW(dc, 38, 62, selection, selection.Length);
-                const string second = "Esc / правая кнопка — отмена · 30 с";
-                TextOutW(dc, 38, 85, second, second.Length);
+                var selection = DesktopLanguage.Text("Левая кнопка — выбрать окно");
+                textArea = new Rect { Left = 38, Top = 62, Right = 306, Bottom = 81 };
+                DrawTextW(dc, selection, selection.Length, ref textArea, 0x0020 | 0x8000 | 0x0800);
+                var second = DesktopLanguage.Text("Esc / правая кнопка — отмена · 30 с");
+                textArea = new Rect { Left = 38, Top = 85, Right = 306, Bottom = 104 };
+                DrawTextW(dc, second, second.Length, ref textArea, 0x0020 | 0x8000 | 0x0800);
                 SelectObject(dc, oldFont);
             }
             finally { DeleteObject(transparent); DeleteObject(background); DeleteObject(white); EndPaint(hwnd, ref paint); }

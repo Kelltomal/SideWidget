@@ -93,7 +93,10 @@ namespace SideWidget.App
         public void ToggleFromHotkey(long receivedAt){Toggles++;HotkeyReceivedAt=receivedAt;}
         public void OpenFromTray(){}
     }
-    sealed record DesktopDisplay(DisplayDescriptor Descriptor,nint Handle,Native.MonitorInfo Bounds);
+    sealed record DesktopDisplay(DisplayDescriptor Descriptor,nint Handle,Native.MonitorInfo Bounds)
+    {
+        public string Id => Descriptor.Id;
+    }
     static class DisplayCatalog {public static IReadOnlyList<DesktopDisplay> Available=[];public static IReadOnlyList<DesktopDisplay> Read()=>Available;}
     static class Native
     {

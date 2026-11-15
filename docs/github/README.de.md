@@ -4,16 +4,19 @@
 
 SideWidget ist ein kompaktes Panel mit Werkzeugen für den Windows-Alltag. Am oberen Bildschirmrand zeigt es die Uhrzeit. Ein Klick darauf öffnet die Dateisuche, angeheftete Apps und weitere Werkzeuge. Die voreingestellte Tastenkombination ist `Ctrl+Alt+Space` (Strg+Alt+Leertaste).
 
-Die Sprachauswahl oben gilt für die Dokumentation. Die Benutzeroberfläche der App ist auf Russisch.
+SideWidget übernimmt die Sprache von Windows. Ist sie nicht verfügbar, startet die App auf Englisch. Unter **Einstellungen → App-Sprache** kannst du die Sprache wechseln.
 
 ## Screenshots
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="SideWidget-Hauptansicht mit Suche, Player und Schnellzugriff auf Werkzeuge">
-  <img src="images/sidewidget-folder-icons.png" width="340" alt="Auswahl des Stils für Ordnersymbole in SideWidget">
+  <img src="images/sidewidget-home.png" width="760" alt="SideWidget-Hauptansicht mit Suche, Player und Schnellzugriff auf Werkzeuge">
 </p>
 
-Die Screenshots zeigen Beispieldaten.
+<p align="center">
+  <img src="images/sidewidget-languages.png" width="630" alt="Auswahl der App-Sprache in den SideWidget-Einstellungen">
+</p>
+
+Die Screenshots stammen aus SideWidget unter Windows. Die Hauptansicht zeigt den laufenden Musiktitel.
 
 ## Funktionen
 
@@ -32,7 +35,7 @@ SideWidget benötigt eine kompatible x64-Version von Windows 10 oder 11.
 2. Entpacke das gesamte Archiv in einen lokalen Ordner mit Schreibzugriff.
 3. Starte `SideWidget.App.exe`. Die ZIP-Datei enthält .NET und WebView2. Kopiere beim Wechsel auf einen anderen PC den gesamten entpackten Ordner.
 
-In den **Einstellungen** kannst du auf GitHub nach der neuesten stabilen Version suchen und die zugehörige Release-Seite im Browser öffnen. Die neue Version lädst du manuell herunter.
+Beim Start sucht SideWidget auf GitHub nach einer stabilen Version. Du kannst sofort aktualisieren, bis zum nächsten Start warten oder diese Version überspringen. Beim Update überprüft SideWidget die SHA-256-Prüfsumme, entpackt das Archiv und startet neu. Unter **Einstellungen → Updates** kannst du die Suche manuell starten.
 
 ## Projektdokumentation
 

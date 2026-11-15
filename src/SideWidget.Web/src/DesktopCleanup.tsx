@@ -1,3 +1,4 @@
+import {locale, t} from './i18n';
 import {useEffect, useRef, useState, type PointerEvent} from 'react';
 import {Icon, invoke, nativeAvailable, Notice, useAction} from './ui';
 import './desktop-cleanup.css';
@@ -147,7 +148,7 @@ export function DesktopCleanup() {
   setDropTarget(targetAt(event));
  }
 
- if (!nativeAvailable) return <Notice>Уборка рабочего стола доступна в приложении Windows.</Notice>;
+ if (!nativeAvailable) return <Notice>{t('Уборка рабочего стола доступна в приложении Windows.')}</Notice>;
 
  const documents = source === 'documents';
  const groups = new Map<string, DesktopFile[]>();
@@ -166,21 +167,21 @@ export function DesktopCleanup() {
  const activeFolderIcons = choosingIcon ? folderIcons : undefined;
  const iconPool = activeFolderIcons ? Object.keys(activeFolderIcons.iconImages) : [];
  const promptHelp = choosingIcon
-  ? preview?.folderIcon ? `Новый значок — «${preview.folderIcon}».` : 'Подберём значок после выбора папки.'
-  : 'Для значков попробуйте «Поменяй значки на рабочем столе».';
- return <section className="stack" aria-label="Файлы и папки" aria-busy={busy}>
+  ? preview?.folderIcon ? t('Новый значок — «{icon}».',{icon:t(preview.folderIcon)}) : t('Подберём значок после выбора папки.')
+  : t('Для значков попробуйте «Поменяй значки на рабочем столе».');
+ return <section className="stack" aria-label={t('Файлы и папки')} aria-busy={busy}>
   {!activeFolderIcons && <>
-  <label>Где разобрать файлы?
+  <label>{t('Где разобрать файлы?')}
    <select value={source} disabled={busy} onChange={event => {
     const next = event.target.value === 'documents' ? 'documents' : 'desktop';
     endDrag(); setSource(next); void run(() => refresh(next));
-   }}><option value="desktop">Рабочий стол</option><option value="documents">Разобранное / Документы</option></select>
+   }}><option value="desktop">{t('Рабочий стол')}</option><option value="documents">{t('Разобранное / Документы')}</option></select>
   </label>
-  {documents ? <p>Перетащите файл на тему или выберите её в списке рядом с файлом. После подтверждения файлы попадут в папки тем внутри «Разобранное».</p> : <>
-  {!iconRequest && <p>Выберите файлы для переноса в папку «Разобранное» на рабочем столе.</p>}
-  <label>Что сделать с файлами и папками?
+  {documents ? <p>{t('Перетащите файл на тему или выберите её в списке рядом с файлом. После подтверждения файлы попадут в папки тем внутри «Разобранное».')}</p> : <>
+  {!iconRequest && <p>{t('Выберите файлы для переноса в папку «Разобранное» на рабочем столе.')}</p>}
+  <label>{t('Что сделать с файлами и папками?')}
    <textarea rows={2} maxLength={2000} value={prompt} disabled={busy} aria-describedby="desktop-prompt-help"
-    onChange={event => setPrompt(event.target.value)} placeholder="Разложи счета по годам, а скриншоты оставь на столе"/>
+    onChange={event => setPrompt(event.target.value)} placeholder={locale() === 'ru' ? 'Разложи счета по годам, а скриншоты оставь на столе' : t('Введите команду на русском')}/>
   </label>
   <small id="desktop-prompt-help" role={choosingIcon ? 'status' : undefined}>
    {promptHelp}
@@ -188,28 +189,28 @@ export function DesktopCleanup() {
   </>}
   </>}
   {error && <Notice error>{error}</Notice>}
-  {result && <Notice>{{icons: 'Изменено значков', 'undo-icons': 'Восстановлено значков',
-   move: 'Перемещено файлов', undo: 'Возвращено файлов'}[result.action]}: {result.data.count}.</Notice>}
-  {changedFolder && <Notice>Значок изменён. {changedFolder}</Notice>}
-  {!!result?.data.issues.length && <ul className="desktop-cleanup-issues" aria-label="Ошибки операции">
-   {result.data.issues.map(issue => <li key={issue.name}><strong>{issue.name}</strong><small>{issue.message}</small></li>)}
+  {result && <Notice>{t({icons: 'Изменено значков: {count}.', 'undo-icons': 'Восстановлено значков: {count}.',
+   move: 'Перемещено файлов: {count}.', undo: 'Возвращено файлов: {count}.'}[result.action],{count:result.data.count})}</Notice>}
+  {changedFolder && <Notice>{t('Значок изменён. {path}',{path:changedFolder})}</Notice>}
+  {!!result?.data.issues.length && <ul className="desktop-cleanup-issues" aria-label={t('Ошибки операции')}>
+   {result.data.issues.map(issue => <li key={issue.name}><strong>{issue.name}</strong><small>{t(issue.message)}</small></li>)}
   </ul>}
   {activeFolderIcons && <fieldset className="desktop-cleanup-group" ref={iconList} tabIndex={-1}>
-   <legend>Папки на рабочем столе</legend>
+   <legend>{t('Папки на рабочем столе')}</legend>
    {activeFolderIcons.folders.length ? <>
     <div className="desktop-folder-icon-settings">
-     <label>Общий стиль<select disabled={busy} value={sharedStyle} onChange={event => setSharedStyle(Number(event.target.value))}>
-      {activeFolderIcons.styles.map(style => <option key={style.id} value={style.id}>{style.name}</option>)}
+     <label>{t('Общий стиль')}<select disabled={busy} value={sharedStyle} onChange={event => setSharedStyle(Number(event.target.value))}>
+      {activeFolderIcons.styles.map(style => <option key={style.id} value={style.id}>{t(style.name)}</option>)}
      </select></label>
-     <label>Общий значок<select disabled={busy} value={sharedIcon} onChange={event => setSharedIcon(event.target.value)}>
-      <option value="">Подбирать по папке</option>
-      {iconPool.map(icon => <option key={icon}>{icon}</option>)}
+     <label>{t('Общий значок')}<select disabled={busy} value={sharedIcon} onChange={event => setSharedIcon(event.target.value)}>
+      <option value="">{t('Подбирать по папке')}</option>
+      {iconPool.map(icon => <option key={icon} value={icon}>{t(icon)}</option>)}
      </select></label>
     </div>
     <label className="checkbox"><input type="checkbox" checked={individualIcons} disabled={busy}
-     onChange={event => setIndividualIcons(event.target.checked)}/>Настраивать папки по отдельности</label>
+     onChange={event => setIndividualIcons(event.target.checked)}/>{t('Настраивать папки по отдельности')}</label>
     <table className="desktop-folder-icons">
-    <thead><tr><th scope="col">Папка</th><th scope="col">Новый значок</th></tr></thead>
+    <thead><tr><th scope="col">{t('Папка')}</th><th scope="col">{t('Новый значок')}</th></tr></thead>
     <tbody>{activeFolderIcons.folders.map(folder => {
      const icon = iconOverride(folder.id) || folder.icon;
      const chosen = activeFolderIcons.styles[styleForFolder(folder.id)];
@@ -218,76 +219,76 @@ export function DesktopCleanup() {
      <td><label className="checkbox"><input type="checkbox" checked={selected.includes(folder.id)} disabled={busy}
       aria-label={folder.name} aria-describedby={`desktop-folder-icon-${folder.id}`}
       onChange={event => setSelected(event.target.checked ? [...selected, folder.id] : selected.filter(id => id !== folder.id))}/>
-      <span>{folder.name}<small id={`desktop-folder-icon-${folder.id}`}>{icon}</small></span></label>
-      {individualIcons && <select aria-label={`Значок папки «${folder.name}»`} disabled={busy}
+      <span>{folder.name}<small id={`desktop-folder-icon-${folder.id}`}>{t(icon)}</small></span></label>
+      {individualIcons && <select aria-label={t('Значок папки «{name}»',{name:folder.name})} disabled={busy}
        value={folderIconChoices[folder.id] ?? ''}
        onChange={event => {const icon = event.target.value; setFolderIconChoices(current => ({...current, [folder.id]: icon}));}}>
-       <option value="">Общий значок</option>
-       {iconPool.map(option => <option key={option}>{option}</option>)}
+       <option value="">{t('Общий значок')}</option>
+       {iconPool.map(option => <option key={option} value={option}>{t(option)}</option>)}
       </select>}</td>
-     <td>{individualIcons ? <div className="desktop-folder-icon-styles" role="radiogroup" aria-label={`Стиль папки «${folder.name}»`}>
-      {activeFolderIcons.styles.map(style => <label key={style.id} title={style.name} className="desktop-folder-icon-choice">
+     <td>{individualIcons ? <div className="desktop-folder-icon-styles" role="radiogroup" aria-label={t('Стиль папки «{name}»',{name:folder.name})}>
+      {activeFolderIcons.styles.map(style => <label key={style.id} title={t(style.name)} className="desktop-folder-icon-choice">
        <input type="radio" className="sr-only" name={`desktop-folder-style-${folder.id}`} disabled={busy}
-        aria-label={`${folder.name} — ${style.name}`} checked={chosen.id === style.id}
+        aria-label={`${folder.name} — ${t(style.name)}`} checked={chosen.id === style.id}
         onChange={() => setFolderStyles(current => ({...current, [folder.id]: style.id}))}/>
        <img src={images[style.id]} width={36} height={36} alt=""
         data-light-preview={style.lightPreview || undefined}/>
       </label>)}
      </div> : <span className="desktop-folder-icon-preview">
       <img src={images[chosen.id]} width={36} height={36} alt="" data-light-preview={chosen.lightPreview || undefined}/>
-      <small>{chosen.name}</small>
+      <small>{t(chosen.name)}</small>
      </span>}</td>
     </tr>;})}</tbody>
-   </table></> : <Notice>На рабочем столе нет доступных папок.</Notice>}
-   {activeFolderIcons.hasMore && <Notice>Показаны первые {activeFolderIcons.folders.length} папок.</Notice>}
+   </table></> : <Notice>{t('На рабочем столе нет доступных папок.')}</Notice>}
+   {activeFolderIcons.hasMore && <Notice>{t('Показаны первые {count} папок.',{count:activeFolderIcons.folders.length})}</Notice>}
   </fieldset>}
   <div className="actions" ref={actions} tabIndex={-1}>
    {choosingIcon && !activeFolderIcons && <button disabled={busy} onClick={() => void run(changeFolderIcon)}>
-    Выбрать папку
+    {t('Выбрать папку')}
    </button>}
    {choosingIcon && !activeFolderIcons && <button className="primary" disabled={busy} onClick={() => void run(previewDesktopIcons)}>
-    Папки на рабочем столе
+    {t('Папки на рабочем столе')}
    </button>}
    {activeFolderIcons && !!activeFolderIcons.folders.length && <>
     <button className="primary" disabled={busy || !selected.length} onClick={() => void run(applyDesktopIcons)}>
-     Изменить значки ({selected.length})
+     {t('Изменить значки ({count})',{count:selected.length})}
     </button>
     <button disabled={busy} onClick={() => setSelected(selected.length === activeFolderIcons.folders.length ? [] : activeFolderIcons.folders.map(folder => folder.id))}>
-     {selected.length === activeFolderIcons.folders.length ? 'Снять выбор со всех' : 'Выбрать все'}
+     {selected.length === activeFolderIcons.folders.length ? t('Снять выбор со всех') : t('Выбрать все')}
     </button>
    </>}
-   {activeFolderIcons && <button className="quiet" disabled={busy} onClick={() => {actions.current?.focus(); setFolderIcons(undefined); setSelected([]);}}>Отмена</button>}
+   {activeFolderIcons && <button className="quiet" disabled={busy} onClick={() => {actions.current?.focus(); setFolderIcons(undefined); setSelected([]);}}>{t('Отмена')}</button>}
    {!!selectable.length && <button className="primary" disabled={busy || promptChanged || !selected.length} onClick={() => void run(() => change('move'))}>
-    Переместить ({selected.length})
+    {t('Переместить ({count})',{count:selected.length})}
    </button>}
    {!choosingIcon && <button disabled={busy} onClick={() => void run(refresh)}>
-    {promptChanged ? 'Применить промпт' : changedFolder || result?.action === 'icons' ? 'Повторить запрос' : 'Обновить список'}
+    {promptChanged ? t('Применить промпт') : changedFolder || result?.action === 'icons' ? t('Повторить запрос') : t('Обновить список')}
    </button>}
    {preview?.hasFolder && !choosingIcon && <button className="quiet" disabled={busy} onClick={() => void run(() => invoke('desktop.open'))}>
-    <Icon name="folder" size={16}/>Открыть «Разобранное»
+    <Icon name="folder" size={16}/>{t('Открыть «Разобранное»')}
    </button>}
-   {preview?.canUndo && !choosingIcon && <button className="quiet" disabled={busy} onClick={() => void run(() => change('undo'))}>Отменить перенос</button>}
-   {canUndoIcons && <button disabled={busy} onClick={() => void run(undoFolderIcons)}>Вернуть как было</button>}
+   {preview?.canUndo && !choosingIcon && <button className="quiet" disabled={busy} onClick={() => void run(() => change('undo'))}>{t('Отменить перенос')}</button>}
+   {canUndoIcons && <button disabled={busy} onClick={() => void run(undoFolderIcons)}>{t('Вернуть как было')}</button>}
   </div>
-  {!preview && busy && <Notice>Разбираем файлы…</Notice>}
+  {!preview && busy && <Notice>{t('Разбираем файлы…')}</Notice>}
   {preview?.answer && !promptChanged && <div className="desktop-cleanup-answer" role="status">
-   <h2>Ответ SideWidget</h2><p>{preview.answer}</p>
+   <h2>{t('Ответ SideWidget')}</h2><p>{t(preview.answer)}</p>
   </div>}
-  {preview && !preview.modelAvailable && <Notice>{documents ? 'Модель недоступна. Выберите темы вручную.' : 'Модель недоступна. Папки предложены по расширениям и правилам.'}</Notice>}
-  {preview?.files.length === 0 && !iconRequest && <Notice>{documents ? 'В папке «Разобранное / Документы» нет файлов для разбора.' : 'На рабочем столе нет файлов для переноса.'}</Notice>}
-  {preview?.hasMore && <Notice>Показаны первые {preview.files.length} файлов.</Notice>}
+  {preview && !preview.modelAvailable && <Notice>{documents ? t('Модель недоступна. Выберите темы вручную.') : t('Модель недоступна. Папки предложены по расширениям и правилам.')}</Notice>}
+  {preview?.files.length === 0 && !iconRequest && <Notice>{documents ? t('В папке «Разобранное / Документы» нет файлов для разбора.') : t('На рабочем столе нет файлов для переноса.')}</Notice>}
+  {preview?.hasMore && <Notice>{t('Показаны первые {count} файлов.',{count:preview.files.length})}</Notice>}
   {!!preview?.files.length && <>
    {!!selectable.length && <button className="quiet desktop-cleanup-select" disabled={busy || promptChanged} onClick={() => setSelected(allSelected ? [] : selectable.map(file => file.id))}>
-    {allSelected ? 'Снять выбор со всех' : 'Выбрать все'}
+    {allSelected ? t('Снять выбор со всех') : t('Выбрать все')}
    </button>}
-   {documents && <div className="desktop-topic-targets" role="group" aria-label="Перетащите файл на тему">
+   {documents && <div className="desktop-topic-targets" role="group" aria-label={t('Перетащите файл на тему')}>
     {['', ...(preview.topics ?? [])].map(topic => <div key={topic} className="desktop-topic-target"
      data-topic={topic} data-dragging={!!dragging || undefined} data-drop-target={dropTarget === topic || undefined}>
-     {topic || 'Оставить на месте'}
+     {topic ? t(topic) : t('Оставить на месте')}
     </div>)}
    </div>}
    {[...groups].map(([category, files]) => <fieldset className="desktop-cleanup-group" key={category}>
-    <legend><Icon name="folder" size={16}/>{category.replaceAll('/', ' / ') || 'Оставить на месте'}</legend>
+    <legend><Icon name="folder" size={16}/>{category.split('/').map(part => t(part)).join(' / ') || t('Оставить на месте')}</legend>
     {files.map(file => <div className="desktop-cleanup-row" key={file.id}>
     <label className="checkbox">
      <input type="checkbox" checked={selected.includes(file.id)} disabled={busy || promptChanged || !file.selectable || (documents && !category)} onChange={event => {
@@ -304,12 +305,12 @@ export function DesktopCleanup() {
       if (dragged.current.active && topic !== undefined) assignTopic(file.id, topic);
       endDrag();
      }} onPointerCancel={endDrag} onLostPointerCapture={endDrag} onClick={event => {if (documents) event.preventDefault();}}>
-      {file.name}{file.reason && (!documents || !category) && <small>{file.reason}</small>}
+      {file.name}{file.reason && (!documents || !category) && <small>{t(file.reason)}</small>}
      </span>
     </label>
-    {documents && <select aria-label={`Тема файла ${file.name}`} value={category} disabled={busy} onChange={event => assignTopic(file.id, event.target.value)}>
-     <option value="">Оставить на месте</option>
-     {preview.topics?.map(topic => <option key={topic}>{topic}</option>)}
+    {documents && <select aria-label={t('Тема файла {name}',{name:file.name})} value={category} disabled={busy} onChange={event => assignTopic(file.id, event.target.value)}>
+     <option value="">{t('Оставить на месте')}</option>
+     {preview.topics?.map(topic => <option key={topic} value={topic}>{t(topic)}</option>)}
     </select>}
     </div>)}
    </fieldset>)}

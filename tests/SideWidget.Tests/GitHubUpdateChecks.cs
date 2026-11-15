@@ -28,6 +28,29 @@ public static class GitHubUpdateChecks
             "compares numeric versions and identifies the portable Windows ZIP");
         Check(available.ReleaseUrl == "https://github.com/Kelltomal/SideWidget/releases/tag/v0.10.0",
             "opens the official release page even if html_url points elsewhere");
+        Check(available.PortableAsset is null, "auto-install requires an official SHA-256 digest");
+        var digest = new string('a', 64);
+        var installable = await Respond(current, Json(Release("v0.3.0", "SideWidget-0.3.0-win-x64.zip", digest: "sha256:" + digest)));
+        Check(installable.PortableAsset is { Size: 4096 } zip && zip.Sha256 == digest &&
+            zip.DownloadUrl.AbsoluteUri == "https://github.com/Kelltomal/SideWidget/releases/download/v0.3.0/SideWidget-0.3.0-win-x64.zip",
+            "verified metadata only points at the official versioned asset");
+        var workspace = Path.Combine(Path.GetTempPath(), $"sidewidget-update-test-{Guid.NewGuid():N}");
+        using (var download = new HttpClient(new Handler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(new byte[4096]),
+        }))))
+        {
+            try
+            {
+                await new PortableUpdate(download).PrepareAsync(installable.PortableAsset!, new Version(0, 3, 0), workspace, _ => { });
+                throw new Exception("GitHub update: invalid digest was accepted");
+            }
+            catch (InvalidDataException)
+            {
+                Check(!Directory.EnumerateFileSystemEntries(workspace).Any(), "invalid archive leaves no staged installation");
+            }
+            finally { if (Directory.Exists(workspace)) Directory.Delete(workspace); }
+        }
         using var serialized = JsonDocument.Parse(JsonSerializer.Serialize(available));
         Check(serialized.RootElement.GetProperty("Status").GetString() == "available", "serializes the status in lower case");
 
@@ -83,14 +106,14 @@ public static class GitHubUpdateChecks
         return checks;
     }
 
-    static string Release(string tag, string? asset = null, bool prerelease = false, bool draft = false) =>
+    static string Release(string tag, string? asset = null, bool prerelease = false, bool draft = false, string? digest = null) =>
         JsonSerializer.Serialize(new
         {
             tag_name = tag,
             html_url = "https://example.net/foreign-release",
             prerelease,
             draft,
-            assets = asset is null ? [] : new[] { new { name = asset, state = "uploaded", size = 4096 } },
+            assets = asset is null ? [] : new[] { new { name = asset, state = "uploaded", size = 4096, digest } },
         });
 
     static HttpResponseMessage Json(string body) => new(HttpStatusCode.OK)

@@ -41,7 +41,7 @@ public sealed partial class MainWindow
     {
         if(!resizing||resizeStart==null)return;resizing=false;
         try{if(!cancel&&resizePreview is not null)controller.SavePlacement(resizePreview);}
-        catch(Exception){SendEvent("notice",new{message="Не удалось сохранить размер панели"});}
+        catch(Exception){SendEvent("notice",new{message=DesktopLanguage.Text("Не удалось сохранить размер панели")});}
         resizePreview=null;
         motion.Target(true,MaximumHeight(),true);Place();resizeOwner?.ReleasePointerCaptures();resizeOwner=null;resizeStart=null;motion.Editing=webEditing||dialogCount>0;
     }
@@ -116,14 +116,14 @@ public sealed partial class MainWindow
         {
             if(!cancel&&dragPosition is double position)
             {
-                var target=dragDisplay?.Descriptor.Id??DisplayId;
+                var target=dragDisplay?.Id??DisplayId;
                 var settings=controller.Settings.WithDisplayPosition(target,position);
                 if(target!=DisplayId)settings=settings with{DisplayIds=[target]};
                 controller.SavePlacement(settings);
                 DisplayId=target;
             }
         }
-        catch(Exception){SendEvent("notice",new{message="Не удалось сохранить положение панели"});}
+        catch(Exception){SendEvent("notice",new{message=DesktopLanguage.Text("Не удалось сохранить положение панели")});}
         dragPosition=null;dragDisplay=null;Place();
         dragOwner?.ReleasePointerCaptures();dragOwner=null;motion.Editing=webEditing||dialogCount>0;
     }

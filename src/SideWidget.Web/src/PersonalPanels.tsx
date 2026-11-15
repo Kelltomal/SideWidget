@@ -1,3 +1,4 @@
+import {locale, t} from './i18n';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {Snapshot} from './types';
 import type {LocalProps,SessionText} from './LocalTools';
@@ -11,11 +12,11 @@ export function Calendar({state,compact=false,open}:{state:Snapshot;compact?:boo
  const today=localDate();const start=(month.getDay()+6)%7;const days=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
  const dates=Array.from({length:start+days},(_,index)=>index<start?null:new Date(month.getFullYear(),month.getMonth(),index-start+1));
  function move(delta:number){setMonth(new Date(month.getFullYear(),month.getMonth()+delta,1));}
- if(compact)return <button className="day-glance" onClick={open}><span>Календарь и задачи</span><strong>{new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'short'})}</strong></button>;
- return <Panel title="Календарь" action={compact&&<button className="quiet" onClick={open}>Открыть</button>}>
-  <div className="month-heading"><button className="icon-button" aria-label="Предыдущий месяц" onClick={()=>move(-1)}><Icon name="back" size={16}/></button><strong>{month.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}</strong><button className="icon-button" aria-label="Следующий месяц" onClick={()=>move(1)}><Icon name="arrow" size={16}/></button></div>
-  <div className="calendar-grid" aria-label="Выбор даты">{['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(day=><span className="weekday" key={day}>{day}</span>)}{dates.map((date,index)=>date?<button key={localDate(date)} className={`${localDate(date)===today?'today ':''}${localDate(date)===selected?'chosen':''}`} aria-label={date.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})} aria-pressed={localDate(date)===selected} onClick={()=>setSelected(localDate(date))}>{date.getDate()}</button>:<span key={`blank-${index}`}/>)}</div>
-  {!compact&&<><div className="section-heading"><h3>{new Date(`${selected}T12:00:00`).toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'long'})}</h3><button className="quiet" onClick={()=>{setSelected(today);setMonth(new Date(new Date().getFullYear(),new Date().getMonth(),1));}}>Сегодня</button></div><SellyBoardPanel day={selected} start={localDate(month)} end={localDate(new Date(month.getFullYear(),month.getMonth()+1,1))}/></>}
+ if(compact)return <button className="day-glance" onClick={open}><span>{t('Календарь и задачи')}</span><strong>{new Date().toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'short'})}</strong></button>;
+ return <Panel title={t('Календарь')} action={compact&&<button className="quiet" onClick={open}>{t('Открыть')}</button>}>
+  <div className="month-heading"><button className="icon-button" aria-label={t('Предыдущий месяц')} onClick={()=>move(-1)}><Icon name="back" size={16}/></button><strong>{month.toLocaleDateString(locale(),{month:'long',year:'numeric'})}</strong><button className="icon-button" aria-label={t('Следующий месяц')} onClick={()=>move(1)}><Icon name="arrow" size={16}/></button></div>
+  <div className="calendar-grid" aria-label={t('Выбор даты')}>{[t('Пн'),t('Вт'),t('Ср'),t('Чт'),t('Пт'),t('Сб'),t('Вс')].map(day=><span className="weekday" key={day}>{day}</span>)}{dates.map((date,index)=>date?<button key={localDate(date)} className={`${localDate(date)===today?'today ':''}${localDate(date)===selected?'chosen':''}`} aria-label={date.toLocaleDateString(locale(),{day:'numeric',month:'long',year:'numeric'})} aria-pressed={localDate(date)===selected} onClick={()=>setSelected(localDate(date))}>{date.getDate()}</button>:<span key={`blank-${index}`}/>)}</div>
+  {!compact&&<><div className="section-heading"><h3>{new Date(`${selected}T12:00:00`).toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'long'})}</h3><button className="quiet" onClick={()=>{setSelected(today);setMonth(new Date(new Date().getFullYear(),new Date().getMonth(),1));}}>{t('Сегодня')}</button></div><SellyBoardPanel day={selected} start={localDate(month)} end={localDate(new Date(month.getFullYear(),month.getMonth()+1,1))}/></>}
  </Panel>;
 }
 
@@ -31,10 +32,10 @@ export function Diary({state,setState}:LocalProps) {
  useEffect(()=>{if(latest.current===lastSaved.current){lastSaved.current=state.drafts.diary;latest.current=state.drafts.diary;setText(state.drafts.diary);try{localStorage.setItem(recoveryKey,state.drafts.diary);}catch{}}},[state.drafts.diary,recoveryKey]);
  function change(value:string){setText(value);latest.current=value;try{localStorage.setItem(recoveryKey,value);setStatus('Черновик сохранён на этом компьютере.');}catch{setStatus('Не удалось сохранить черновик. Скопируйте текст перед закрытием.');}}
  useEffect(()=>{if(text===lastSaved.current)return;const timer=setTimeout(()=>{const value=text;if(nativeAvailable){pending.current=pending.current.then(async()=>{try {const next=await invoke<Snapshot>('diary.draft',{text:value});lastSaved.current=value;if(latest.current===value){setState(next);setStatus('Черновик сохранён на этом компьютере.');}}catch{if(latest.current===value)setStatus('Текст сохранён локально; хранилище приложения пока недоступно.');}});}else {lastSaved.current=value;setState({...state,drafts:{diary:value}});}},450);return()=>clearTimeout(timer);},[text]);
- return <div className="stack"><p>Личный черновик. Синхронизация с дневником SellyBoard пока недоступна.</p><div className="actions"><button aria-pressed={!preview} onClick={()=>setPreview(false)}>Редактор</button><button aria-pressed={preview} onClick={()=>setPreview(true)}>Предпросмотр</button></div>
-  {preview?<div className="markdown-preview">{text?<MarkdownPreview text={text}/>:<p>Здесь появится запись.</p>}</div>:<label>Запись<textarea autoFocus rows={12} value={text} onChange={e=>change(e.target.value)} placeholder={'# Сегодня\n\nЧто важно запомнить?'} maxLength={50000}/></label>}
-  <small>Заголовки, списки, чекбоксы, выделение и код. HTML и внешние изображения не исполняются и не загружаются.</small><Notice>{status||'Черновик хранится только на этом компьютере.'}</Notice>
-  <div className="actions"><CopyButton text={text}/><button disabled={!nativeAvailable} onClick={()=>void run(async()=>{setState(await invoke<Snapshot>('diary.draft',{text}));setStatus('Черновик сохранён на этом компьютере.');})}>Сохранить черновик</button></div>{error&&<Notice error>{error}</Notice>}
+ return <div className="stack"><p>{t('Личный черновик. Синхронизация с дневником SellyBoard пока недоступна.')}</p><div className="actions"><button aria-pressed={!preview} onClick={()=>setPreview(false)}>{t('Редактор')}</button><button aria-pressed={preview} onClick={()=>setPreview(true)}>{t('Предпросмотр')}</button></div>
+  {preview?<div className="markdown-preview">{text?<MarkdownPreview text={text}/>:<p>{t('Здесь появится запись.')}</p>}</div>:<label>{t('Запись')}<textarea autoFocus rows={12} value={text} onChange={e=>change(e.target.value)} placeholder={t('# Сегодня\n\nЧто важно запомнить?')} maxLength={50000}/></label>}
+  <small>{t('Заголовки, списки, чекбоксы, выделение и код. HTML и внешние изображения не исполняются и не загружаются.')}</small><Notice>{t(status||'Черновик хранится только на этом компьютере.')}</Notice>
+  <div className="actions"><CopyButton text={text}/><button disabled={!nativeAvailable} onClick={()=>void run(async()=>{setState(await invoke<Snapshot>('diary.draft',{text}));setStatus('Черновик сохранён на этом компьютере.');})}>{t('Сохранить черновик')}</button></div>{error&&<Notice error>{t(error)}</Notice>}
  </div>;
 }
 function MarkdownPreview({text}:{text:string}) {
@@ -66,13 +67,13 @@ function DiaryLink({label,url}:{label:string;url:string}) {
 
 type WeatherState={city:string;temperature:number;apparent:number;wind:number;precipitation:number;code:number;time:string;fetchedAt:string;source:string;stale?:boolean;forecast:{date:string;min:number;max:number;code:number}[]};
 function savedWeather():WeatherState|undefined {try{const value=JSON.parse(localStorage.getItem('sidewidget.weather.last')||'null');return value&&typeof value.temperature==='number'&&Array.isArray(value.forecast)?value:undefined;}catch{return undefined;}}
-function weatherLabel(code:number){if(code===0)return 'Ясно';if(code<=3)return 'Облачно';if(code<50)return 'Туман';if(code<60)return 'Морось';if(code<70)return 'Дождь';if(code<80)return 'Снег';if(code<90)return 'Ливни';return 'Гроза';}
+function weatherLabel(code:number){if(code===0)return t('Ясно');if(code<=3)return t('Облачно');if(code<50)return t('Туман');if(code<60)return t('Морось');if(code<70)return t('Дождь');if(code<80)return t('Снег');if(code<90)return t('Ливни');return t('Гроза');}
 export function Weather({compact=false,open}:{compact?:boolean;open?:()=>void}) {
  const [city,setCity]=useState(()=>localStorage.getItem('sidewidget.weather.city')||'');const [value,setValue]=useState<WeatherState|undefined>(savedWeather);const {error,busy,run}=useAction();
  async function load(){await run(async()=>{const next=await invoke<WeatherState>('weather.get',{city});setValue(next);localStorage.setItem('sidewidget.weather.city',city);localStorage.setItem('sidewidget.weather.last',JSON.stringify(next));});}
- if(compact)return <button className="day-glance" onClick={open} title={value?.city||city||'Выбрать город'}><span>Погода</span><strong>{value?`${Math.round(value.temperature)}° · ${value.city}`:city||'Выбрать город'}</strong>{value&&<small>{new Date(value.fetchedAt).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small>}</button>;
- return <div className="stack"><form className="stack" onSubmit={e=>{e.preventDefault();void load();}}><label>Город<input autoFocus required value={city} onChange={e=>setCity(e.target.value)} placeholder="Например, Москва" maxLength={100}/></label><button className="primary" disabled={busy||!city.trim()}>{busy?'Загружаем…':'Получить погоду'}</button></form><small>Город отправляется Open-Meteo по нажатию кнопки. Автоматическая геолокация не используется.</small>{error&&<Notice error>{error}</Notice>}
-  {value&&<><div className="weather-current"><strong>{Math.round(value.temperature)}°</strong><div><h2>{value.city}</h2><p>{weatherLabel(value.code)}</p><small>Ощущается как {Math.round(value.apparent)}°</small></div></div>{(value.stale||Date.now()-Date.parse(value.fetchedAt)>3600000)&&<Notice>Сохранённые данные. Обновите прогноз для выбранного города.</Notice>}<p>Ветер {value.wind} км/ч · осадки {value.precipitation} мм</p><div className="forecast">{value.forecast.map(day=><div key={day.date}><span>{new Date(`${day.date}T12:00:00`).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</span><strong>{Math.round(day.min)}° / {Math.round(day.max)}°</strong><small>{weatherLabel(day.code)}</small></div>)}</div><small>Источник: {value.source}. Модельные данные на {value.time}. Получено {new Date(value.fetchedAt).toLocaleString('ru-RU')}.</small></>}
+ if(compact)return <button className="day-glance" onClick={open} title={value?.city||city||t('Выбрать город')}><span>{t('Погода')}</span><strong>{value?`${Math.round(value.temperature)}° · ${value.city}`:city||t('Выбрать город')}</strong>{value&&<small>{new Date(value.fetchedAt).toLocaleString(locale(),{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small>}</button>;
+ return <div className="stack"><form className="stack" onSubmit={e=>{e.preventDefault();void load();}}><label>{t('Город')}<input autoFocus required value={city} onChange={e=>setCity(e.target.value)} placeholder={t('Например, Москва')} maxLength={100}/></label><button className="primary" disabled={busy||!city.trim()}>{busy?t('Загружаем…'):t('Получить погоду')}</button></form><small>{t('Город отправляется Open-Meteo по нажатию кнопки. Автоматическая геолокация не используется.')}</small>{error&&<Notice error>{t(error)}</Notice>}
+  {value&&<><div className="weather-current"><strong>{Math.round(value.temperature)}°</strong><div><h2>{value.city}</h2><p>{weatherLabel(value.code)}</p><small>{t('Ощущается как {temperature}°',{temperature:Math.round(value.apparent)})}</small></div></div>{(value.stale||Date.now()-Date.parse(value.fetchedAt)>3600000)&&<Notice>{t('Сохранённые данные. Обновите прогноз для выбранного города.')}</Notice>}<p>{t('Ветер {wind} км/ч · осадки {precipitation} мм',{wind:value.wind.toLocaleString(locale()),precipitation:value.precipitation.toLocaleString(locale())})}</p><div className="forecast">{value.forecast.map(day=><div key={day.date}><span>{new Date(`${day.date}T12:00:00`).toLocaleDateString(locale(),{day:'numeric',month:'short'})}</span><strong>{Math.round(day.min)}° / {Math.round(day.max)}°</strong><small>{weatherLabel(day.code)}</small></div>)}</div><small>{t('Источник: {source}. Модельные данные на {time}. Получено {fetchedAt}.',{source:t(value.source),time:value.time,fetchedAt:new Date(value.fetchedAt).toLocaleString(locale())})}</small></>}
  </div>;
 }
 
@@ -81,9 +82,10 @@ export function Currency() {
  const [value,setValue]=useState<CurrencyState>();const [amount,setAmount]=useState('100');const [from,setFrom]=useState('USD');const [to,setTo]=useState('RUB');const {error,busy,run}=useAction();
  function load(){void run(async()=>setValue(await invoke<CurrencyState>('currency.get')));}
  useEffect(load,[]);
- const rates=value?.rates||[];const a=rates.find(r=>r.code===from);const b=rates.find(r=>r.code===to);const number=Number(amount.replace(',','.'));const result=a&&b&&amount.trim()&&Number.isFinite(number)?(number*a.rate/b.rate).toLocaleString('ru-RU',{maximumFractionDigits:4}):'';
- return <div className="stack"><label>Сумма<input autoFocus inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)}/></label><div className="form-row"><label>Из<select value={from} onChange={e=>setFrom(e.target.value)} disabled={!rates.length}>{rates.map(rate=><option key={rate.code} value={rate.code}>{rate.code} · {rate.name}</option>)}</select></label><label>В<select value={to} onChange={e=>setTo(e.target.value)} disabled={!rates.length}>{rates.map(rate=><option key={rate.code} value={rate.code}>{rate.code} · {rate.name}</option>)}</select></label></div><div className="actions"><button onClick={()=>{setFrom(to);setTo(from);}} disabled={!rates.length}>Поменять местами</button><button onClick={load} disabled={busy}>{busy?'Загружаем…':'Обновить курсы'}</button></div>{result&&<div className="answer"><output>{result} <small>{to}</small></output><CopyButton text={result}/></div>}{error&&<Notice error>{error}</Notice>}
-  {value&&<><Notice>{value.stale?'Сохранённые курсы; обновление не удалось.':'Последние опубликованные курсы.'}</Notice><small>{value.source} · котировка на {value.date}. Получено {new Date(value.fetchedAt).toLocaleString('ru-RU')}.</small></>}<small>Номинал учтён. Результат округлён до 4 знаков. Это справочный курс, не цена обмена в банке.</small>
+ const currencyNames=locale()==='ru'?null:new Intl.DisplayNames(locale(),{type:'currency',fallback:'none'});
+ const rates=(value?.rates??[]).map(rate=>({...rate,name:(currencyNames && /^[A-Z]{3}$/.test(rate.code) ? currencyNames.of(rate.code) : undefined) ?? rate.name}));const a=rates.find(r=>r.code===from);const b=rates.find(r=>r.code===to);const number=Number(amount.replace(',','.'));const result=a&&b&&amount.trim()&&Number.isFinite(number)?(number*a.rate/b.rate).toLocaleString(locale(),{maximumFractionDigits:4}):'';
+ return <div className="stack"><label>{t('Сумма')}<input autoFocus inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)}/></label><div className="form-row"><label>{t('Из')}<select value={from} onChange={e=>setFrom(e.target.value)} disabled={!rates.length}>{rates.map(rate=><option key={rate.code} value={rate.code}>{rate.code} · {rate.name}</option>)}</select></label><label>{t('В')}<select value={to} onChange={e=>setTo(e.target.value)} disabled={!rates.length}>{rates.map(rate=><option key={rate.code} value={rate.code}>{rate.code} · {rate.name}</option>)}</select></label></div><div className="actions"><button onClick={()=>{setFrom(to);setTo(from);}} disabled={!rates.length}>{t('Поменять местами')}</button><button onClick={load} disabled={busy}>{busy?t('Загружаем…'):t('Обновить курсы')}</button></div>{result&&<div className="answer"><output>{result} <small>{to}</small></output><CopyButton text={result}/></div>}{error&&<Notice error>{t(error)}</Notice>}
+  {value&&<><Notice>{value.stale?t('Сохранённые курсы; обновление не удалось.'):t('Последние опубликованные курсы.')}</Notice><small>{t('{source} · котировка на {date}. Получено {fetchedAt}.',{source:t(value.source),date:value.date,fetchedAt:new Date(value.fetchedAt).toLocaleString(locale())})}</small></>}<small>{t('Номинал учтён. Результат округлён до 4 знаков. Это справочный курс, не цена обмена в банке.')}</small>
  </div>;
 }
 
@@ -124,8 +126,8 @@ export function Translation({sessionText,sessionResult}:{sessionText?:SessionTex
  const [recentLanguages,setRecentLanguages]=useState(readRecentLanguages);
  const recentOptions=recentLanguages.map(code=>translationLanguages.find(([id])=>id===code)!);
  const otherOptions=translationLanguages.filter(([code])=>!recentLanguages.includes(code));
- const languageOption=([code,name]:string[])=><option key={code} value={code}>{name}</option>;
- const providerName=provider==='mymemory'?'MyMemory':provider==='deepl'?'DeepL':provider==='google'?'Google':'Яндекс';const textLimit=provider==='google'?5000:10000;
+ const languageOption=([code,name]:string[])=><option key={code} value={code}>{t(name)}</option>;
+ const providerName=provider==='mymemory'?'MyMemory':provider==='deepl'?'DeepL':provider==='google'?'Google':t('Яндекс');const textLimit=provider==='google'?5000:10000;
  const byteCount=new TextEncoder().encode(text).length;
  const canTranslate=!busy&&!configure.busy&&!!text.trim()&&text.length<=textLimit&&(provider!=='deepl'||config?.configured===true)&&(provider!=='mymemory'||byteCount<=500);
 
@@ -150,30 +152,30 @@ export function Translation({sessionText,sessionResult}:{sessionText?:SessionTex
  }
  async function cancel(){revision.current++;try{await invoke('translation.cancel');}catch{setError('Не удалось отменить запрос. Дождитесь завершения.');}finally{pending.current=false;setBusy(false);}}
  return <div className="stack">
-  <label>Переводчик<select value={provider} disabled={busy||configure.busy} onChange={e=>{const next=e.target.value as TranslationProvider;select({provider:next,source:next==='mymemory'&&source==='auto'?'en':source,target});}}><option value="mymemory">MyMemory · бесплатно, без ключа</option><option value="google">Google · бесплатно, без ключа</option><option value="yandex">Яндекс · бесплатно, без ключа</option><option value="deepl">DeepL API · свой ключ</option></select></label>
-  <small>Текст отправится в {providerName} по кнопке «Перевести» или Ctrl+Enter.</small>
-  {provider==='mymemory'&&<small>Без регистрации. До 500 байт за запрос и 5 000 символов в сутки; лимит сервиса общий для IP.</small>}
-  {provider==='deepl'&&<>{!config?.configured&&<Notice>Для DeepL нужен API-ключ. MyMemory работает без него.</Notice>}<button disabled={busy||configure.busy} onClick={()=>void configure.run(async()=>{await invoke('translation.configure');setConfig(await invoke('translation.get'));})}>{configure.busy?'Окно настройки открыто…':'Настроить ключ DeepL'}</button>{configure.error&&<Notice error>{configure.error}</Notice>}</>}
+  <label>{t('Переводчик')}<select value={provider} disabled={busy||configure.busy} onChange={e=>{const next=e.target.value as TranslationProvider;select({provider:next,source:next==='mymemory'&&source==='auto'?'en':source,target});}}><option value="mymemory">{t('MyMemory · бесплатно, без ключа')}</option><option value="google">{t('Google · бесплатно, без ключа')}</option><option value="yandex">{t('Яндекс · бесплатно, без ключа')}</option><option value="deepl">{t('DeepL API · свой ключ')}</option></select></label>
+  <small>{t('Текст отправится в {provider} по кнопке «Перевести» или Ctrl+Enter.',{provider:providerName})}</small>
+  {provider==='mymemory'&&<small>{t('Без регистрации. До 500 байт за запрос и 5 000 символов в сутки; лимит сервиса общий для IP.')}</small>}
+  {provider==='deepl'&&<>{!config?.configured&&<Notice>{t('Для DeepL нужен API-ключ. MyMemory работает без него.')}</Notice>}<button disabled={busy||configure.busy} onClick={()=>void configure.run(async()=>{await invoke('translation.configure');setConfig(await invoke('translation.get'));})}>{configure.busy?t('Окно настройки открыто…'):t('Настроить ключ DeepL')}</button>{configure.error&&<Notice error>{configure.error}</Notice>}</>}
   <div className="form-row translation-languages">
-   <label>Исходный язык<select disabled={busy} value={source} onChange={e=>{select({...selection,source:e.target.value});rememberLanguages(e.target.value);}}>{recentOptions.map(languageOption)}{provider!=='mymemory'&&<option value="auto">Определить автоматически</option>}{otherOptions.map(languageOption)}</select></label>
-   <button type="button" className="translation-swap" aria-label="Поменять языки местами" disabled={busy||source==='auto'} onClick={()=>{select({provider,source:target,target:source});rememberLanguages(source,target);if(result)setText(result);}}><Icon name="swap" size={20}/></button>
-   <label>Язык перевода<select disabled={busy} value={target} onChange={e=>{select({...selection,target:e.target.value});rememberLanguages(e.target.value);}}>{recentOptions.map(languageOption)}{otherOptions.map(languageOption)}</select></label>
+   <label>{t('Исходный язык')}<select disabled={busy} value={source} onChange={e=>{select({...selection,source:e.target.value});rememberLanguages(e.target.value);}}>{recentOptions.map(languageOption)}{provider!=='mymemory'&&<option value="auto">{t('Определить автоматически')}</option>}{otherOptions.map(languageOption)}</select></label>
+   <button type="button" className="translation-swap" aria-label={t('Поменять языки местами')} disabled={busy||source==='auto'} onClick={()=>{select({provider,source:target,target:source});rememberLanguages(source,target);if(result)setText(result);}}><Icon name="swap" size={20}/></button>
+   <label>{t('Язык перевода')}<select disabled={busy} value={target} onChange={e=>{select({...selection,target:e.target.value});rememberLanguages(e.target.value);}}>{recentOptions.map(languageOption)}{otherOptions.map(languageOption)}</select></label>
   </div>
   <div className="form-row translation-texts">
-   <label>Исходный текст<textarea autoFocus disabled={busy} rows={5} value={text} maxLength={textLimit} onChange={e=>{invalidate();setText(e.target.value);}} onKeyDown={e=>{
+   <label>{t('Исходный текст')}<textarea autoFocus disabled={busy} rows={5} value={text} maxLength={textLimit} onChange={e=>{invalidate();setText(e.target.value);}} onKeyDown={e=>{
     if(e.key!=='Enter'||!e.ctrlKey||e.altKey||e.shiftKey||e.metaKey||e.nativeEvent.isComposing)return;
     e.preventDefault();
     if(!e.repeat)void translate();
    }}/></label>
-   <label>Результат<textarea readOnly rows={5} value={result}/></label>
+   <label>{t('Результат')}<textarea readOnly rows={5} value={result}/></label>
   </div>
-  <small>{provider==='mymemory'?`${byteCount} / 500 байт · кириллица обычно занимает 2 байта`:`${text.length} / ${textLimit.toLocaleString("ru-RU")} символов`}</small>
-  {provider==='mymemory'&&byteCount>500&&<Notice>Сократите текст до 500 байт.</Notice>}
+  <small>{provider==='mymemory'?t('{count} / 500 байт · кириллица обычно занимает 2 байта',{count:byteCount}):t('{count} / {limit} символов',{count:text.length,limit:textLimit.toLocaleString(locale())})}</small>
+  {provider==='mymemory'&&byteCount>500&&<Notice>{t('Сократите текст до 500 байт.')}</Notice>}
 
-  {text.length>textLimit&&<Notice>Сократите текст до {textLimit.toLocaleString("ru-RU")} символов для выбранного переводчика.</Notice>}
-  <div className="actions"><button className="primary" aria-keyshortcuts="Control+Enter" disabled={!canTranslate} onClick={()=>void translate()}>{busy?'Переводим…':'Перевести'}</button>{busy&&<button onClick={()=>void cancel()}>Отменить запрос</button>}</div>
-  {error&&<Notice error>{error}</Notice>}
-  {result&&<><div className="actions"><CopyButton text={result}/><button onClick={()=>setQr(v=>!v)}>{qr?'Скрыть QR':'Показать QR'}</button></div>{qr&&<QrTool initialText={result}/>}</>}
+  {text.length>textLimit&&<Notice>{t('Сократите текст до {limit} символов для выбранного переводчика.',{limit:textLimit.toLocaleString(locale())})}</Notice>}
+  <div className="actions"><button className="primary" aria-keyshortcuts="Control+Enter" disabled={!canTranslate} onClick={()=>void translate()}>{busy?t('Переводим…'):t('Перевести')}</button>{busy&&<button onClick={()=>void cancel()}>{t('Отменить запрос')}</button>}</div>
+  {error&&<Notice error>{t(error)}</Notice>}
+  {result&&<><div className="actions"><CopyButton text={result}/><button onClick={()=>setQr(v=>!v)}>{qr?t('Скрыть QR'):t('Показать QR')}</button></div>{qr&&<QrTool initialText={result}/>}</>}
  </div>;
 }
 

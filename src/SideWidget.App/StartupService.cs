@@ -27,6 +27,13 @@ sealed class StartupService(string executable,
         return Get();
     });
 
+    public void TransferTo(string updatedExecutable)=>Access(()=>{
+        using var run=Registry.CurrentUser.OpenSubKey(runPath,writable:true);
+        if(run?.GetValue(Name) is string entry && string.Equals(entry,Command,StringComparison.OrdinalIgnoreCase))
+            run.SetValue(Name,$"\"{Path.GetFullPath(updatedExecutable)}\"",RegistryValueKind.String);
+        return true;
+    });
+
     static T Access<T>(Func<T> action){
         try{return action();}
         catch(Exception error) when(error is UnauthorizedAccessException or System.Security.SecurityException or IOException){

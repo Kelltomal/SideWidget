@@ -12,10 +12,11 @@ sealed class DesktopWindows
     readonly DispatcherQueue dispatcher=DispatcherQueue.GetForCurrentThread();
     public IReadOnlyList<DisplayDescriptor> Displays=>displays.Select(display=>display.Descriptor).ToArray();
     public bool Multiple=>windows.Count>1||state.Personal.Settings.DisplayIds?.Length>1;
-    public bool CanTransferDisplay=>!Multiple&&(state.Personal.Settings.DisplayIds is null||state.Personal.Settings.DisplayIds.All(id=>displays.Any(display=>display.Descriptor.Id==id)));
+    public bool CanTransferDisplay=>!Multiple&&(state.Personal.Settings.DisplayIds is null||state.Personal.Settings.DisplayIds.All(id=>displays.Any(display=>display.Id==id)));
     public DesktopWindows(string directory)
     {
         state=new(directory);
+        DesktopLanguage.Select(state.Personal.Settings.Language);
         state.Audio.LevelChanged+=(volume,muted)=>dispatcher.TryEnqueue(()=>{
             if(!stopping&&windows.FirstOrDefault() is {} source)Emit(source,"audio.level.changed",new{volume,muted});
         });
@@ -54,7 +55,7 @@ sealed class DesktopWindows
         finally{refreshing=false;}
     }
     public Native.MonitorInfo Monitor(string id)
-        =>displays.FirstOrDefault(display=>display.Descriptor.Id==id)?.Bounds??displays.First().Bounds;
+        =>displays.FirstOrDefault(display=>display.Id==id)?.Bounds??displays.First().Bounds;
     public DesktopDisplay? Display(nint handle)=>displays.FirstOrDefault(display=>display.Handle==handle);
 
     public void CheckActiveDisplayFullscreen()
@@ -63,7 +64,7 @@ sealed class DesktopWindows
         if(foreground==0||MainWindow.IsSideWidgetWindow(foreground))return;
         var active=Display(Native.MonitorFromWindow(foreground,2));
         if(active is null)return;
-        windows.FirstOrDefault(window=>window.DisplayId==active.Descriptor.Id)?.CheckFullscreen(foreground,active.Bounds.Monitor);
+        windows.FirstOrDefault(window=>window.DisplayId==active.Id)?.CheckFullscreen(foreground,active.Bounds.Monitor);
     }
 
     public void ValidateSettings(Preferences settings)=>windows.FirstOrDefault()?.ValidateHotkey(settings.Hotkey);

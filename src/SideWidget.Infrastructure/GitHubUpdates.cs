@@ -22,7 +22,13 @@ public sealed record GitHubUpdateResult(
     string CurrentVersion,
     string? LatestVersion = null,
     string? ReleaseUrl = null,
-    bool HasPortableAsset = false);
+    bool HasPortableAsset = false,
+    GitHubPortableAsset? PortableAsset = null);
+
+public sealed record GitHubPortableAsset(string Tag, string Name, long Size, string Sha256)
+{
+    public Uri DownloadUrl => new($"https://github.com/Kelltomal/SideWidget/releases/download/{Tag}/{Name}");
+}
 
 public sealed class GitHubUpdates(HttpClient? transport = null)
 {
@@ -81,10 +87,15 @@ public sealed class GitHubUpdates(HttpClient? transport = null)
                 return new(GitHubUpdateStatus.Current, unavailable.CurrentVersion, versionText);
 
             var portableName = $"SideWidget-{versionText}-win-x64.zip";
-            var hasPortableAsset = release.TryGetProperty("assets", out var assets) &&
-                assets.ValueKind == JsonValueKind.Array && assets.EnumerateArray().Any(asset => IsUploadedPortable(asset, portableName));
+            var portable = release.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array
+                ? assets.EnumerateArray().FirstOrDefault(asset => IsUploadedPortable(asset, portableName)) : default;
+            var hasPortableAsset = portable.ValueKind == JsonValueKind.Object;
+            var digest = hasPortableAsset ? ReadString(portable, "digest") : null;
+            var verified = digest is { Length: 71 } && digest.StartsWith("sha256:", StringComparison.Ordinal) &&
+                digest[7..].All(Uri.IsHexDigit)
+                ? new GitHubPortableAsset(tag, portableName, portable.GetProperty("size").GetInt64(), digest[7..]) : null;
             return new(GitHubUpdateStatus.Available, unavailable.CurrentVersion, versionText,
-                $"https://github.com/{Repository}/releases/tag/{tag}", hasPortableAsset);
+                $"https://github.com/{Repository}/releases/tag/{tag}", hasPortableAsset, verified);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

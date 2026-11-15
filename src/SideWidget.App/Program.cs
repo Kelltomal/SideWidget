@@ -5,6 +5,7 @@ namespace SideWidget.App;
 internal static class Program
 {
     internal static bool RestartRequested { get; set; }
+    internal static bool Updating { get; set; }
     internal static ProcessStartInfo? NextBuild { get; set; }
     [STAThread]
     static void Main(string[] args)
@@ -28,7 +29,19 @@ internal static class Program
         // Start only after window cleanup and release of the single-instance lock.
         if(NextBuild is not null)
         {
-            try{using var launched=Process.Start(NextBuild);if(launched is not null)return;}
+            try
+            {
+                using var launched=Process.Start(NextBuild);
+                if(launched is not null)
+                {
+                    if(Updating)
+                    {
+                        try { new StartupService(Environment.ProcessPath!).TransferTo(NextBuild.FileName); }
+                        catch(SideWidget.Core.CommandFault) { }
+                    }
+                    return;
+                }
+            }
             catch(System.ComponentModel.Win32Exception){}
             catch(InvalidOperationException){}
             RestartRequested=true;
@@ -57,10 +70,10 @@ sealed partial class DesktopApp : Application
         }
         catch(Exception error)
         {
-            var message=error is SideWidget.Core.CommandFault fault?fault.Message:
-                "Не удалось открыть SideWidget. Проверьте доступ к локальным данным и перезапустите приложение. Тип ошибки: "+error.GetType().Name;
+            var message=error is SideWidget.Core.CommandFault fault?DesktopLanguage.Text(fault.Message):
+                DesktopLanguage.Text("Не удалось открыть SideWidget. Проверьте доступ к локальным данным и перезапустите приложение. Тип ошибки: {0}",error.GetType().Name);
             var text=new Microsoft.UI.Xaml.Controls.TextBlock{Text=message,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(24),FontSize=16,FontFamily=new Microsoft.UI.Xaml.Media.FontFamily("ms-appx:///Assets/Fonts/MedeoSans.ttf#Medeo Sans")};
-            var failure=failureWindow=new Window{Title="SideWidget — ошибка запуска",Content=text};
+            var failure=failureWindow=new Window{Title=DesktopLanguage.Text("SideWidget — ошибка запуска"),Content=text};
             failure.AppWindow.Resize(new Windows.Graphics.SizeInt32(520,260));failure.Activate();
         }
     }

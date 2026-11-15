@@ -13,10 +13,10 @@ public sealed partial class MainWindow
         // Keep the restrictive policy before all supplied markup, including any other CSP.
         const string policy="<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'\">";
         if(html.Length>1500000)throw new CommandFault("print","Документ печати слишком большой. Уменьшите количество стикеров.");
-        var window=new Window{Title="SideWidget — печать QR-стикеров"};
+        var window=new Window{Title=DesktopLanguage.Text("SideWidget — печать QR-стикеров")};
         var view=new WebView2();
-        var print=new Button{Content="Печать…",IsEnabled=false};
-        var close=new Button{Content="Закрыть"};
+        var print=new Button{Content=DesktopLanguage.Text("Печать…"),IsEnabled=false};
+        var close=new Button{Content=DesktopLanguage.Text("Закрыть")};
         var controls=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12};
         controls.Children.Add(print);controls.Children.Add(close);
         var status=new TextBlock{TextWrapping=TextWrapping.Wrap};
@@ -38,7 +38,7 @@ public sealed partial class MainWindow
         {
             if(closed)return;
             try{view.CoreWebView2?.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);status.Text="";}
-            catch{status.Text="Не удалось открыть диалог печати. Проверьте принтер и нажмите «Печать…» ещё раз.";}
+            catch{status.Text=DesktopLanguage.Text("Не удалось открыть диалог печати. Проверьте принтер и нажмите «Печать…» ещё раз.");}
         }
         print.Click+=(_,_)=>OpenPrint();
         window.Activate();

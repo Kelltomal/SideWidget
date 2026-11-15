@@ -1,4 +1,3 @@
-using System.Globalization;
 using SideWidget.Core;
 
 namespace SideWidget.App;
@@ -10,8 +9,13 @@ public sealed partial class MainWindow
     bool compactHidden;
     bool clockOnlyHeader;
 
-    string CompactClockLabel()=>DateTime.Now.ToString(compactPanel.ClockOnly?"HH:mm":"HH:mm   d MMM",
-        CultureInfo.GetCultureInfo("ru-RU")).TrimEnd('.');
+    string CompactClockLabel()
+    {
+        var now=DateTime.Now;
+        var culture=DesktopLanguage.Culture;
+        var time=now.ToString("HH':'mm",culture);
+        return compactPanel.ClockOnly?time:time+"   "+DesktopLanguage.HeaderDate(now,culture);
+    }
 
     void OpenCompactStrip()
     {

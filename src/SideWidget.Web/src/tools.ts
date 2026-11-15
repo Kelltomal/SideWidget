@@ -1,7 +1,8 @@
+import {t} from './i18n';
 import QRCode from 'qrcode';
 
 function finite(value: number): number {
-  if (!Number.isFinite(value)) throw new Error('Результат выходит за допустимый диапазон.');
+  if (!Number.isFinite(value)) throw new Error(t('Результат выходит за допустимый диапазон.'));
   return value;
 }
 
@@ -14,7 +15,7 @@ function finite(value: number): number {
  * This is approximate arithmetic, not arbitrary precision or financial math.
  */
 export function evaluate(expression: string): string {
-  if (expression.length > 4096) throw new Error('Выражение слишком длинное.');
+  if (expression.length > 4096) throw new Error(t('Выражение слишком длинное.'));
   expression=expression.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
   const tokens: (number | string)[] = [];
   let offset = 0;
@@ -30,28 +31,28 @@ export function evaluate(expression: string): string {
       tokens.push(rest[0]);
       offset++;
     } else {
-      throw new Error('Допустимы числа, скобки и операции + − * / %.');
+      throw new Error(t('Допустимы числа, скобки и операции + − * / %.'));
     }
-    if (tokens.length > 512) throw new Error('В выражении слишком много операций.');
+    if (tokens.length > 512) throw new Error(t('В выражении слишком много операций.'));
   }
   let cursor = 0;
   const take = (token: string) => tokens[cursor] === token && (++cursor > 0);
   function primary(depth: number): number {
-    if (depth > 32) throw new Error('Слишком много вложенных скобок или знаков.');
+    if (depth > 32) throw new Error(t('Слишком много вложенных скобок или знаков.'));
     let value: number;
     if (take('(')) {
       value = sum(depth + 1);
-      if (!take(')')) throw new Error('Закройте скобку.');
+      if (!take(')')) throw new Error(t('Закройте скобку.'));
     } else {
       const token = tokens[cursor++];
-      if (typeof token !== 'number') throw new Error('Ожидается число или выражение в скобках.');
+      if (typeof token !== 'number') throw new Error(t('Ожидается число или выражение в скобках.'));
       value = token;
     }
     while (take('%')) value /= 100;
     return value;
   }
   function unary(depth: number): number {
-    if (depth > 32) throw new Error('Слишком много вложенных скобок или знаков.');
+    if (depth > 32) throw new Error(t('Слишком много вложенных скобок или знаков.'));
     if (take('+')) return unary(depth + 1);
     if (take('-')) return -unary(depth + 1);
     return primary(depth);
@@ -61,7 +62,7 @@ export function evaluate(expression: string): string {
     while (tokens[cursor] === '*' || tokens[cursor] === '/') {
       const operation = tokens[cursor++];
       const right = unary(depth);
-      if (operation === '/' && right === 0) throw new Error('На ноль делить нельзя.');
+      if (operation === '/' && right === 0) throw new Error(t('На ноль делить нельзя.'));
       value = finite(operation === '*' ? value * right : value / right);
     }
     return value;
@@ -76,7 +77,7 @@ export function evaluate(expression: string): string {
     return value;
   }
   const value = finite(sum(0));
-  if (cursor !== tokens.length) throw new Error('Между числами должна быть операция.');
+  if (cursor !== tokens.length) throw new Error(t('Между числами должна быть операция.'));
   return String(finite(Number(value.toPrecision(15))));
 }
 
@@ -129,10 +130,10 @@ export function convertUnit(value: number, from: string, to: string): number {
   finite(value);
   const source = unitsById.get(from);
   const target = unitsById.get(to);
-  if (!source || !target || source.category !== target.category) throw new Error('Выберите единицы одной категории.');
+  if (!source || !target || source.category !== target.category) throw new Error(t('Выберите единицы одной категории.'));
   if (source.category === 'temperature') {
     const minimum = from === 'C' ? -273.15 : from === 'F' ? -459.67 : 0;
-    if (value < minimum) throw new Error('Температура не может быть ниже абсолютного нуля.');
+    if (value < minimum) throw new Error(t('Температура не может быть ниже абсолютного нуля.'));
     if (from === to) return value;
     const celsius = from === 'K' ? value - 273.15 : from === 'F' ? (value - 32) * 5 / 9 : value;
     return finite(to === 'K' ? Math.max(0, celsius + 273.15) : to === 'F' ? celsius * 9 / 5 + 32 : celsius);
@@ -142,7 +143,7 @@ export function convertUnit(value: number, from: string, to: string): number {
 
 /** No alpha channel. RGB rounds HSL to nearest 8-bit channel; HSL output to 0.1. */
 export function parseColor(text: string): {hex: string; rgb: string; hsl: string} {
-  if (text.length > 128) throw new Error('Слишком длинное значение цвета.');
+  if (text.length > 128) throw new Error(t('Слишком длинное значение цвета.'));
   const input = text.trim();
   const hex = /^#?([\da-f]{3}|[\da-f]{6})$/i.exec(input);
   const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i.exec(input);
@@ -154,10 +155,10 @@ export function parseColor(text: string): {hex: string; rgb: string; hsl: string
     channels = [0, 2, 4].map(index => parseInt(full.slice(index, index + 2), 16));
   } else if (rgb) {
     channels = rgb.slice(1).map(Number);
-    if (channels.some(value => value > 255)) throw new Error('Каналы RGB — целые числа от 0 до 255.');
+    if (channels.some(value => value > 255)) throw new Error(t('Каналы RGB — целые числа от 0 до 255.'));
   } else if (hsl) {
     const [hue, saturation, lightness] = hsl.slice(1).map(Number);
-    if (hue > 360 || saturation > 100 || lightness > 100) throw new Error('H: 0–360; S и L: 0–100%.');
+    if (hue > 360 || saturation > 100 || lightness > 100) throw new Error(t('H: 0–360; S и L: 0–100%.'));
     const h = hue / 60;
     const l = lightness / 100;
     const chroma = (1 - Math.abs(2 * l - 1)) * saturation / 100;
@@ -166,7 +167,7 @@ export function parseColor(text: string): {hex: string; rgb: string; hsl: string
     const sectors = [[chroma,x,0], [x,chroma,0], [0,chroma,x], [0,x,chroma], [x,0,chroma], [chroma,0,x]];
     channels = sectors[Math.floor(h) % 6].map(value => Math.round((value + m) * 255));
   } else {
-    throw new Error('Введите HEX, rgb(0, 0, 0) или hsl(0, 0%, 0%). Альфа не поддерживается.');
+    throw new Error(t('Введите HEX, rgb(0, 0, 0) или hsl(0, 0%, 0%). Альфа не поддерживается.'));
   }
   const [r, g, b] = channels.map(value => value / 255);
   const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
@@ -190,26 +191,26 @@ export function parseColor(text: string): {hex: string; rgb: string; hsl: string
 export async function makeQr(text: string, options: {size?: number; level?: 'L'|'M'|'Q'|'H'} = {}): Promise<{svg: string; png: string; jpeg: string}> {
   const size = options.size ?? 512;
   const level = options.level ?? 'M';
-  if (!Number.isInteger(size) || size < 128 || size > 2048) throw new Error('Размер QR — целое число от 128 до 2048 пикселей.');
-  if (!['L', 'M', 'Q', 'H'].includes(level)) throw new Error('Неизвестный уровень коррекции QR.');
-  if (text.length === 0) throw new Error('Введите текст для QR.');
-  if (text.length > 6000 || new TextEncoder().encode(text).length > 2953) throw new Error('Текст слишком длинный для одного QR. Сократите его или разделите на части.');
+  if (!Number.isInteger(size) || size < 128 || size > 2048) throw new Error(t('Размер QR — целое число от 128 до 2048 пикселей.'));
+  if (!['L', 'M', 'Q', 'H'].includes(level)) throw new Error(t('Неизвестный уровень коррекции QR.'));
+  if (text.length === 0) throw new Error(t('Введите текст для QR.'));
+  if (text.length > 6000 || new TextEncoder().encode(text).length > 2953) throw new Error(t('Текст слишком длинный для одного QR. Сократите его или разделите на части.'));
   // Reject malformed surrogate pairs: TextEncoder would silently replace them.
-  if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(text)) throw new Error('Текст содержит неполный символ Unicode.');
+  if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(text)) throw new Error(t('Текст содержит неполный символ Unicode.'));
   let modules: ReturnType<typeof QRCode.create>['modules'];
   try {
     modules = QRCode.create(text, {errorCorrectionLevel: level}).modules;
   } catch {
-    throw new Error('Текст не помещается в QR с выбранной коррекцией. Сократите текст или выберите другой уровень.');
+    throw new Error(t('Текст не помещается в QR с выбранной коррекцией. Сократите текст или выберите другой уровень.'));
   }
   const scale = Math.floor(size / (modules.size + 8));
-  if (scale < 2) throw new Error('Для такого текста увеличьте размер QR.');
+  if (scale < 2) throw new Error(t('Для такого текста увеличьте размер QR.'));
   const inset = Math.floor((size - modules.size * scale) / 2);
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const context = canvas.getContext('2d');
-  if (!context) throw new Error('Не удалось создать изображение QR.');
+  if (!context) throw new Error(t('Не удалось создать изображение QR.'));
   context.imageSmoothingEnabled = false;
   context.fillStyle = '#FFFFFF';
   context.fillRect(0, 0, size, size);
@@ -226,6 +227,6 @@ export async function makeQr(text: string, options: {size?: number; level?: 'L'|
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#fff"/><path fill="#000" d="${paths.join('')}"/></svg>`;
   const png = canvas.toDataURL('image/png');
   const jpeg = canvas.toDataURL('image/jpeg', 0.95);
-  if (!png.startsWith('data:image/png;') || !jpeg.startsWith('data:image/jpeg;')) throw new Error('Этот браузер не поддерживает выбранный формат изображения.');
+  if (!png.startsWith('data:image/png;') || !jpeg.startsWith('data:image/jpeg;')) throw new Error(t('Этот браузер не поддерживает выбранный формат изображения.'));
   return {svg, png, jpeg};
 }

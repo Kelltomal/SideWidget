@@ -1,3 +1,4 @@
+import {t,locale} from './i18n';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Icon,invoke,nativeAvailable} from './ui';
@@ -24,12 +25,13 @@ export function ButtonHelp(){
  useEffect(()=>{
   let timer:ReturnType<typeof setTimeout>|undefined;let active:HTMLButtonElement|null=null;let previousTitle:string|null=null;
   function clear(){clearTimeout(timer);}
-  function dismiss(){clear();if(active){active.removeAttribute('data-help-open');const ids=(active.getAttribute('aria-describedby')||'').split(' ').filter(id=>id&&id!=='button-help');if(ids.length)active.setAttribute('aria-describedby',ids.join(' '));else active.removeAttribute('aria-describedby');if(previousTitle!==null)active.setAttribute('title',previousTitle);}active=null;previousTitle=null;setHelp(null);}
+  function dismiss(){clear();if(active){active.removeAttribute('data-help-open');const ids=(active.getAttribute('aria-describedby')||'').split(' ').filter(id=>id&&id!=='button-help');if(ids.length)active.setAttribute('aria-describedby',ids.join(' '));else active.removeAttribute('aria-describedby');if(previousTitle!==null&&!active.hasAttribute('title'))active.setAttribute('title',previousTitle);}active=null;previousTitle=null;setHelp(null);}
   function show(button:HTMLButtonElement,immediate=false){
    if(button.closest('[inert]')||button===active)return;const instant=!!active;dismiss();active=button;previousTitle=button.getAttribute('title');button.removeAttribute('title');
-   const label=button.getAttribute('aria-label')||previousTitle||button.textContent?.trim()||'Действие';
+   const label=button.getAttribute('aria-label')||previousTitle||button.textContent?.trim()||t("Действие");
    const section=button.closest('section,[data-module],form')?.querySelector('h2')?.textContent;
-   const description=button.dataset.help||descriptions[label]||(previousTitle&&previousTitle!==label?previousTitle:'')||(button.disabled?'Сейчас недоступно.':section?`Действие в разделе «${section}».`:'');
+   const descriptionKey=Object.keys(descriptions).find(key=>t(key)===label);
+   const description=button.dataset.help||(descriptionKey?t(descriptions[descriptionKey]):"")||(previousTitle&&previousTitle!==label?previousTitle:'')||(button.disabled?t("Сейчас недоступно."):section?t("Действие в разделе «{section}».",{section}):'');
    timer=setTimeout(()=>{if(!button.isConnected){dismiss();return;}button.setAttribute('data-help-open','');button.setAttribute('aria-describedby',`${button.getAttribute('aria-describedby')||''} button-help`.trim());setHelp({button,label,description});},immediate||instant?0:400);
   }
   function over(event:PointerEvent){if(event.pointerType==='touch')return;const target=event.target as Element;const button=target.closest('button');if(button instanceof HTMLButtonElement)show(button);}
@@ -40,7 +42,7 @@ export function ButtonHelp(){
   function scroll(){if(!active?.matches(':hover')&&document.activeElement!==active)dismiss();}
   document.addEventListener('pointerover',over);document.addEventListener('pointerout',out);document.addEventListener('focusin',focus);document.addEventListener('focusout',blur);document.addEventListener('keydown',key);document.addEventListener('pointerdown',dismiss);document.addEventListener('scroll',scroll,true);window.addEventListener('resize',dismiss);
   return()=>{dismiss();if(nativeAvailable)void invoke('shell.tooltip',{visible:false}).catch(()=>{});document.removeEventListener('pointerover',over);document.removeEventListener('pointerout',out);document.removeEventListener('focusin',focus);document.removeEventListener('focusout',blur);document.removeEventListener('keydown',key);document.removeEventListener('pointerdown',dismiss);document.removeEventListener('scroll',scroll,true);window.removeEventListener('resize',dismiss);};
- },[]);
+ },[locale()]);
  useLayoutEffect(()=>{
   if(!help)return;
   const source=help.button.querySelector('svg,img');if(source&&preview.current){const clone=source.cloneNode(true) as Element;clone.setAttribute('aria-hidden','true');clone.removeAttribute('id');preview.current.replaceChildren(clone);}
@@ -49,10 +51,10 @@ export function ButtonHelp(){
   if(!nativeAvailable||!nativeHelp)return;
   const source=help?.button.querySelector('svg');
   const path=source?Array.from(source.querySelectorAll('path')).map(node=>node.getAttribute('d')||'').join(' ').slice(0,4096):'';
-  const description=help?`${help.description}${help.button.disabled?' Сейчас недоступно.':''}`.slice(0,800):'';
+  const description=help?`${help.description}${help.button.disabled?' '+t("Сейчас недоступно."):''}`.slice(0,800):'';
   void invoke('shell.tooltip',help?{visible:true,label:help.label.slice(0,180),description,path}:{visible:false}).catch(()=>setNativeHelp(false));
  },[help,nativeHelp]);
  if(!help)return null;
  if(nativeHelp)return <span id="button-help" role="tooltip" className="sr-only">{help.label}. {help.description}</span>;
- return createPortal(<div id="button-help" role="tooltip" className="button-help"><div className="button-help-preview" ref={preview} key={help.label}><Icon name="arrow" size={28}/></div><div><strong>{help.label}</strong>{help.description&&<p>{help.description}</p>}{help.button.disabled&&help.description!=='Сейчас недоступно.'&&<small>Сейчас недоступно.</small>}</div></div>,document.body);
+ return createPortal(<div id="button-help" role="tooltip" className="button-help"><div className="button-help-preview" ref={preview} key={help.label}><Icon name="arrow" size={28}/></div><div><strong>{help.label}</strong>{help.description&&<p>{help.description}</p>}{help.button.disabled&&help.description!==t("Сейчас недоступно.")&&<small>{t("Сейчас недоступно.")}</small>}</div></div>,document.body);
 }

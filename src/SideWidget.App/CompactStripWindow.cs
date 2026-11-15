@@ -24,7 +24,7 @@ internal sealed partial class CompactStripWindow : IDisposable
     public CompactStripWindow(CompactPanel panel,Action open,Action updateClockMode)
     {
         this.panel=panel;this.open=open;this.updateClockMode=updateClockMode;procedure=Procedure;mouseProcedure=ObserveMouse;
-        Handle=CreateWindowExW(0x080800A8,"STATIC","SideWidget — время и дата",0x80000100,
+        Handle=CreateWindowExW(0x080800A8,"STATIC",DesktopLanguage.Text("SideWidget — время и дата"),0x80000100,
             0,0,1,1,0,0,0,0); // NOACTIVATE | LAYERED | TRANSPARENT | TOOLWINDOW | TOPMOST
         if(Handle==0)throw new Win32Exception(Marshal.GetLastWin32Error());
         if(!Native.SetWindowSubclass(Handle,procedure,1,0)||!SetLayeredWindowAttributes(Handle,0,CompactPanel.Alpha,2))
@@ -64,6 +64,7 @@ internal sealed partial class CompactStripWindow : IDisposable
         text=label;
         InvalidateRect(Handle,0,false);
     }
+    public void RefreshLanguage()=>SetWindowTextW(Handle,DesktopLanguage.Text("SideWidget — время и дата"));
     nint Procedure(nint window,uint message,nuint wParam,nint lParam,nuint id,nuint data)
     {
         if(message==0x0021)return 3; // MA_NOACTIVATE
@@ -85,7 +86,8 @@ internal sealed partial class CompactStripWindow : IDisposable
             brush=CreateSolidBrush(light?0x00F6F5F4u:0x001C1A18u);FillRect(dc,ref bounds,brush);
             PaintSpectrum(dc,bounds);
             SetBkMode(dc,1);SetTextColor(dc,light?0x002C2620u:0x00F5F4F2u);
-            font=CreateFontW(-(int)Math.Round(13*scale),0,0,0,500,0,0,0,1,0,0,4,0,"Medeo Sans");
+            var face=DesktopLanguage.Language switch{"zh-CN"=>"Microsoft YaHei UI","ja"=>"Yu Gothic UI",_=>"Medeo Sans"};
+            font=CreateFontW(-(int)Math.Round(13*scale),0,0,0,500,0,0,0,1,0,0,4,0,face);
             if(font!=0)oldFont=SelectObject(dc,font);
             bounds.Left+=(int)Math.Round(12*scale);bounds.Right-=(int)Math.Round(12*scale);
             DrawTextW(dc,text,text.Length,ref bounds,0x0001|0x0004|0x0020|0x0800);
@@ -123,6 +125,7 @@ internal sealed partial class CompactStripWindow : IDisposable
     [DllImport("user32.dll")] static extern nint CallNextHookEx(nint hook,int code,nint message,nint data);
     [DllImport("kernel32.dll",CharSet=CharSet.Unicode)] static extern nint GetModuleHandleW(string? name);
     [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern nint CreateWindowExW(uint extendedStyle,string className,string name,uint style,int x,int y,int width,int height,nint parent,nint menu,nint instance,nint parameter);
+    [DllImport("user32.dll",CharSet=CharSet.Unicode,ExactSpelling=true)] static extern bool SetWindowTextW(nint window,string name);
     [DllImport("user32.dll",SetLastError=true)] static extern bool SetLayeredWindowAttributes(nint window,uint key,byte alpha,uint flags);
     [DllImport("user32.dll")] static extern bool DestroyWindow(nint window);
     [DllImport("user32.dll")] static extern bool InvalidateRect(nint window,nint bounds,bool erase);

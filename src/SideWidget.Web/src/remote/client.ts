@@ -1,3 +1,4 @@
+import {t} from '../i18n';
 import type {MediaState} from '../types';
 
 export type RemoteState={media:MediaState;audio:{available:boolean;volume:number|null;muted:boolean|null}};
@@ -12,12 +13,12 @@ export class RemoteClient {
   const abort=new AbortController();const timer=setTimeout(()=>abort.abort(),10000);
   try{
    const response=await fetch(path,{method:body?'POST':'GET',headers:{'X-SideWidget-Key':this.key,...path==='/api/state'?{'X-SideWidget-Artwork':[...this.artwork.keys()].join(',')}:{},...body?{'Content-Type':'application/json'}:{}},body:body?JSON.stringify(body):undefined,signal:abort.signal,cache:'no-store',credentials:'omit',redirect:'error'});
-   if(response.status===401){this.forget();throw new RemoteError('Доступ отозван. Подключите телефон заново через QR на ПК.',401);}
-   if(!response.ok){const data=await response.json().catch(()=>({}));throw new RemoteError(data.message||'ПК не выполнил запрос. Обновите состояние и повторите вручную.',response.status);}
+   if(response.status===401){this.forget();throw new RemoteError(t("Доступ отозван. Подключите телефон заново через QR на ПК."),401);}
+   if(!response.ok){const data=await response.json().catch(()=>({}));throw new RemoteError(t(typeof data.message==='string'&&data.message?data.message:"ПК не выполнил запрос. Обновите состояние и повторите вручную."),response.status);}
    return await response.json() as T;
   }catch(error){
    if(error instanceof RemoteError)throw error;
-   throw new RemoteError(body?'Нет ответа ПК. Проверьте результат перед повтором команды.':'Нет связи с ПК. Проверяем подключение…');
+   throw new RemoteError(body?t("Нет ответа ПК. Проверьте результат перед повтором команды."):t("Нет связи с ПК. Проверяем подключение…"));
   }finally{clearTimeout(timer);}
  }
  async state(){
