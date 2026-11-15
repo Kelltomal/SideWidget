@@ -9,7 +9,7 @@ The languages listed above are for the documentation. The app’s interface is i
 ## Screenshots
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="SideWidget home panel with the clock and quick tools">
+  <img src="images/sidewidget-home.png" width="340" alt="SideWidget home panel with search, media controls and quick tools">
   <img src="images/sidewidget-folder-icons.png" width="340" alt="Folder icon style selection in SideWidget">
 </p>
 
@@ -28,7 +28,7 @@ Screenshots use sample data.
 
 SideWidget requires a compatible 64-bit (x64) edition of Windows 10 or 11.
 
-1. Open [Releases](https://github.com/Kelltomal/SideWidget/releases) and download the portable Windows x64 ZIP when it becomes available.
+1. Open [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) and download the portable Windows x64 ZIP.
 2. Extract the entire archive to a writable local folder.
 3. Run `SideWidget.App.exe`. The ZIP includes .NET and WebView2. Keep the extracted folder together when moving SideWidget to another computer.
 

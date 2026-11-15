@@ -9,7 +9,7 @@ SideWidget は、日常的に使うツールをまとめた Windows 向けのコ
 ## スクリーンショット
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="時計とよく使うツールが並ぶ SideWidget のメインパネル">
+  <img src="images/sidewidget-home.png" width="340" alt="検索、プレーヤー、よく使うツールが並ぶ SideWidget のメインパネル">
   <img src="images/sidewidget-folder-icons.png" width="340" alt="SideWidget のフォルダーアイコンのスタイル選択画面">
 </p>
 
@@ -28,7 +28,7 @@ SideWidget は、日常的に使うツールをまとめた Windows 向けのコ
 
 対応する Windows 10 または 11（x64）が必要です。
 
-1. [Releases](https://github.com/Kelltomal/SideWidget/releases) を開き、Windows x64 向けのポータブル版 ZIP が公開されたらダウンロードします。
+1. [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) を開き、Windows x64 向けのポータブル版 ZIP をダウンロードします。
 2. ZIP 全体を書き込み可能なローカルフォルダーに展開します。
 3. `SideWidget.App.exe` を起動します。ZIP には .NET と WebView2 が含まれます。別の PC に移す場合は、展開したフォルダーごとコピーしてください。
 

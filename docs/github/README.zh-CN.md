@@ -9,7 +9,7 @@ SideWidget 是一款适用于 Windows 的小巧工具面板。屏幕顶部显示
 ## 界面截图
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="显示时钟和快捷工具的 SideWidget 主面板">
+  <img src="images/sidewidget-home.png" width="340" alt="带搜索、播放器和快捷工具的 SideWidget 主面板">
   <img src="images/sidewidget-folder-icons.png" width="340" alt="在 SideWidget 中选择文件夹图标样式">
 </p>
 
@@ -28,7 +28,7 @@ SideWidget 是一款适用于 Windows 的小巧工具面板。屏幕顶部显示
 
 需要兼容的 Windows 10 或 11（x64）。
 
-1. 打开 [Releases](https://github.com/Kelltomal/SideWidget/releases) 页面，待 Windows x64 便携版 ZIP 发布后下载。
+1. 打开 [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) 页面，下载 Windows x64 便携版 ZIP。
 2. 将整个压缩包解压到本地可写入的文件夹。
 3. 运行 `SideWidget.App.exe`。压缩包已包含 .NET 和 WebView2。将应用迁移到其他电脑时，请保留完整的解压文件夹。
 

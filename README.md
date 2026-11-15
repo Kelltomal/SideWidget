@@ -9,7 +9,7 @@ SideWidget — компактная панель повседневных инс
 ## Снимки экрана
 
 <p align="center">
-  <img src="docs/github/images/sidewidget-home.png" width="340" alt="Главная панель SideWidget с часами и быстрыми инструментами">
+  <img src="docs/github/images/sidewidget-home.png" width="340" alt="Главная панель SideWidget с поиском, плеером и быстрыми инструментами">
   <img src="docs/github/images/sidewidget-folder-icons.png" width="340" alt="Выбор стиля значков папок в SideWidget">
 </p>
 
@@ -28,7 +28,7 @@ SideWidget — компактная панель повседневных инс
 
 Нужна совместимая Windows 10 или 11 x64.
 
-1. Откройте [Releases](https://github.com/Kelltomal/SideWidget/releases) и скачайте портативный ZIP для Windows x64, когда он появится в списке.
+1. Откройте [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) и скачайте портативный ZIP для Windows x64.
 2. Распакуйте архив целиком в локальную папку с доступом на запись.
 3. Запустите `SideWidget.App.exe`. Окружение .NET и WebView2 включено в архив. Для переноса на другой компьютер нужна вся распакованная папка.
 

@@ -9,7 +9,7 @@ Die Sprachauswahl oben gilt für die Dokumentation. Die Benutzeroberfläche der 
 ## Screenshots
 
 <p align="center">
-  <img src="images/sidewidget-home.png" width="340" alt="SideWidget-Hauptansicht mit Uhr und Schnellzugriff auf Werkzeuge">
+  <img src="images/sidewidget-home.png" width="340" alt="SideWidget-Hauptansicht mit Suche, Player und Schnellzugriff auf Werkzeuge">
   <img src="images/sidewidget-folder-icons.png" width="340" alt="Auswahl des Stils für Ordnersymbole in SideWidget">
 </p>
 
@@ -28,7 +28,7 @@ Die Screenshots zeigen Beispieldaten.
 
 SideWidget benötigt eine kompatible x64-Version von Windows 10 oder 11.
 
-1. Öffne [Releases](https://github.com/Kelltomal/SideWidget/releases) und lade die portable ZIP-Datei für Windows x64 herunter, sobald sie verfügbar ist.
+1. Öffne [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) und lade die portable ZIP-Datei für Windows x64 herunter.
 2. Entpacke das gesamte Archiv in einen lokalen Ordner mit Schreibzugriff.
 3. Starte `SideWidget.App.exe`. Die ZIP-Datei enthält .NET und WebView2. Kopiere beim Wechsel auf einen anderen PC den gesamten entpackten Ordner.
 
