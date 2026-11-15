@@ -43,8 +43,8 @@ static class FocusTimerChecks
   var many=new SideWidget.Infrastructure.FocusTimerService(durable,items=>{if(fail)throw new IOException("full");durable=items.ToArray();});
   many.Add(t=>t.Start("timer",60,null,now));var first=many.Items[0].Id;
   many.Add(t=>t.Start("timer",30,null,now));var second=many.Items[1].Id;
-  many.Add(t=>t.Start("alarm",0,"13:00",now));
-  many.Add(t=>t.Start("alarm",0,"13:00",now));
+  many.Add(t=>t.Start("alarm",0,"13:00",now,timeZone:alarmZone));
+  many.Add(t=>t.Start("alarm",0,"13:00",now,timeZone:alarmZone));
   Check(many.Items.Count==4&&many.Primary?.Id==second,"multiple timers and alarms; header nearest deadline");
   many.Change(t=>t.Pause(now.AddSeconds(10)),first);
   Check(many.Items[0].State.Status=="paused"&&many.Items[1].State.Status=="running","pause targets one id");
