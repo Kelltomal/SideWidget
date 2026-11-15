@@ -49,7 +49,7 @@ public sealed partial class MainWindow : Window
         this.desktop=desktop;primaryWindow=primary;DisplayId=displayId;
         controller=new(state);controller.Displays=()=>desktop.Displays;
         root.Background = Brush("181A1C"); root.RequestedTheme = ElementTheme.Dark;
-        root.RowDefinitions.Add(new() { Height = new GridLength(52) });
+        root.RowDefinitions.Add(new() { Height = new GridLength(controller.Settings.ClockHeaderHeight) });
         root.RowDefinitions.Add(new() { Height = new GridLength(1, GridUnitType.Star) });
         header.ColumnDefinitions.Add(new() { Width = new GridLength(1,GridUnitType.Star) });
         header.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
@@ -98,8 +98,9 @@ public sealed partial class MainWindow : Window
         // Flush the cached non-client frame after changing window styles, before the first XAML render.
         Native.SetWindowPos(hwnd,0,0,0,0,0,0x0001|0x0002|0x0004|0x0010|0x0020);
         subclass=WindowProcedure;Native.SetWindowSubclass(hwnd,subclass,1,0);
-        controller.Confirm=Confirm;controller.AddApp=AddApplication;controller.ChangeAppIcon=ChangeApplicationIcon;controller.PickWindow=PickApplicationWindow;controller.PickColor=PickScreenColor;controller.ConfigureTranslation=ConfigureTranslation;controller.TranslateWebsite=TranslateWebsite;controller.CancelWebsiteTranslation=CancelWebsiteTranslation;controller.ConfigureSellyBoard=ConfigureSellyBoard;controller.SaveQr=SaveQr;controller.PrintQr=PrintQr;controller.CopyText=CopyText;controller.CopyImage=CopyImage;controller.SettingsChanged=desktop.ValidateSettings;
+        controller.Confirm=Confirm;controller.AddApp=AddApplication;controller.ChangeAppIcon=ChangeApplicationIcon;controller.PickWindow=PickApplicationWindow;controller.PickColor=PickScreenColor;controller.ConfigureTranslation=ConfigureTranslation;controller.TranslateWebsite=TranslateWebsite;controller.CancelWebsiteTranslation=CancelWebsiteTranslation;controller.SaveQr=SaveQr;controller.PrintQr=PrintQr;controller.CopyText=CopyText;controller.CopyImage=CopyImage;controller.SettingsChanged=desktop.ValidateSettings;
         controller.PickFolder=PickDesktopFolder;
+        controller.ShowFullscreenClock=()=>desktop.ShowFullscreenClock(Monitor().Monitor,currentLightTheme==true);
         root.AllowDrop=true;root.DragOver+=AppDragOver;root.Drop+=AppDrop;
         controller.Emit=(type,data)=>DispatcherQueue.TryEnqueue(()=>{if(!closing)desktop.Emit(this,type,data);});controller.Shell=Shell;controller.Tooltip=SetTooltip;
         controller.InitializePhoneRemote(work =>
@@ -141,6 +142,7 @@ public sealed partial class MainWindow : Window
         clock.Text=now.ToString("HH':'mm",culture);
         date.Text=DesktopLanguage.HeaderDate(now,culture);
         UpdateTimerHeader();
+        if(compactHidden)UpdateCompactStrip(now);
     }
     void RefreshNativeLanguage()
     {
@@ -163,8 +165,20 @@ public sealed partial class MainWindow : Window
     internal object Snapshot()=>controller.Snapshot();
     internal void DeliverEvent(string type,object data)=>SendEvent(type,data);
     internal void AssignDisplay(string id){if(id==DisplayId)return;DisplayId=id;compactPanel.Update(false);Collapse();Place();}
-    double MaximumHeight() => Math.Min(Placement.Height,(Monitor().Work.Bottom-Monitor().Work.Top)/scale);
-    void Place() { scale=Math.Max(1,Native.GetDpiForWindow(hwnd)/96d); ApplyGeometry(); }
+    double MaximumHeight()
+    {
+        var work=Monitor().Work;
+        return Math.Min(Placement.Height+controller.Settings.ClockHeaderHeight-Preferences.DefaultClockHeaderHeight,
+            (work.Bottom-work.Top)/scale);
+    }
+    void Place()
+    {
+        scale=Math.Max(1,Native.GetDpiForWindow(hwnd)/96d);
+        var headerHeight=Math.Min(controller.Settings.ClockHeaderHeight,MaximumHeight());
+        root.RowDefinitions[0].Height=new GridLength(headerHeight);
+        motion.ResizeHeader(headerHeight,MaximumHeight());
+        ApplyGeometry();
+    }
     void ApplyGeometry()
     {
         var monitor=Monitor();
@@ -172,7 +186,8 @@ public sealed partial class MainWindow : Window
         var clockOnly=compactPanel.ClockOnly&&motion.State==PanelState.Collapsed;
         if(clockOnly)
         {
-            var clockWidth=Math.Min(viewport.ClipWidth,(int)Math.Round(100*scale));
+            var clockWidthDip=100+Math.Max(0,controller.Settings.ClockFontSize-Preferences.DefaultClockFontSize)*3;
+            var clockWidth=Math.Min(viewport.ClipWidth,(int)Math.Round(clockWidthDip*scale));
             viewport=viewport with{ClipLeft=viewport.ClipLeft+(viewport.ClipWidth-clockWidth)/2,ClipWidth=clockWidth};
         }
         if(clockOnlyHeader!=clockOnly)
@@ -238,7 +253,7 @@ public sealed partial class MainWindow : Window
         if(beforeHeight!=motion.Height||beforeExpansion!=motion.Expansion) { ApplyGeometry(); if(motion.State==PanelState.Collapsed) RestoreFocus(); }
         if(beforeState!=motion.State){SendEvent("panel",new{expanded=motion.State!=PanelState.Collapsed,pinned=motion.Pinned});if(motion.State==PanelState.Collapsed){pendingSearchFocus=false;compactPanel.Fold();UpdateCompactSurface();}}
 
-        if(now/1000!=(now-delta)/1000){UpdateClock();compactStrip?.UpdateLabel(CompactClockLabel());if(primaryWindow)desktop.CheckActiveDisplayFullscreen();if(Environment.GetCommandLineArgs().Contains("--diagnostics")&&now<10000)File.AppendAllText(Path.Combine(controller.Store.DirectoryPath,"layout.ndjson"),System.Text.Json.JsonSerializer.Serialize(new{ms=now,rootWidth=root.ActualWidth,rootHeight=root.ActualHeight,xamlVisible=root.XamlRoot?.IsHostVisible,clockWidth=clock.ActualWidth,clockHeight=clock.ActualHeight,webHeight=web.ActualHeight,visible=Visible})+"\n");}
+        if(now/1000!=(now-delta)/1000){UpdateClock();if(primaryWindow)desktop.CheckActiveDisplayFullscreen();if(Environment.GetCommandLineArgs().Contains("--diagnostics")&&now<10000)File.AppendAllText(Path.Combine(controller.Store.DirectoryPath,"layout.ndjson"),System.Text.Json.JsonSerializer.Serialize(new{ms=now,rootWidth=root.ActualWidth,rootHeight=root.ActualHeight,xamlVisible=root.XamlRoot?.IsHostVisible,clockWidth=clock.ActualWidth,clockHeight=clock.ActualHeight,webHeight=web.ActualHeight,visible=Visible,compact=compactHidden?compactStrip?.LayoutSnapshot():null})+"\n");}
         return Task.CompletedTask;
     }
     void RenderFrame(object? sender,object args)

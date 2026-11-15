@@ -6,7 +6,7 @@ Search [existing issues](https://github.com/Kelltomal/SideWidget/issues) before 
 
 ## Build and test
 
-Use Windows x64, PowerShell 7 (`pwsh.exe` on PATH), and Node.js with npm. Windows CI uses Node.js 24. For local builds on Node.js 22, use version 22.12 or later. The bootstrap script installs the pinned .NET SDK locally. The build downloads the fixed x64 WebView2 runtime and publishes the portable app to `artifacts/release`.
+Use Windows x64, PowerShell 7 (`pwsh.exe` on PATH), and Node.js with npm. Windows CI uses Node.js 24. For local builds on Node.js 22, use version 22.12 or later. The bootstrap script installs the pinned .NET SDK locally. The full build bundles its runtimes and publishes to `artifacts/release`. Run `./scripts/build.ps1 -Lite` for a framework-dependent build in `artifacts/release-lite`. [Lite prerequisites](docs/github/README.en.md#getting-started)
 
 From the repository root in PowerShell 7:
 

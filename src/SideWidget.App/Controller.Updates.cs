@@ -14,7 +14,9 @@ sealed partial class Controller
 
     internal async Task<GitHubUpdateResult> CheckUpdate()
     {
-        offeredUpdate = await githubUpdates.CheckAsync(currentAppVersion);
+        var lite = DistributionArchive.IsLite(AppContext.BaseDirectory);
+        var preferLite = !lite && await Task.Run(LiteDependencies.AreAvailable);
+        offeredUpdate = await githubUpdates.CheckAsync(currentAppVersion, lite, preferLite: preferLite);
         return offeredUpdate;
     }
 
@@ -46,10 +48,15 @@ sealed partial class Controller
             throw new CommandFault("update_busy", "Обновление уже загружается.");
         try
         {
+            if (asset.IsLite && !DistributionArchive.IsLite(AppContext.BaseDirectory) &&
+                !await Task.Run(LiteDependencies.AreAvailable))
+                throw new InvalidDataException("Shared Lite dependencies are unavailable.");
+
             using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(30));
             Emit("updates.progress", new { percent = 0 });
             var executable = await portableUpdate.PrepareAsync(asset, Version.Parse(versionText),
-                Path.Combine(Store.DirectoryPath, "Versions"), percent => Emit("updates.progress", new { percent }), deadline.Token);
+                Path.Combine(Store.DirectoryPath, "Versions"), percent => Emit("updates.progress", new { percent }),
+                asset.IsLite, deadline.Token);
             RestartForUpdate(new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)! });
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or HttpRequestException or OperationCanceledException or BadImageFormatException or System.Text.Json.JsonException)

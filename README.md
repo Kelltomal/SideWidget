@@ -80,18 +80,41 @@ SideWidget выбирает язык Windows. Если его нет в спис
 - Поиск файлов через установленный и запущенный Everything, запуск закреплённых программ.
 - **Файлы и папки.** Сортировка файлов рабочего стола, предпросмотр значков папок, единый стиль или свой для каждой папки и отмена последнего изменения значков.
 - Управление совместимыми проигрывателями, микшер громкости и показатели компьютера.
-- Календарь с дополнительным подключением SellyBoard, локальный черновик Markdown и перевод через внешние сервисы.
+- Календарь, локальный черновик Markdown и перевод через внешние сервисы.
 - Настройка размера, сочетания клавиш и списка мониторов, на которых видна панель.
 
-## Запуск
+## Установка
 
-Нужна совместимая Windows 10 или 11 x64.
+Для Windows 10 или 11 x64. Откройте [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) и выберите ZIP.
 
-1. Откройте [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) и скачайте портативный ZIP для Windows x64.
-2. Распакуйте архив целиком в локальную папку с доступом на запись.
-3. Запустите `SideWidget.App.exe`. Окружение .NET и WebView2 включено в архив. Для переноса на другой компьютер нужна вся распакованная папка.
+- **Lite** (`-lite-win-x64.zip`) использует системные библиотеки. Их достаточно установить один раз.
+- **Полная** (`-portable-win-x64.zip`) включает библиотеки для автономного запуска.
 
-При запуске SideWidget проверяет стабильный релиз на GitHub. Можно обновиться сразу, отложить до следующего запуска или пропустить конкретную версию. При обновлении SideWidget проверяет SHA-256 архива, распаковывает сборку и перезапускается. В **Настройках → Обновления** проверку можно запустить вручную.
+Распакуйте архив в отдельную папку. Если выбрали Lite, запустите [Install-Dependencies.bat](scripts/Install-Dependencies.bat) из распакованной папки. Скрипт использует WinGet. Затем откройте `SideWidget.exe` рядом с папкой `App`.
+
+### Ручная установка зависимостей Lite
+
+Установите следующие пакеты x64 один раз. Прямые ссылки ведут к установщикам Microsoft.
+
+- [.NET Runtime 10.0 x64](https://aka.ms/dotnet/10.0/dotnet-runtime-win-x64.exe)
+- [ASP.NET Core Runtime 10.0 x64](https://aka.ms/dotnet/10.0/aspnetcore-runtime-win-x64.exe)
+- [Windows App Runtime 1.8.12 x64](https://aka.ms/windowsappsdk/1.8/1.8.260921001/windowsappruntimeinstall-x64.exe)
+- [Microsoft Edge WebView2 Evergreen](https://go.microsoft.com/fwlink/p/?LinkId=2124703)
+- [Microsoft Visual C++ Redistributable v14 x64](https://aka.ms/vc14/vc_redist.x64.exe)
+
+При запуске SideWidget проверяет стабильные релизы GitHub. Также можно открыть **Настройки → Обновления**. Обновления Lite используют Lite ZIP. Чтобы перейти с полной версии на Lite, выйдите из SideWidget через трей и запустите `SideWidget.exe` из папки Lite. Полная версия тоже выберет Lite, если в Windows уже установлены все общие зависимости.
+
+## Everything
+
+Everything — отдельный индексатор voidtools. SideWidget использует его для поиска файлов и папок из главной панели. «Файлы и папки», калькулятор и остальные инструменты работают самостоятельно.
+
+1. Скачайте **Download Installer 64-bit** для обычного стабильного Everything. SideWidget подключается через IPC, доступный в обычном выпуске. [Загрузки voidtools](https://www.voidtools.com/downloads/)
+
+2. В установщике выберите **Install Everything service**, чтобы индексировать NTFS, пока основное окно работает с правами обычного пользователя. Запустите `Everything.exe` в текущем сеансе Windows и дождитесь индексации. Для поиска сразу после входа можно включить **Start Everything on system startup**. [Установка Everything](https://www.voidtools.com/support/everything/installing_everything/)
+
+3. Откройте SideWidget через `Ctrl+Alt+Space` и введите часть имени. Например, `invoice *.pdf` ищет PDF с `invoice` в имени, а `\downloads *.zip` — ZIP в папках Downloads. SideWidget показывает до 50 совпадений. [Синтаксис Everything](https://www.voidtools.com/support/everything/searching/)
+
+Если поиск недоступен, проверьте, что запущен обычный, стандартный экземпляр Everything в том же сеансе Windows и с тем же уровнем прав, что SideWidget. Если пропал отдельный диск, проверьте, включён ли он в индекс Everything.
 
 ## Документация проекта
 

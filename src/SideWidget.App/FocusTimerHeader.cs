@@ -23,7 +23,10 @@ public sealed partial class MainWindow
     }
     void UpdateTimerHeader()
     {
-        controller.TickTimer();var state=controller.Timer.State;var ringing=state.Status=="ringing";var reduced=ReducedMotion();
+        controller.TickTimer();
+        var timer=FocusTimerPresentation.Create(controller.Timer.State,controller.Timer.Remaining(DateTimeOffset.Now));
+        var ringing=timer?.Ringing==true;var reduced=ReducedMotion();
+        var fontSize=controller.Settings.ClockFontSize;
         if(ringing!=timerRinging||reduced!=timerReduced){
             var opacity=timerTint.Opacity;timerGlow.Stop();timerFade.Stop();timerFade.Children.Clear();
             timerTint.Opacity=ringing?.12:0;
@@ -34,18 +37,18 @@ public sealed partial class MainWindow
             }
             timerRinging=ringing;timerReduced=reduced;
         }
-        if(clockOnlyHeader||state.Status=="idle")
+        if(clockOnlyHeader||timer==null)
         {
-            clock.FontSize=22;
+            clock.FontSize=fontSize;
             if(timerHeader!=null)Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(timerHeader,
-                ringing?DesktopLanguage.Text("Время вышло. Нажмите, чтобы остановить сигнал"):"SideWidget, "+clock.Text);
+                ringing?timer!.AccessibleName:"SideWidget, "+clock.Text);
             return;
         }
-        day.Text=DesktopLanguage.Text(state.Status=="paused"?"Пауза":state.Status=="ready"?"Готов к старту":state.Mode=="alarm"?"Будильник":state.Mode=="timer"?"Таймер":state.Phase=="work"?"Работа":"Перерыв");
-        clock.FontSize=ringing?18:22;
-        clock.Text=ringing?DesktopLanguage.Text("Время вышло"):FocusTimer.Format(controller.Timer.Remaining(DateTimeOffset.Now));
-        if(ringing)date.Text=DesktopLanguage.Text("Нажмите");
-        if(timerHeader!=null)Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(timerHeader,ringing?DesktopLanguage.Text("Время вышло. Нажмите, чтобы остановить сигнал"):DesktopLanguage.Text("{0}, осталось {1}",day.Text,clock.Text));
+        day.Text=timer.Caption;
+        clock.FontSize=ringing?fontSize*18d/22:fontSize;
+        clock.Text=timer.Value;
+        if(ringing)date.Text=timer.Action;
+        if(timerHeader!=null)Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(timerHeader,timer.AccessibleName);
     }
     bool DismissTimerSignal()
     {

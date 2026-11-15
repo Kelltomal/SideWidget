@@ -1,6 +1,20 @@
+using System.Text.Json.Serialization;
+
 namespace SideWidget.Core;
-public sealed record Preferences(int Width=444,int Height=620,int HideDelay=650,int OpenDelay=100,string Hotkey="Ctrl+Alt+Space",int Monitor=0,double Position=1,bool LargeMode=false,string[]? Order=null,string[]? Disabled=null,string Theme="dark",VisualizerOptions? Visualizer=null,string[]? DisplayIds=null,string[]? PinnedTools=null,Dictionary<string,double>? DisplayPositions=null,string? Language=null)
+public sealed record Preferences(int Width=444,int Height=620,int HideDelay=650,int OpenDelay=100,string Hotkey="Ctrl+Alt+Space",int Monitor=0,double Position=1,bool LargeMode=false,string[]? Order=null,string[]? Disabled=null,string Theme="dark",VisualizerOptions? Visualizer=null,string[]? DisplayIds=null,string[]? PinnedTools=null,Dictionary<string,double>? DisplayPositions=null,string? Language=null,int ClockFontSize=Preferences.DefaultClockFontSize,int CompactStripHeight=Preferences.DefaultCompactStripHeight)
 {
+    public const int DefaultClockFontSize=22;
+    public const int DefaultClockHeaderHeight=52;
+    public const int DefaultCompactStripHeight=23;
+    const int DefaultCompactClockFontSize=13;
+    [JsonIgnore] public int ClockHeaderHeight=>DefaultClockHeaderHeight+ClockFontSize-DefaultClockFontSize;
+    [JsonIgnore] public int CompactClockFontSize=>(int)Math.Round(ClockFontSize*(double)DefaultCompactClockFontSize/DefaultClockFontSize);
+    [JsonIgnore] public int CompactClockHeight=>Math.Max(CompactStripHeight,CompactClockFontSize+DefaultCompactStripHeight-DefaultCompactClockFontSize);
+    public void ValidateClock()
+    {
+        if(ClockFontSize is <14 or >34||CompactStripHeight is <23 or >120)
+            throw new CommandFault("settings","Проверьте размер часов и высоту полоски");
+    }
     static readonly string[] Tools=["calculator","translation","qr","currency","units","colors","diary","timer","desktop"];
     public double PositionForDisplay(string id)=>DisplayPositions?.GetValueOrDefault(id,Position)??Position;
     public Preferences WithDisplayPosition(string id,double position)
@@ -14,7 +28,7 @@ public sealed record Preferences(int Width=444,int Height=620,int HideDelay=650,
         if(DisplayPositions?.Any(entry=>string.IsNullOrWhiteSpace(entry.Key)||entry.Key.Length>512||!double.IsFinite(entry.Value)||entry.Value is <0 or >1)==true)
             throw new CommandFault("settings","Проверьте сохранённые позиции экранов");
     }
-    public void Validate(){if(Width is <360 or >900||Height is <360 or >1200||HideDelay is <200 or >5000||OpenDelay is <0 or >2000||Monitor is <0 or >15||!double.IsFinite(Position)||Position is <0 or >1||Order?.Length>25||Disabled?.Length>25)throw new CommandFault("settings","Проверьте размеры, задержки и положение");if(DisplayIds is not null&&(DisplayIds.Length is <1 or >16||DisplayIds.Any(id=>string.IsNullOrWhiteSpace(id)||id.Length>512)||DisplayIds.Distinct(StringComparer.Ordinal).Count()!=DisplayIds.Length))throw new CommandFault("settings","Выберите хотя бы один экран без повторений");if(Theme is not ("dark" or "light" or "system"))throw new CommandFault("settings","Выберите тему приложения");if(PinnedTools is not null&&(PinnedTools.Length>4||PinnedTools.Any(id=>!Tools.Contains(id))||PinnedTools.Distinct(StringComparer.Ordinal).Count()!=PinnedTools.Length))throw new CommandFault("settings","Выберите до четырёх разных инструментов");ValidateDisplayPositions();Visualizer?.Validate();HotkeyParser.Parse(Hotkey);}
+    public void Validate(){if(Width is <360 or >900||Height is <360 or >1200||HideDelay is <200 or >5000||OpenDelay is <0 or >2000||Monitor is <0 or >15||!double.IsFinite(Position)||Position is <0 or >1||Order?.Length>25||Disabled?.Length>25)throw new CommandFault("settings","Проверьте размеры, задержки и положение");if(DisplayIds is not null&&(DisplayIds.Length is <1 or >16||DisplayIds.Any(id=>string.IsNullOrWhiteSpace(id)||id.Length>512)||DisplayIds.Distinct(StringComparer.Ordinal).Count()!=DisplayIds.Length))throw new CommandFault("settings","Выберите хотя бы один экран без повторений");if(Theme is not ("dark" or "light" or "system"))throw new CommandFault("settings","Выберите тему приложения");if(PinnedTools is not null&&(PinnedTools.Length>4||PinnedTools.Any(id=>!Tools.Contains(id))||PinnedTools.Distinct(StringComparer.Ordinal).Count()!=PinnedTools.Length))throw new CommandFault("settings","Выберите до четырёх разных инструментов");ValidateDisplayPositions();ValidateClock();Visualizer?.Validate();HotkeyParser.Parse(Hotkey);}
 }
 public static class HotkeyParser
 {

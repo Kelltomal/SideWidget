@@ -11,19 +11,23 @@ internal sealed partial class CompactStripWindow : IDisposable
     readonly CompactPanel panel;
     readonly Action open;
     readonly Action updateClockMode;
+    readonly Action dismissSignal;
     readonly Native.SubclassProc procedure;
     readonly MouseProc mouseProcedure;
     nint mouseHook;
     int left,top,width,height;
     string text="";
     double scale=1;
-    bool light,visible;
+    double timerProgress;
+    int fontSize;
+    bool light,visible,ringing;
     readonly string fontPath=Path.Combine(AppContext.BaseDirectory,"Assets","Fonts","MedeoSans.ttf");
     readonly bool fontLoaded;
 
-    public CompactStripWindow(CompactPanel panel,Action open,Action updateClockMode)
+    public CompactStripWindow(CompactPanel panel,Action open,Action updateClockMode,Action dismissSignal)
     {
-        this.panel=panel;this.open=open;this.updateClockMode=updateClockMode;procedure=Procedure;mouseProcedure=ObserveMouse;
+        this.panel=panel;this.open=open;this.updateClockMode=updateClockMode;this.dismissSignal=dismissSignal;
+        procedure=Procedure;mouseProcedure=ObserveMouse;
         Handle=CreateWindowExW(0x080800A8,"STATIC",DesktopLanguage.Text("SideWidget — время и дата"),0x80000100,
             0,0,1,1,0,0,0,0); // NOACTIVATE | LAYERED | TRANSPARENT | TOOLWINDOW | TOPMOST
         if(Handle==0)throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -34,20 +38,26 @@ internal sealed partial class CompactStripWindow : IDisposable
         fontLoaded=AddFontResourceExW(fontPath,0x10,0)>0;
         var corner=1;Native.DwmSetWindowAttribute(Handle,33,ref corner,4);
     }
-    public void Show(int left,int top,int width,double dpiScale,string label,bool lightTheme)
+    public void Show(PanelBounds bounds,int top,double dpiScale,Preferences settings,string label,
+        FocusTimerPresentation? timer,bool lightTheme)
     {
-        var changed=text!=label||scale!=dpiScale||light!=lightTheme;
-        var nextHeight=(int)Math.Round(CompactPanel.Height*dpiScale);
-        var moved=this.left!=left||this.top!=top||this.width!=width||height!=nextHeight;
-        text=label;scale=dpiScale;light=lightTheme;
-        this.left=left;this.top=top;this.width=width;height=nextHeight;
+        var nextRinging=timer?.Ringing==true;
+        var nextProgress=timer?.Progress??0;
+        var nextFontSize=settings.CompactClockFontSize;
+        var changed=text!=label||scale!=dpiScale||light!=lightTheme||ringing!=nextRinging||
+            timerProgress!=nextProgress||fontSize!=nextFontSize;
+        var nextHeight=(int)Math.Round(settings.CompactClockHeight*dpiScale);
+        var moved=left!=bounds.Left||this.top!=top||width!=bounds.Width||height!=nextHeight;
+        text=label;scale=dpiScale;light=lightTheme;timerProgress=nextProgress;fontSize=nextFontSize;
+        left=bounds.Left;this.top=top;width=bounds.Width;height=nextHeight;
+        if(ringing!=nextRinging){ringing=nextRinging;RefreshLanguage();}
         if(mouseHook==0)
         {
             mouseHook=SetWindowsHookExW(14,mouseProcedure,GetModuleHandleW(null),0);
             if(mouseHook==0)throw new Win32Exception(Marshal.GetLastWin32Error());
         }
         if(moved||!visible)Native.SetWindowPos(Handle,new nint(-1),left,top,width,height,0x0010|0x0040);
-        if(changed||!visible)InvalidateRect(Handle,0,false);
+        if(changed||moved||!visible)InvalidateRect(Handle,0,false);
         visible=true;
         RefreshSpectrumAnimation();
     }
@@ -58,13 +68,10 @@ internal sealed partial class CompactStripWindow : IDisposable
         panel.ResetClicks();
         if(swallowRelease==0 && pendingDown is null)StopObserving();
     }
-    public void UpdateLabel(string label)
-    {
-        if(!visible||text==label)return;
-        text=label;
-        InvalidateRect(Handle,0,false);
-    }
-    public void RefreshLanguage()=>SetWindowTextW(Handle,DesktopLanguage.Text("SideWidget — время и дата"));
+    public void RefreshLanguage()=>SetWindowTextW(Handle,ringing
+        ?DesktopLanguage.Text("Время вышло. Нажмите, чтобы остановить сигнал")
+        :DesktopLanguage.Text("SideWidget — время и дата"));
+    public object LayoutSnapshot()=>new{left,top,width,height,fontSize,scale,text,ringing,timerProgress,visible};
     nint Procedure(nint window,uint message,nuint wParam,nint lParam,nuint id,nuint data)
     {
         if(message==0x0021)return 3; // MA_NOACTIVATE
@@ -79,23 +86,35 @@ internal sealed partial class CompactStripWindow : IDisposable
     {
         var dc=BeginPaint(window,out var paint);
         if(dc==0)return;
-        nint brush=0,font=0,oldFont=0;
+        nint brush=0,progressBrush=0,font=0,oldFont=0;
         try
         {
             GetClientRect(window,out var bounds);
-            brush=CreateSolidBrush(light?0x00F6F5F4u:0x001C1A18u);FillRect(dc,ref bounds,brush);
+            var background=ringing
+                ?(light?0x00F1EFEdu:0x00322E2B)
+                :(light?0x00F6F5F4u:0x001C1A18u);
+            brush=CreateSolidBrush(background);FillRect(dc,ref bounds,brush);
             PaintSpectrum(dc,bounds);
+            if(timerProgress>0)
+            {
+                var progress=bounds;
+                progress.Top=progress.Bottom-Math.Max(1,(int)Math.Round(2*scale));
+                progress.Right=progress.Left+(int)Math.Round((progress.Right-progress.Left)*timerProgress);
+                progressBrush=CreateSolidBrush(light?0x0085807Au:0x00D0C3B6u);
+                FillRect(dc,ref progress,progressBrush);
+            }
             SetBkMode(dc,1);SetTextColor(dc,light?0x002C2620u:0x00F5F4F2u);
             var face=DesktopLanguage.Language switch{"zh-CN"=>"Microsoft YaHei UI","ja"=>"Yu Gothic UI",_=>"Medeo Sans"};
-            font=CreateFontW(-(int)Math.Round(13*scale),0,0,0,500,0,0,0,1,0,0,4,0,face);
+            font=CreateFontW(-(int)Math.Round(fontSize*scale),0,0,0,500,0,0,0,1,0,0,4,0,face);
             if(font!=0)oldFont=SelectObject(dc,font);
             bounds.Left+=(int)Math.Round(12*scale);bounds.Right-=(int)Math.Round(12*scale);
-            DrawTextW(dc,text,text.Length,ref bounds,0x0001|0x0004|0x0020|0x0800);
+            DrawTextW(dc,text,text.Length,ref bounds,0x0001|0x0004|0x0020|0x0800|0x8000);
         }
         finally
         {
             if(oldFont!=0)SelectObject(dc,oldFont);
             if(font!=0)DeleteObject(font);
+            if(progressBrush!=0)DeleteObject(progressBrush);
             if(brush!=0)DeleteObject(brush);
             EndPaint(window,ref paint);
         }

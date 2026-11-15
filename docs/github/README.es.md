@@ -73,18 +73,31 @@ Toma un color de la pantalla, copia su valor en HEX, RGB o HSL y guárdalo en tu
 - Búsqueda de archivos a través de Everything cuando está en ejecución y acceso rápido a las aplicaciones ancladas.
 - **Archivos y carpetas.** Organiza los archivos del escritorio, previsualiza los iconos de las carpetas, elige un estilo común o uno por carpeta y deshaz el último cambio de iconos.
 - Controles de reproducción para reproductores compatibles, mezclador de volumen y métricas del sistema.
-- Calendario con integración opcional con SellyBoard, borrador local en Markdown y traducción mediante servicios externos.
+- Calendario, borrador local en Markdown y traducción mediante servicios externos.
 - Ajuste del tamaño y del atajo de teclado, y selección de las pantallas en las que aparece el panel.
 
-## Primeros pasos
+## Instalación
 
-SideWidget requiere una versión compatible de Windows 10 u 11 para x64.
+Para Windows 10 u 11 x64. Abre [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) y elige un ZIP.
 
-1. Abre [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) y descarga el ZIP portátil para Windows x64.
-2. Extrae el archivo completo en una carpeta local con permisos de escritura.
-3. Ejecuta `SideWidget.App.exe`. El ZIP incluye .NET y WebView2. Para trasladar la aplicación a otro equipo, copia toda la carpeta extraída.
+- **Lite** (`-lite-win-x64.zip`) usa dependencias compartidas que se instalan una sola vez.
+- **Completa** (`-portable-win-x64.zip`) incluye sus dependencias para funcionar sin conexión.
 
-Al iniciarse, SideWidget busca una versión estable más reciente en GitHub. Puedes actualizar ahora, aplazarlo hasta el próximo inicio u omitir esa versión. Al actualizar, SideWidget verifica el SHA-256 del ZIP, extrae los archivos y se reinicia. Puedes buscar actualizaciones en **Configuración → Actualizaciones**.
+Extrae el ZIP en una carpeta propia. Para Lite, ejecuta allí [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat). El script usa WinGet. Luego ejecuta `SideWidget.exe`, junto a la carpeta `App`.
+
+### Instalar manualmente las dependencias de Lite
+
+Instala estos paquetes x64 una sola vez. Los enlaces apuntan a instaladores de Microsoft.
+
+- [.NET Runtime 10.0 x64](https://aka.ms/dotnet/10.0/dotnet-runtime-win-x64.exe)
+- [ASP.NET Core Runtime 10.0 x64](https://aka.ms/dotnet/10.0/aspnetcore-runtime-win-x64.exe)
+- [Windows App Runtime 1.8.12 x64](https://aka.ms/windowsappsdk/1.8/1.8.260921001/windowsappruntimeinstall-x64.exe)
+- [Microsoft Edge WebView2 Evergreen](https://go.microsoft.com/fwlink/p/?LinkId=2124703)
+- [Microsoft Visual C++ Redistributable v14 x64](https://aka.ms/vc14/vc_redist.x64.exe)
+
+SideWidget busca versiones estables en GitHub al iniciarse. También puedes consultar **Configuración → Actualizaciones**. Lite se actualiza con su ZIP. Para pasar de la versión completa a Lite, cierra SideWidget desde la bandeja y ejecuta `SideWidget.exe` desde la carpeta de Lite. La versión completa también elige Lite para actualizarse cuando ya están instaladas todas las dependencias compartidas.
+
+[Everything](../../README.md#everything) · [voidtools x64](https://www.voidtools.com/downloads/)
 
 ## Documentación del proyecto
 

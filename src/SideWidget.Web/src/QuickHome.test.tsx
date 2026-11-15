@@ -7,7 +7,7 @@ import {invoke} from './ui';
 import type {Snapshot} from './types';
 
 vi.mock('./ui',async original=>({...await original<typeof import('./ui')>(),nativeAvailable:true,invoke:vi.fn()}));
-const state:Snapshot={settings:{width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:['search','music','tools'],disabled:[]},calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''},selly:{configured:false,message:''}};
+const state:Snapshot={settings:{width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:['search','music','tools'],disabled:[]},calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''}};
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.resetAllMocks();});
 
 function show(snapshot=state,ready:Promise<Snapshot>=Promise.resolve(snapshot)){

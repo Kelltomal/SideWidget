@@ -57,6 +57,43 @@ static class DistributionChecks
         if(Path.GetDirectoryName(adjacent)!=unpacked)throw new Exception("Share must save next to the running application");
         using(var zip=ZipFile.OpenRead(adjacent))if(zip.Entries.Count!=manifest.Files.Length+1||zip.Entries.Any(entry=>entry.FullName.EndsWith(".zip",StringComparison.OrdinalIgnoreCase)))throw new Exception("Adjacent ZIP must not contain previous archives");
         if(Directory.GetFiles(output).Length!=2)throw new Exception("Failed export left a partial archive");
-        return 14;
+        var lite = Path.Combine(root, "lite");
+        foreach (var name in DistributionArchive.LiteRequiredFiles)
+        {
+            var path = Path.Combine(lite, name);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "lite-build");
+        }
+        var liteConfig = Path.Combine(lite, "SideWidget.App.runtimeconfig.json");
+        const string shared = """{"runtimeOptions":{"frameworks":[{"name":"Microsoft.NETCore.App","version":"10.0.0"},{"name":"Microsoft.AspNetCore.App","version":"10.0.0"}]}}""";
+        File.WriteAllText(liteConfig, shared);
+        File.WriteAllText(Path.Combine(lite, "SideWidget.App.deps.json"),
+            """{"runtimeTarget":{"name":".NETCoreApp,Version=v10.0/win-x64"},"targets":{".NETCoreApp,Version=v10.0/win-x64":{}}}""");
+        if (DistributionArchive.IsLite(lite) || DistributionArchive.IsLite(app))
+            throw new Exception("Missing manifest and format 2 must identify as full");
+        DistributionArchive.Prepare(lite, lite: true);
+        DistributionArchive.Validate(lite, expectedLite: true);
+        Reject(() => DistributionArchive.Validate(lite, expectedLite: false), "Lite accepted as full");
+        Reject(() => DistributionArchive.Validate(app, expectedLite: true), "Full accepted as lite");
+        var undeclared = Path.Combine(lite, "unexpected.dll");
+        File.WriteAllText(undeclared, "undeclared");
+        Reject(() => DistributionArchive.Validate(lite, expectedLite: true), "Undeclared ZIP payload accepted");
+        File.Delete(undeclared);
+        var liteZip = DistributionArchive.Create(lite, Path.Combine(root, "lite-exports"));
+        if (!DistributionArchive.IsLite(lite) || !liteZip.EndsWith("-lite-win-x64.zip", StringComparison.Ordinal))
+            throw new Exception("Lite manifest and shared ZIP must identify variant");
+        foreach (var bundled in new[] { "coreclr.dll", "Microsoft.ui.xaml.dll", "WebView2Runtime/msedgewebview2.exe" })
+        {
+            var path = Path.Combine(lite, bundled);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "bundled");
+            Reject(() => DistributionArchive.Prepare(lite, lite: true), "Lite allowed bundled runtime " + bundled);
+            File.Delete(path);
+        }
+        File.WriteAllText(liteConfig, standalone);
+        Reject(() => DistributionArchive.Prepare(lite, lite: true), "Lite accepted a standalone .NET runtime config");
+        File.WriteAllText(liteConfig, shared.Replace("Microsoft.AspNetCore.App", "Microsoft.WindowsDesktop.App"));
+        Reject(() => DistributionArchive.Prepare(lite, lite: true), "Lite accepted a missing ASP.NET runtime");
+        return 24;
     }
 }

@@ -53,6 +53,14 @@ internal sealed partial class CompactStripWindow
 
         var now = clickWatch.ElapsedMilliseconds;
         var release = right ? RightUp : LeftUp;
+        if (ringing && !right)
+        {
+            panel.ResetClicks();
+            ReplayPendingClick();
+            swallowRelease = release;
+            dismissSignal();
+            return true;
+        }
         if (panel.Click(now, point.X, point.Y, Native.GetSystemMetrics(36), Native.GetSystemMetrics(37), right))
         {
             ClearPendingClick();

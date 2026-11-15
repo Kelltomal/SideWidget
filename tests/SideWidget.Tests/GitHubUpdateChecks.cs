@@ -1,4 +1,6 @@
+using System.IO.Compression;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using SideWidget.Infrastructure;
@@ -34,6 +36,39 @@ public static class GitHubUpdateChecks
         Check(installable.PortableAsset is { Size: 4096 } zip && zip.Sha256 == digest &&
             zip.DownloadUrl.AbsoluteUri == "https://github.com/Kelltomal/SideWidget/releases/download/v0.3.0/SideWidget-0.3.0-win-x64.zip",
             "verified metadata only points at the official versioned asset");
+        const string legacyName = "SideWidget-0.3.0-win-x64.zip";
+        const string fullName = "SideWidget-0.3.0-portable-win-x64.zip";
+        const string liteName = "SideWidget-0.3.0-lite-win-x64.zip";
+        var lite = await Respond(current, Json(Release("v0.3.0", fullName, digest: "sha256:" + digest,
+            additionalAsset: liteName)), lite: true);
+        Check(lite.PortableAsset is { Name: liteName, Size: 4096 } liteZip && liteZip.Sha256 == digest &&
+            liteZip.DownloadUrl.AbsoluteUri == "https://github.com/Kelltomal/SideWidget/releases/download/v0.3.0/SideWidget-0.3.0-lite-win-x64.zip",
+            "lite selects only the verified lite asset when both are uploaded");
+        var full = await Respond(current, Json(Release("v0.3.0", liteName, digest: "sha256:" + digest,
+            additionalAsset: fullName)));
+        Check(full.PortableAsset is { Name: fullName }, "full selects only the full asset when both are uploaded");
+        var preferLite = await Respond(current, Json(Release("v0.3.0", fullName, digest: "sha256:" + digest,
+            additionalAsset: liteName)), preferLite: true);
+        Check(preferLite.PortableAsset is { Name: liteName, IsLite: true },
+            "full with shared prerequisites prefers verified lite");
+        var preferLiteUnverified = await Respond(current, Json(Release("v0.3.0", fullName, digest: "sha256:" + digest,
+            additionalAsset: liteName, additionalDigest: "invalid")), preferLite: true);
+        Check(preferLiteUnverified.PortableAsset is { Name: fullName, IsLite: false },
+            "full with shared prerequisites falls back to verified full when the lite digest is invalid");
+        var onlyLiteWithoutPrerequisites = await Respond(current, Json(Release("v0.3.0", liteName, digest: "sha256:" + digest)));
+        Check(onlyLiteWithoutPrerequisites is { PortableAsset: null, ReleaseUrl: "https://github.com/Kelltomal/SideWidget/releases/tag/v0.3.0" },
+            "full without shared prerequisites cannot auto-install even verified lite");
+        var fullWithLegacy = await Respond(current, Json(Release("v0.3.0", legacyName, digest: "sha256:" + digest,
+            additionalAsset: fullName)));
+        Check(fullWithLegacy.PortableAsset is { Name: fullName }, "full prefers the clean archive over the legacy flat archive");
+        var liteMissing = await Respond(current, Json(Release("v0.3.0", fullName, digest: "sha256:" + digest)), lite: true);
+        Check(liteMissing is { Status: GitHubUpdateStatus.Available, HasPortableAsset: false, PortableAsset: null,
+            ReleaseUrl: "https://github.com/Kelltomal/SideWidget/releases/tag/v0.3.0" },
+            "lite offers the release page when only the verified full asset exists");
+        var liteUnverified = await Respond(current, Json(Release("v0.3.0", liteName, digest: "sha256:" + new string('x', 64))), lite: true);
+        Check(liteUnverified is { Status: GitHubUpdateStatus.Available, HasPortableAsset: true, PortableAsset: null,
+            ReleaseUrl: "https://github.com/Kelltomal/SideWidget/releases/tag/v0.3.0" },
+            "lite keeps the release link when its uploaded archive has an invalid digest");
         var workspace = Path.Combine(Path.GetTempPath(), $"sidewidget-update-test-{Guid.NewGuid():N}");
         using (var download = new HttpClient(new Handler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -42,14 +77,55 @@ public static class GitHubUpdateChecks
         {
             try
             {
-                await new PortableUpdate(download).PrepareAsync(installable.PortableAsset!, new Version(0, 3, 0), workspace, _ => { });
-                throw new Exception("GitHub update: invalid digest was accepted");
-            }
-            catch (InvalidDataException)
-            {
-                Check(!Directory.EnumerateFileSystemEntries(workspace).Any(), "invalid archive leaves no staged installation");
+                foreach (var (offer, isLite) in new[] { (installable, false), (lite, true) })
+                {
+                    await Reject(() => new PortableUpdate(download).PrepareAsync(offer.PortableAsset!, new Version(0, 3, 0),
+                        workspace, _ => { }, lite: isLite), "invalid digest was accepted");
+                    Check(!Directory.EnumerateFileSystemEntries(workspace).Any(), "invalid digest leaves no staged installation");
+                }
             }
             finally { if (Directory.Exists(workspace)) Directory.Delete(workspace); }
+        }
+        foreach (var (isLite, legacy) in new[] { (false, false), (true, false), (false, true) })
+        {
+            var app = Path.Combine(workspace, "fixture");
+            var versions = Path.Combine(workspace, "versions");
+            Directory.CreateDirectory(app);
+            try
+            {
+                var archive = MakePortableFixture(app, workspace, isLite, out var version);
+                var bytes = legacy ? File.ReadAllBytes(archive) : WrapPortableFixture(archive, isLite);
+                using var download = new HttpClient(new Handler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent(bytes),
+                })));
+                var updater = new PortableUpdate(download);
+                var suffix = legacy ? "" : isLite ? "-lite" : "-portable";
+                var asset = new GitHubPortableAsset($"v{version}", $"SideWidget-{version}{suffix}-win-x64.zip", bytes.Length,
+                    Convert.ToHexString(SHA256.HashData(bytes)));
+                var executable = await updater.PrepareAsync(asset, version, versions, _ => { }, lite: isLite);
+                var application = Path.GetDirectoryName(executable)!;
+                Check(File.Exists(executable) && Path.GetFileName(executable) == "SideWidget.App.exe" &&
+                    (Path.GetFileName(application) == "App") == !legacy && DistributionArchive.IsLite(application) == isLite,
+                    "matching portable archive stages an executable of the same edition");
+                await Reject(() => updater.PrepareAsync(asset, version, versions, _ => { }, lite: !isLite),
+                    "asset name for a different edition was accepted");
+                var otherSuffix = isLite ? "-portable" : "-lite";
+                bytes = WrapPortableFixture(archive, !isLite);
+                var mislabeled = new GitHubPortableAsset($"v{version}", $"SideWidget-{version}{otherSuffix}-win-x64.zip",
+                    bytes.Length, Convert.ToHexString(SHA256.HashData(bytes)));
+                await Reject(() => updater.PrepareAsync(mislabeled, version, versions, _ => { }, lite: !isLite),
+                    "archive with a manifest for a different edition was accepted");
+                bytes = WrapPortableFixture(archive, isLite, includeLauncher: false);
+                var missingLauncher = new GitHubPortableAsset($"v{version}",
+                    $"SideWidget-{version}{(isLite ? "-lite" : "-portable")}-win-x64.zip", bytes.Length,
+                    Convert.ToHexString(SHA256.HashData(bytes)));
+                await Reject(() => updater.PrepareAsync(missingLauncher, version, versions, _ => { }, lite: isLite),
+                    "clean archive without a launcher was accepted");
+                Check(Directory.EnumerateFileSystemEntries(versions).Count() == 1,
+                    "rejected archive leaves only the previously staged installation");
+            }
+            finally { Directory.Delete(workspace, recursive: true); }
         }
         using var serialized = JsonDocument.Parse(JsonSerializer.Serialize(available));
         Check(serialized.RootElement.GetProperty("Status").GetString() == "available", "serializes the status in lower case");
@@ -106,14 +182,77 @@ public static class GitHubUpdateChecks
         return checks;
     }
 
-    static string Release(string tag, string? asset = null, bool prerelease = false, bool draft = false, string? digest = null) =>
+    static string MakePortableFixture(string app, string output, bool lite, out Version version)
+    {
+        var required = lite
+            ? DistributionArchive.LiteRequiredFiles
+            : DistributionArchive.RequiredFiles.Append("WebView2Runtime/Locales/ru.pak");
+        foreach (var file in required)
+        {
+            var path = Path.Combine(app, file);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "test-fixture");
+        }
+        File.WriteAllText(Path.Combine(app, "SideWidget.App.runtimeconfig.json"),
+            lite
+                ? """{"runtimeOptions":{"frameworks":[{"name":"Microsoft.NETCore.App","version":"10.0.0"},{"name":"Microsoft.AspNetCore.App","version":"10.0.0"}]}}"""
+                : """{"runtimeOptions":{"includedFrameworks":[{"name":"Microsoft.NETCore.App","version":"10.0.14"}]}}""");
+        File.WriteAllText(Path.Combine(app, "SideWidget.App.deps.json"),
+            """{"runtimeTarget":{"name":".NETCoreApp,Version=v10.0/win-x64"},"targets":{".NETCoreApp,Version=v10.0/win-x64":{}}}""");
+        var assembly = typeof(GitHubUpdateChecks).Assembly;
+        var assembled = assembly.GetName().Version!;
+        version = new Version(assembled.Major, assembled.Minor, assembled.Build);
+        File.Copy(assembly.Location, Path.Combine(app, "SideWidget.App.dll"), overwrite: true);
+        DistributionArchive.Prepare(app, lite);
+        var archive = Path.Combine(output, "fixture.zip");
+        ZipFile.CreateFromDirectory(app, archive);
+        return archive;
+    }
+
+    static async Task Reject(Func<Task> run, string failure)
+    {
+        try { await run(); }
+        catch (InvalidDataException) { return; }
+        throw new Exception("GitHub update: " + failure);
+    }
+
+    static byte[] WrapPortableFixture(string archive, bool lite, bool includeLauncher = true)
+    {
+        using var output = new MemoryStream();
+        using (var wrapper = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            if (includeLauncher)
+            {
+                using var launcher = wrapper.CreateEntry("SideWidget.exe").Open();
+                launcher.WriteByte(1);
+            }
+            if (lite)
+            {
+                using var installer = wrapper.CreateEntry("Install-Dependencies.bat").Open();
+                installer.WriteByte(1);
+            }
+            using var source = ZipFile.OpenRead(archive);
+            foreach (var entry in source.Entries)
+            {
+                using var input = entry.Open();
+                using var entryOutput = wrapper.CreateEntry("App/" + entry.FullName).Open();
+                input.CopyTo(entryOutput);
+            }
+        }
+        return output.ToArray();
+    }
+
+    static string Release(string tag, string? asset = null, bool prerelease = false, bool draft = false, string? digest = null,
+        string? additionalAsset = null, string? additionalDigest = null) =>
         JsonSerializer.Serialize(new
         {
             tag_name = tag,
             html_url = "https://example.net/foreign-release",
             prerelease,
             draft,
-            assets = asset is null ? [] : new[] { new { name = asset, state = "uploaded", size = 4096, digest } },
+            assets = new[] { asset, additionalAsset }.Where(name => name is not null)
+                .Select(name => new { name, state = "uploaded", size = 4096,
+                    digest = name == additionalAsset ? additionalDigest ?? digest : digest }),
         });
 
     static HttpResponseMessage Json(string body) => new(HttpStatusCode.OK)
@@ -121,10 +260,10 @@ public static class GitHubUpdateChecks
         Content = new StringContent(body, Encoding.UTF8, "application/json"),
     };
 
-    static async Task<GitHubUpdateResult> Respond(Version current, HttpResponseMessage response)
+    static async Task<GitHubUpdateResult> Respond(Version current, HttpResponseMessage response, bool lite = false, bool preferLite = false)
     {
         using var client = new HttpClient(new Handler((_, _) => Task.FromResult(response)));
-        return await new GitHubUpdates(client).CheckAsync(current);
+        return await new GitHubUpdates(client).CheckAsync(current, lite, preferLite: preferLite);
     }
 
     sealed class Handler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> respond) : HttpMessageHandler

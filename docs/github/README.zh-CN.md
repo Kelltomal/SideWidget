@@ -73,18 +73,31 @@ SideWidget 的开发以常识为基础，并借助 GPT-6.1 Sol。
 - 通过已安装并运行的 Everything 搜索文件，快速启动固定的应用。
 - **文件和文件夹。** 整理桌面文件、预览文件夹图标、统一设置图标样式或逐个设置，并撤销上一次图标修改。
 - 控制兼容的播放器、调整各应用音量、查看系统指标。
-- 日历支持接入 SellyBoard，另有本地 Markdown 草稿和由外部服务提供的翻译功能。
+- 日历、本地 Markdown 草稿，以及通过外部服务进行翻译。
 - 可调整面板尺寸和快捷键，也可选择在哪些显示器上显示。
 
-## 开始使用
+## 安装
 
-需要兼容的 Windows 10 或 11（x64）。
+适用于 Windows 10 或 11 x64。打开 [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) 并选择 ZIP。
 
-1. 打开 [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) 页面，下载 Windows x64 便携版 ZIP。
-2. 将整个压缩包解压到本地可写入的文件夹。
-3. 运行 `SideWidget.App.exe`。压缩包已包含 .NET 和 WebView2。将应用迁移到其他电脑时，请保留完整的解压文件夹。
+- **Lite 轻量版**（`-lite-win-x64.zip`）使用共享运行库，每台电脑只需安装一次。
+- **完整版**（`-portable-win-x64.zip`）内置运行库，支持离线运行。
 
-启动时，SideWidget 会在 GitHub 上检查是否有更新的稳定版。你可以立即更新、下次启动时提醒或跳过此版本。更新时，SideWidget 会验证 ZIP 的 SHA-256 校验值、解压文件并重新启动。也可在**设置 → 更新**中手动检查。
+将 ZIP 解压到单独的文件夹。使用 Lite 时，运行解压目录中的 [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat)。该脚本使用 WinGet。然后运行与 `App` 文件夹并列的 `SideWidget.exe`。
+
+### 手动安装 Lite 的依赖
+
+以下 x64 运行库只需安装一次。链接指向 Microsoft 安装程序。
+
+- [.NET Runtime 10.0 x64](https://aka.ms/dotnet/10.0/dotnet-runtime-win-x64.exe)
+- [ASP.NET Core Runtime 10.0 x64](https://aka.ms/dotnet/10.0/aspnetcore-runtime-win-x64.exe)
+- [Windows App Runtime 1.8.12 x64](https://aka.ms/windowsappsdk/1.8/1.8.260921001/windowsappruntimeinstall-x64.exe)
+- [Microsoft Edge WebView2 Evergreen](https://go.microsoft.com/fwlink/p/?LinkId=2124703)
+- [Microsoft Visual C++ Redistributable v14 x64](https://aka.ms/vc14/vc_redist.x64.exe)
+
+SideWidget 在启动时检查 GitHub 上的稳定版本，也可在**设置 → 更新**中检查。Lite 使用 Lite ZIP 更新。从完整版切换到 Lite 时，先在系统托盘退出 SideWidget，再运行 Lite 目录中的 `SideWidget.exe`。 系统已安装所有共享运行库时，完整版也会选择 Lite 更新包。
+
+[Everything](../../README.md#everything) · [voidtools x64](https://www.voidtools.com/downloads/)
 
 ## 项目文档
 

@@ -10,7 +10,6 @@ sealed class DesktopState : IDisposable
     public DesktopCleanup Cleanup {get;}
     public FocusTimerService Timer {get;}
     public OnlineServices Online {get;}
-    public SellyBoardConnection Selly {get;}
     public AudioSpectrumService Spectrum {get;}=new();
     public AudioService Audio {get;}=new();
     public MediaService Media {get;}=new();
@@ -25,8 +24,7 @@ sealed class DesktopState : IDisposable
             catch (Exception error) when (error is System.Runtime.InteropServices.COMException or SideWidget.Core.CommandFault or UnauthorizedAccessException) {return null;}
         },Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory));
         Online=new(Personal.Store,new SecretVault(Path.Combine(directory,"secrets")));
-        Selly=new(Personal.Store,new SecretVault(Path.Combine(directory,"secrets")));
         Spectrum.SetEnabled((Personal.Settings.Visualizer??new()).Enabled);
     }
-    public void Dispose(){PhoneRemote?.Dispose();Spectrum.Dispose();Audio.Dispose();Media.Dispose();Selly.Dispose();Online.Dispose();}
+    public void Dispose(){PhoneRemote?.Dispose();Spectrum.Dispose();Audio.Dispose();Media.Dispose();Online.Dispose();}
 }

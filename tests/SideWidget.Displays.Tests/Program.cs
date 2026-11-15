@@ -9,6 +9,17 @@ Check(DesktopLanguage.ResolveSystemLanguage("pt_BR")=="pt-BR","Weblate Brazilian
 Check(DesktopLanguage.IsSupported("de"),"web catalog is selectable on desktop");
 DesktopLanguage.Select("de");
 Check(DesktopLanguage.Text("Открыть панель")=="Panel öffnen","native catalog is embedded");
+Check(FocusTimerPresentation.Create(new(), 0) is null,"idle compact strip keeps calendar time");
+var countdown=FocusTimerPresentation.Create(new(Mode:"alarm",Status:"running",DurationSeconds:3600),3540)!;
+Check(countdown.CompactLabel(false)=="Wecker   59:00"&&countdown.CompactLabel(true)=="59:00"&&countdown.Progress>0,
+    "compact strip localizes alarms and fits a countdown in clock-only mode");
+var paused=FocusTimerPresentation.Create(new(Status:"paused",DurationSeconds:75),62)!;
+Check(paused.CompactLabel(true)=="Pausiert   01:02"&&paused.NeedsFullWidth,"clock-only strip preserves paused status");
+var ready=FocusTimerPresentation.Create(new(Mode:"pomodoro",Status:"ready",Phase:"break",DurationSeconds:300),300)!;
+Check(ready.CompactLabel(true)=="Startbereit   05:00"&&ready.NeedsFullWidth,"compact strip shows a ready Pomodoro phase");
+var ringing=FocusTimerPresentation.Create(new(Mode:"alarm",Status:"ringing"),0)!;
+Check(ringing.CompactLabel(true)=="Zeit abgelaufen   Drücken"&&ringing.Ringing&&ringing.NeedsFullWidth,
+    "clock-only strip widens for localized alarm and dismissal prompt");
 DesktopLanguage.Select("system");
 var a=new DesktopDisplay(new("a","Экран 1",true),1,new(){Monitor=new(){Left=0,Top=0,Right=1920,Bottom=1080}});
 var b=new DesktopDisplay(new("b","Экран 2",false),2,new(){Monitor=new(){Left=-2560,Top=0,Right=0,Bottom=1440}});
@@ -28,6 +39,11 @@ Native.Cursor=new(){X=-200,Y=20};desktop.ToggleAtPointer(123);
 Check(secondary.Toggles==1&&secondary.HotkeyReceivedAt==123&&primary.Toggles==0,"hotkey and timestamp target pointer on negative-coordinate display");
 Native.Cursor=new(){X=3000,Y=20};desktop.ToggleAtPointer(456);
 Check(primary.Toggles==1,"hotkey falls back when pointer has no selected curtain");
+desktop.ShowFullscreenClockAtPointer(new(){X=-200,Y=20},light:true);
+var fullscreenClock=FullscreenClockWindow.Last!;
+Check(fullscreenClock.Bounds.Left==b.Bounds.Monitor.Left&&fullscreenClock.Light,"tray clock targets the pointer display");
+desktop.ToggleAtPointer(650);
+Check(fullscreenClock.IsClosed&&primary.Toggles==1,"hotkey exits the fullscreen clock");
 desktop.ValidateSettings(new(Hotkey:"Ctrl+Shift+F12"));
 Check(primary.ValidatedHotkey=="Ctrl+Shift+F12"&&secondary.ValidatedHotkey==null,"hotkey validation belongs to primary");
 desktop.Synchronize(primary);
@@ -69,6 +85,16 @@ namespace Microsoft.UI.Dispatching
 namespace Microsoft.UI.Xaml {sealed class Application {public static Application Current {get;}=new();public void Exit(){}}}
 namespace SideWidget.App
 {
+    sealed class FullscreenClockWindow(bool light)
+    {
+        public static FullscreenClockWindow? Last;
+        public event EventHandler? Closed;
+        public bool Light {get;}=light;
+        public Native.Rect Bounds {get;private set;}
+        public bool IsClosed {get;private set;}
+        public void ShowOn(Native.Rect monitor){Bounds=monitor;Last=this;}
+        public void Close(){IsClosed=true;Closed?.Invoke(this,EventArgs.Empty);}
+    }
     sealed class DesktopState
     {
         public static DesktopState? Last;

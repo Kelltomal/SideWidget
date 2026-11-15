@@ -64,23 +64,59 @@ jobs:
       - name: Build the portable Windows app
         run: ./scripts/build.ps1 -SkipWeb
 
-      - name: Package the tagged build
+      - name: Smoke-test the portable Windows app
+        run: ./scripts/test-portable.ps1
+
+      - name: Build the Lite Windows app
+        run: ./scripts/build.ps1 -SkipWeb -Lite
+
+      - name: Set up shared runtimes for Lite smoke test
+        run: |
+          # VC++ x64 is part of the Windows Server 2025 runner image.
+          # The local SDK already includes the .NET and ASP.NET Core 10 x64 runtimes.
+          $windowsAppRuntime = Join-Path $env:RUNNER_TEMP 'WindowsAppRuntimeInstall-x64.exe'
+          Invoke-WebRequest -Uri 'https://aka.ms/windowsappsdk/1.8/1.8.260921001/windowsappruntimeinstall-x64.exe' -OutFile $windowsAppRuntime
+          $process = Start-Process -FilePath $windowsAppRuntime -ArgumentList '--quiet' -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Windows App Runtime installer failed ($($process.ExitCode))." }
+
+          $client = 'Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          $versions = Get-ItemPropertyValue -LiteralPath "HKLM:\SOFTWARE\WOW6432Node\$client","HKCU:\SOFTWARE\$client" -Name pv -ErrorAction SilentlyContinue
+          if (-not ($versions | Where-Object { $_ -and $_ -ne '0.0.0.0' })) {
+            $webView = Join-Path $env:RUNNER_TEMP 'MicrosoftEdgeWebview2Setup.exe'
+            Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $webView
+            $process = Start-Process -FilePath $webView -ArgumentList '/silent','/install' -WindowStyle Hidden -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "Evergreen WebView2 installer failed ($($process.ExitCode))." }
+          }
+
+      - name: Smoke-test the Lite Windows app
+        run: ./scripts/test-portable.ps1 -Lite -DotnetRoot .tools/dotnet
+
+      - name: Package the tagged builds
         if: github.ref_type == 'tag'
         run: |
           $version = $env:GITHUB_REF_NAME.Substring(1)
-          $assembly = Join-Path $PWD 'artifacts/release/SideWidget.App.dll'
-          $builtVersion = [Reflection.AssemblyName]::GetAssemblyName($assembly).Version
-          if ($builtVersion -ne [version]"$version.0") {
-            throw "Built app version '$builtVersion' does not match $env:GITHUB_REF_NAME."
+          foreach ($edition in @('release', 'release-lite')) {
+            $assembly = Join-Path $PWD "artifacts/$edition/SideWidget.App.dll"
+            $builtVersion = [Reflection.AssemblyName]::GetAssemblyName($assembly).Version
+            if ($builtVersion -ne [version]"$version.0") {
+              throw "Built app version '$builtVersion' does not match $env:GITHUB_REF_NAME."
+            }
           }
-          ./scripts/package.ps1 -OutputArchive "artifacts/github-release/SideWidget-$version-win-x64.zip"
+          $legacyArchive = "artifacts/github-release/SideWidget-$version-win-x64.zip"
+          $portableArchive = "artifacts/github-release/SideWidget-$version-portable-win-x64.zip"
+          $liteArchive = "artifacts/github-release/SideWidget-$version-lite-win-x64.zip"
+          ./scripts/package.ps1 -OutputArchive $legacyArchive
+          ./scripts/package-clean.ps1 -ReleaseDirectory artifacts/release -OutputArchive $portableArchive -PayloadArchive $legacyArchive
+          ./scripts/package-clean.ps1 -Lite -ReleaseDirectory artifacts/release-lite -OutputArchive $liteArchive
+          ./scripts/test-portable.ps1 -Archive $portableArchive
+          ./scripts/test-portable.ps1 -Archive $liteArchive -Lite -DotnetRoot .tools/dotnet
 
       - name: Upload release files
         id: release-files
         if: github.ref_type == 'tag'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: portable-release
+          name: windows-release
           path: artifacts/github-release/
           if-no-files-found: error
           compression-level: 0
@@ -105,17 +141,25 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Verify ZIP checksum
+      - name: Verify ZIP checksums
         working-directory: release
         shell: bash
-        run: sha256sum --check --strict "SideWidget-${GITHUB_REF_NAME#v}-win-x64.zip.sha256"
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sha256sum --check --strict "SideWidget-$version-win-x64.zip.sha256" \
+            "SideWidget-$version-portable-win-x64.zip.sha256" "SideWidget-$version-lite-win-x64.zip.sha256"
 
-      - name: Publish ZIP and checksum
+      - name: Publish ZIPs and checksums
         working-directory: release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          archive="SideWidget-${GITHUB_REF_NAME#v}-win-x64.zip"
-          gh release create "$GITHUB_REF_NAME" "$archive" "$archive.sha256" \
+          version="${GITHUB_REF_NAME#v}"
+          files=()
+          for edition in '' '-portable' '-lite'; do
+            archive="SideWidget-$version$edition-win-x64.zip"
+            files+=("$archive" "$archive.sha256")
+          done
+          gh release create "$GITHUB_REF_NAME" "${files[@]}" \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "SideWidget $GITHUB_REF_NAME" --generate-notes

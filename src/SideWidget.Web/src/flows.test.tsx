@@ -12,7 +12,7 @@ import {bridge,BridgeError} from './bridge';
 import type {Snapshot} from './types';
 const hostAvailability=vi.hoisted(()=>({enabled:false}));
 vi.mock('./ui',async importOriginal=>({...await importOriginal<typeof import('./ui')>(),invoke:vi.fn(),get nativeAvailable(){return hostAvailability.enabled;}}));
-const snapshot:Snapshot={settings:{width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:[],disabled:[]},calculatorHistory:[{id:'old',expression:'1+1',result:'2',time:'2026-11-05T00:00:00Z'}],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''},selly:{configured:false,message:'Не подключено'}};
+const snapshot:Snapshot={settings:{width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:[],disabled:[]},calculatorHistory:[{id:'old',expression:'1+1',result:'2',time:'2026-11-05T00:00:00Z'}],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''}};
 afterEach(()=>{cleanup();hostAvailability.enabled=false;vi.useRealTimers();vi.restoreAllMocks();vi.resetAllMocks();});
 it('switches theme immediately, persists across restart, and keeps unsaved form fields separate',async()=>{
  localStorage.clear();HTMLElement.prototype.scrollTo=vi.fn();render(<App/>);

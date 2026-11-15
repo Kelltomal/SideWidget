@@ -9,7 +9,7 @@ const host=vi.hoisted(()=>({enabled:false}));
 vi.mock('./ui',async original=>({...await original<typeof import('./ui')>(),get nativeAvailable(){return host.enabled;},invoke:vi.fn(async()=>({enabled:false}))}));
 const settings:Settings={width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:[],disabled:[]};
 const displays=[{id:'one',name:'Экран 1',primary:true},{id:'two',name:'Экран 2',primary:false}];
-const state:Snapshot={settings,displays,calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''},selly:{configured:false,message:''}};
+const state:Snapshot={settings,displays,calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''}};
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();localStorage.clear();history.replaceState(null,'',location.pathname);});
 it('migrates legacy index and allows adding screens',()=>{
  const change=vi.fn();render(<DisplaySettings settings={{...settings,monitor:1}} displays={displays} onChange={change} onPositionChange={vi.fn()}/>);

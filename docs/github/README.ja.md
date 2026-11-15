@@ -73,18 +73,31 @@ SideWidget は常識を大切にし、GPT-6.1 Sol の支援を受けて開発し
 - 起動中の Everything を使ったファイル検索と、ピン留めしたアプリの起動。
 - **ファイルとフォルダー。** デスクトップのファイル整理、フォルダーアイコンのプレビュー、共通スタイルまたはフォルダーごとのスタイル設定、直前のアイコン変更の取り消し。
 - 対応プレーヤーの再生操作、音量ミキサー、PC のシステム情報の表示。
-- SellyBoard と連携できるカレンダー、ローカルに保存する Markdown の下書き、外部サービスを利用した翻訳。
+- カレンダー、ローカル Markdown 下書き、外部サービスによる翻訳。
 - パネルのサイズやショートカットの変更、表示するモニターの選択。
 
-## 使い始める
+## インストール
 
-対応する Windows 10 または 11（x64）が必要です。
+Windows 10 または 11 x64 が必要です。[Releases](https://github.com/Kelltomal/SideWidget/releases/latest) を開き、ZIP を選びます。
 
-1. [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) を開き、Windows x64 向けのポータブル版 ZIP をダウンロードします。
-2. ZIP 全体を書き込み可能なローカルフォルダーに展開します。
-3. `SideWidget.App.exe` を起動します。ZIP には .NET と WebView2 が含まれます。別の PC に移す場合は、展開したフォルダーごとコピーしてください。
+- **Lite**（`-lite-win-x64.zip`）は共有ランタイムを使います。ランタイムのインストールは PC ごとに一度です。
+- **フル版**（`-portable-win-x64.zip`）はランタイムを同梱し、オフラインで使えます。
 
-起動時に GitHub で新しい安定版を確認します。今すぐ更新、次回起動時に再通知、このバージョンをスキップ、のいずれかを選べます。更新時は ZIP の SHA-256 を確認して展開し、SideWidget が再起動します。**設定 → 更新**からも手動で確認できます。
+ZIP を専用のフォルダーに展開します。Lite の場合は展開先の [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat) を実行します。このスクリプトは WinGet を使用します。その後、`App` フォルダーの隣にある `SideWidget.exe` を実行します。
+
+### Lite の依存関係を手動でインストール
+
+以下の x64 パッケージをインストールします。リンク先は Microsoft のインストーラーです。
+
+- [.NET Runtime 10.0 x64](https://aka.ms/dotnet/10.0/dotnet-runtime-win-x64.exe)
+- [ASP.NET Core Runtime 10.0 x64](https://aka.ms/dotnet/10.0/aspnetcore-runtime-win-x64.exe)
+- [Windows App Runtime 1.8.12 x64](https://aka.ms/windowsappsdk/1.8/1.8.260921001/windowsappruntimeinstall-x64.exe)
+- [Microsoft Edge WebView2 Evergreen](https://go.microsoft.com/fwlink/p/?LinkId=2124703)
+- [Microsoft Visual C++ Redistributable v14 x64](https://aka.ms/vc14/vc_redist.x64.exe)
+
+起動時に GitHub の安定版を確認します。**設定 → 更新**からも確認できます。Lite の更新には Lite ZIP を使います。フル版から切り替えるには、トレイから終了し、Lite の `SideWidget.exe` を実行します。 共有ランタイムが揃っている場合は、フル版のアップデートにも Lite が選ばれます。
+
+[Everything](../../README.md#everything) · [voidtools x64](https://www.voidtools.com/downloads/)
 
 ## プロジェクトのドキュメント
 

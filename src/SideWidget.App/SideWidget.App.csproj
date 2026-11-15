@@ -3,11 +3,17 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion><UseWinUI>true</UseWinUI>
-    <WindowsPackageType>None</WindowsPackageType><WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <SelfContained>true</SelfContained><RuntimeIdentifier>win-x64</RuntimeIdentifier><PlatformTarget>x64</PlatformTarget>
+    <WindowsPackageType>None</WindowsPackageType><RuntimeIdentifier>win-x64</RuntimeIdentifier><PlatformTarget>x64</PlatformTarget>
     <ApplicationManifest>app.manifest</ApplicationManifest><EnableMsixTooling>false</EnableMsixTooling>
     <ApplicationIcon>Assets/Icons/sidemenu.ico</ApplicationIcon>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SideWidgetLite)' != 'true'">
+    <SelfContained>true</SelfContained><WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SideWidgetLite)' == 'true'">
+    <SelfContained>false</SelfContained><WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <DistributionArguments>-Lite</DistributionArguments>
   </PropertyGroup>
   <ItemGroup><PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../SideWidget.Core/SideWidget.Core.csproj" /><ProjectReference Include="../SideWidget.Infrastructure/SideWidget.Infrastructure.csproj" /></ItemGroup>
@@ -18,8 +24,9 @@
   <ItemGroup><Content Include="../SideWidget.Web/dist/**" Link="Web/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/><Content Include="../../licenses/*" Link="Licenses/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/></ItemGroup>
 <ItemGroup><Content Include="Assets/Native/Everything64.dll" Link="Everything64.dll" CopyToOutputDirectory="PreserveNewest"/><Content Include="Assets/Native/Everything-SDK-LICENSE.txt" Link="Licenses/Everything-SDK-LICENSE.txt" CopyToOutputDirectory="PreserveNewest"/></ItemGroup>
   <Target Name="PreparePortableDistribution" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'win-x64'">
-    <Error Condition="'$(SelfContained)' != 'true'" Text="Portable SideWidget requires --self-contained true. Framework-dependent candidate publication is not supported." />
-    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="pwsh.exe -NoProfile -File &quot;$(MSBuildThisFileDirectory)..\..\scripts\finalize-distribution.ps1&quot; -ReleaseDirectory &quot;$(PublishDir)\.&quot;" />
+    <Error Condition="'$(SideWidgetLite)' != 'true' And ('$(SelfContained)' != 'true' Or '$(WindowsAppSDKSelfContained)' != 'true')" Text="Portable SideWidget requires self-contained .NET and Windows App SDK." />
+    <Error Condition="'$(SideWidgetLite)' == 'true' And ('$(SelfContained)' != 'false' Or '$(WindowsAppSDKSelfContained)' != 'false')" Text="Lite SideWidget requires shared .NET and Windows App SDK." />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="pwsh.exe -NoProfile -File &quot;$(MSBuildThisFileDirectory)..\..\scripts\finalize-distribution.ps1&quot; -ReleaseDirectory &quot;$(PublishDir)\.&quot; $(DistributionArguments)" />
   </Target>
 </Project>
 

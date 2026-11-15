@@ -18,6 +18,22 @@ foreach(var theme in new[]{"dark","light","system"}){
     Check(JsonSerializer.Deserialize<Preferences>(JsonSerializer.Serialize(themed,Protocol.Json),Protocol.Json)!.Theme==theme,"theme roundtrip");
 }
 Check(JsonSerializer.Deserialize<Preferences>("{}",Protocol.Json)!.Theme=="dark","existing settings default dark");
+var oldClockSettings=JsonSerializer.Deserialize<Preferences>("{}",Protocol.Json)!;
+Check(oldClockSettings.ClockFontSize==22&&oldClockSettings.ClockHeaderHeight==52&&oldClockSettings.CompactClockHeight==23,"old profiles keep clock geometry");
+var largerClock=oldClockSettings with{ClockFontSize=34,CompactStripHeight=60};
+var restoredClock=JsonSerializer.Deserialize<Preferences>(JsonSerializer.Serialize(largerClock,Protocol.Json),Protocol.Json)!;
+Check(restoredClock.ClockHeaderHeight==64&&restoredClock.CompactClockHeight==60,"clock preferences survive JSON round trip");
+Check((largerClock with{CompactStripHeight=23}).CompactClockHeight>23,"compact strip grows to fit larger clock");
+Reject(()=>(largerClock with{ClockFontSize=35}).Validate(),"clock size bounds");
+Reject(()=>(largerClock with{CompactStripHeight=121}).Validate(),"compact strip height bounds");
+var resizedMotion=new PanelMotion();
+resizedMotion.ResizeHeader(64,632);
+Check(resizedMotion.Height==64&&resizedMotion.State==PanelState.Collapsed,"clock size grows collapsed panel");
+resizedMotion.Target(true,632,true);
+resizedMotion.ResizeHeader(44,612);
+Check(resizedMotion.Height==612&&resizedMotion.State==PanelState.Expanded,"clock size shrinks expanded panel");
+resizedMotion.Target(false,immediate:true);
+Check(resizedMotion.Height==44&&resizedMotion.State==PanelState.Collapsed,"collapse uses resized header");
 Reject(()=>new Preferences(Theme:"invalid").Validate(),"invalid theme");
 var dir=Path.Combine(Path.GetTempPath(),"SideWidget-reset-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);var db=Path.Combine(dir,"sidewidget.db");
 Check(WebLink.Validate("https://example.com/a?q=test").Host=="example.com","web link");
@@ -44,7 +60,6 @@ count += PhoneNetworkChecks.Run();
 count += LauncherPersistenceChecks.Run();
 count += await OnlineChecks.Run();
 count += await GitHubUpdateChecks.Run();
-count += await SellyBoardChecks.Run();
 Console.WriteLine($"PASS {count} checks, including 500 rapid motion transitions; storage/migration/protocol/DPAPI/currency.");
 if (args.Contains("--public-online")) Environment.ExitCode = await OnlineChecks.RunPublic();
 

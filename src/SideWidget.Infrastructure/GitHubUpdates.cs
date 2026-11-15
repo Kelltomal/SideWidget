@@ -28,6 +28,14 @@ public sealed record GitHubUpdateResult(
 public sealed record GitHubPortableAsset(string Tag, string Name, long Size, string Sha256)
 {
     public Uri DownloadUrl => new($"https://github.com/Kelltomal/SideWidget/releases/download/{Tag}/{Name}");
+
+    [JsonIgnore]
+    public bool IsLite => Name.EndsWith("-lite-win-x64.zip", StringComparison.Ordinal);
+
+    internal static string ArchiveName(Version version, bool lite) =>
+        $"SideWidget-{version}-{(lite ? "lite" : "portable")}-win-x64.zip";
+
+    internal static string LegacyArchiveName(Version version) => $"SideWidget-{version}-win-x64.zip";
 }
 
 public sealed class GitHubUpdates(HttpClient? transport = null)
@@ -42,7 +50,11 @@ public sealed class GitHubUpdates(HttpClient? transport = null)
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
     });
 
-    public async Task<GitHubUpdateResult> CheckAsync(Version currentVersion, CancellationToken cancellationToken = default)
+    public Task<GitHubUpdateResult> CheckAsync(Version currentVersion, CancellationToken cancellationToken = default) =>
+        CheckAsync(currentVersion, lite: false, cancellationToken);
+
+    public async Task<GitHubUpdateResult> CheckAsync(Version currentVersion, bool lite, CancellationToken cancellationToken = default,
+        bool preferLite = false)
     {
         // Assembly versions generally add a fourth, zero revision component.
         var current = currentVersion.Revision > 0
@@ -86,14 +98,14 @@ public sealed class GitHubUpdates(HttpClient? transport = null)
             if (latest <= current)
                 return new(GitHubUpdateStatus.Current, unavailable.CurrentVersion, versionText);
 
-            var portableName = $"SideWidget-{versionText}-win-x64.zip";
-            var portable = release.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array
-                ? assets.EnumerateArray().FirstOrDefault(asset => IsUploadedPortable(asset, portableName)) : default;
-            var hasPortableAsset = portable.ValueKind == JsonValueKind.Object;
-            var digest = hasPortableAsset ? ReadString(portable, "digest") : null;
-            var verified = digest is { Length: 71 } && digest.StartsWith("sha256:", StringComparison.Ordinal) &&
-                digest[7..].All(Uri.IsHexDigit)
-                ? new GitHubPortableAsset(tag, portableName, portable.GetProperty("size").GetInt64(), digest[7..]) : null;
+            var (hasPortableAsset, verified) = lite || preferLite
+                ? FindPortable(release, tag, GitHubPortableAsset.ArchiveName(latest, lite: true)) : default;
+            if (!lite && verified is null)
+            {
+                (hasPortableAsset, verified) = FindPortable(release, tag, GitHubPortableAsset.ArchiveName(latest, lite: false));
+                if (!hasPortableAsset)
+                    (hasPortableAsset, verified) = FindPortable(release, tag, GitHubPortableAsset.LegacyArchiveName(latest));
+            }
             return new(GitHubUpdateStatus.Available, unavailable.CurrentVersion, versionText,
                 $"https://github.com/{Repository}/releases/tag/{tag}", hasPortableAsset, verified);
         }
@@ -105,6 +117,20 @@ public sealed class GitHubUpdates(HttpClient? transport = null)
         {
             return unavailable;
         }
+    }
+
+    static (bool Uploaded, GitHubPortableAsset? Verified) FindPortable(JsonElement release, string tag, string name)
+    {
+        if (!release.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
+            return (false, null);
+        var portable = assets.EnumerateArray().FirstOrDefault(asset => IsUploadedPortable(asset, name));
+        if (portable.ValueKind != JsonValueKind.Object)
+            return (false, null);
+        var digest = ReadString(portable, "digest");
+        var verified = digest is { Length: 71 } && digest.StartsWith("sha256:", StringComparison.Ordinal) &&
+            digest[7..].All(Uri.IsHexDigit)
+            ? new GitHubPortableAsset(tag, name, portable.GetProperty("size").GetInt64(), digest[7..]) : null;
+        return (true, verified);
     }
 
     static bool IsUploadedPortable(JsonElement asset, string portableName) =>

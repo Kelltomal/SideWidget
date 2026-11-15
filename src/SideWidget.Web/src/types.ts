@@ -1,6 +1,8 @@
 export type VisualizerOptions={enabled:boolean;showInHeader:boolean;brightness:number;sensitivity:number;style:'wave'|'bars'};
 export type AudioSpectrumFrame={available:boolean;message?:string;bands:number[];rms:number;sequence:number;settings:VisualizerOptions};
 export type Settings = {
+  clockFontSize?:number;
+  compactStripHeight?:number;
   language?: import('./i18n').LanguagePreference|null;
   displayIds?:string[]|null;
   displayPositions?:Record<string,number>|null;
@@ -20,7 +22,6 @@ export type Snapshot = {
   settings:Settings; calculatorHistory:Calculation[]; colorHistory:string[];
   unitFavorites:{from:string;to:string}[]; apps:AppShortcut[]; drafts:{diary:string};
   launcherUndoAvailable?:boolean;
-  selly:{configured:boolean;message:string};
 };
 export type DisplayDescriptor={id:string;name:string;primary:boolean};
 export type Invoke = <T>(action:string, params?:object)=>Promise<T>;

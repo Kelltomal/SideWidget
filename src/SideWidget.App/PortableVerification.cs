@@ -10,8 +10,7 @@ namespace SideWidget.App;
 
 static class PortableVerification
 {
-    // Runs before the desktop mutex/UI. Lets release checks execute the actual
-    // shipped apphost with DOTNET_ROOT pointed at an empty directory.
+    // Runs the shipped apphost before the desktop mutex/UI.
     public static bool TryRun(string[] args)
     {
         if(args.Length!=2||args[0] is not ("--verify-portable" or "--share-portable"))return false;
@@ -22,20 +21,35 @@ static class PortableVerification
                 DistributionArchive.Create(AppContext.BaseDirectory,args[1]);return true;
             }
             DistributionArchive.Validate(AppContext.BaseDirectory);
+            var lite = DistributionArchive.IsLite(AppContext.BaseDirectory);
             var root=Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory)+Path.DirectorySeparatorChar;
             var runtime=RuntimeEnvironment.GetRuntimeDirectory();
-            if(!Path.GetFullPath(runtime).StartsWith(root,StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException(".NET loaded outside the distribution: "+runtime);
-            // Load native subsystems from their app-local paths, not System32 copies.
-            var libraries=new[]{"vcruntime140.dll","vcruntime140_1.dll","msvcp140.dll","concrt140.dll","Microsoft.WindowsAppRuntime.dll","Microsoft.ui.xaml.dll","WebView2Loader.dll","Everything64.dll"};
+            bool IsLocal(string path) => Path.GetFullPath(path).StartsWith(root, StringComparison.OrdinalIgnoreCase);
+            if (IsLocal(runtime) == lite)
+                throw new InvalidOperationException("Unexpected .NET runtime location: " + runtime);
+            var libraries = lite
+                ? new[] { "Microsoft.WindowsAppRuntime.Bootstrap.dll", "WebView2Loader.dll", "Everything64.dll" }
+                : new[] { "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "concrt140.dll", "Microsoft.WindowsAppRuntime.dll", "Microsoft.ui.xaml.dll", "WebView2Loader.dll", "Everything64.dll" };
             foreach(var name in libraries)NativeLibrary.Load(Path.Combine(root,name));
+            if (lite)
+            {
+                NativeLibrary.Load("Microsoft.WindowsAppRuntime.dll");
+                NativeLibrary.Load("Microsoft.ui.xaml.dll");
+                NativeLibrary.Load("vcruntime140.dll");
+            }
             using var connection=new SqliteConnection("Data Source=:memory:");connection.Open();
-            var browser=BundledBrowser.Folder()??throw new InvalidOperationException("Bundled WebView2 missing");
+            var browser=BundledBrowser.Folder();
+            if ((browser is null) != lite) throw new InvalidOperationException("Unexpected WebView2 configuration");
             var browserVersion=CoreWebView2Environment.GetAvailableBrowserVersionString(browser);
-            // Include the optional local remote-server stack if this build contains it.
-            if(File.Exists(Path.Combine(root,"Microsoft.AspNetCore.Server.Kestrel.Core.dll")))Assembly.Load("Microsoft.AspNetCore.Server.Kestrel.Core");
+            var aspNet = Assembly.Load("Microsoft.AspNetCore.Server.Kestrel.Core").Location;
+            if (IsLocal(aspNet) == lite)
+                throw new InvalidOperationException("Unexpected ASP.NET Core runtime location: " + aspNet);
             var modules=Process.GetCurrentProcess().Modules.Cast<ProcessModule>()
-                .Where(module=>module.FileName.StartsWith(root,StringComparison.OrdinalIgnoreCase)).Select(module=>module.FileName).ToArray();
-            File.WriteAllText(args[1],JsonSerializer.Serialize(new{passed=true,application=root,runtime,browser,browserVersion,sqlite=connection.ServerVersion,modules},new JsonSerializerOptions{WriteIndented=true}));
+                .Select(module=>module.FileName).ToArray();
+            var winUi = modules.FirstOrDefault(path => Path.GetFileName(path).Equals("Microsoft.ui.xaml.dll", StringComparison.OrdinalIgnoreCase));
+            if (winUi is null || IsLocal(winUi) == lite)
+                throw new InvalidOperationException("Unexpected WinUI runtime location: " + winUi);
+            File.WriteAllText(args[1],JsonSerializer.Serialize(new{passed=true,lite,application=root,runtime,aspNet,winUi,browser,browserVersion,sqlite=connection.ServerVersion,modules},new JsonSerializerOptions{WriteIndented=true}));
         }
         catch(Exception error)
         {

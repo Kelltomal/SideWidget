@@ -20,10 +20,7 @@ sealed partial class Controller
     public Preferences Settings {get=>state.Settings;set=>state.Settings=value;}
     public LauncherService Launcher {get;}
     public OnlineServices Online {get;}
-    public SellyBoardConnection Selly {get;}
-    Task? sellyRestore;
     int sharing;
-    public Func<Task<object>> ConfigureSellyBoard {get;set;}=()=>Task.FromResult<object>(new{});
     public bool Ready {get;set;}
     public Func<string,string,Task<bool>> Confirm {get;set;}=(_,_)=>Task.FromResult(false);
     public Func<Task<object>> AddApp {get;set;}=()=>Task.FromResult<object>(new{});
@@ -41,11 +38,12 @@ sealed partial class Controller
     public Action<Preferences> SettingsChanged {get;set;}=_=>{};
     public Action<string,object> Emit {get;set;}=(_,_)=>{};
     public Action<string> Shell {get;set;}=_=>{};
+    public Action ShowFullscreenClock {get;set;}=()=>{};
     public Action<TooltipContent?> Tooltip {get;set;}=_=>{};
     public Func<IReadOnlyList<DisplayDescriptor>> Displays {get;set;}=()=>[];
     public Controller(string directory):this(new DesktopState(directory)){ownsDesktopState=true;audio.LevelChanged+=(volume,muted)=>Emit("audio.level.changed",new{volume,muted});}
-    internal Controller(DesktopState shared){desktopState=shared;state=shared.Personal;Timer=shared.Timer;Launcher=shared.Launcher;Online=shared.Online;Selly=shared.Selly;audio=shared.Audio;media=shared.Media;}
-    public object Snapshot()=>new {appVersion,language=DesktopLanguage.Language,systemLanguage=DesktopLanguage.SystemLanguage,settings=Settings,displays=Displays(),calculatorHistory=state.CalculatorHistory,colorHistory=state.ColorHistory,unitFavorites=state.UnitFavorites,apps=state.Apps,launcherUndoAvailable=Launcher.CanUndo,drafts=new{diary=state.DiaryDraft},selly=new{configured=false,message="Подключение календаря и дневника SellyBoard требует отдельного API-доступа. Локальный черновик сохраняется на этом компьютере."}};
+    internal Controller(DesktopState shared){desktopState=shared;state=shared.Personal;Timer=shared.Timer;Launcher=shared.Launcher;Online=shared.Online;audio=shared.Audio;media=shared.Media;}
+    public object Snapshot()=>new {appVersion,language=DesktopLanguage.Language,systemLanguage=DesktopLanguage.SystemLanguage,settings=Settings,displays=Displays(),calculatorHistory=state.CalculatorHistory,colorHistory=state.ColorHistory,unitFavorites=state.UnitFavorites,apps=state.Apps,launcherUndoAvailable=Launcher.CanUndo,drafts=new{diary=state.DiaryDraft}};
     public void SavePlacement(Preferences p){state.SaveSettings(p);Emit("settings.changed",new{settings=p});}
     public async Task<object> Handle(Command c)
     {
@@ -68,6 +66,18 @@ sealed partial class Controller
                 case "shell.editing":Shell(p.GetProperty("value").GetBoolean()?"editing":"idle");return new{};
                 case "shell.tooltip":Tooltip(p.GetProperty("visible").GetBoolean()?TooltipContent.Read(p):null);return new{};
                 case "settings.theme":var themed=Settings with{Theme=Text("theme",16)};themed.Validate();state.SaveSettings(themed);ThemeChanged(themed.Theme);return Snapshot();
+                case "settings.clock":
+                    var clockSettings=Settings with
+                    {
+                        ClockFontSize=p.TryGetProperty("clockFontSize",out var fontSize)?fontSize.GetInt32():Settings.ClockFontSize,
+                        CompactStripHeight=p.TryGetProperty("compactStripHeight",out var stripHeight)?stripHeight.GetInt32():Settings.CompactStripHeight
+                    };
+                    clockSettings.ValidateClock();
+                    if(clockSettings!=Settings)state.SaveSettings(clockSettings);
+                    return Snapshot();
+                case "clock.fullscreen":
+                    ShowFullscreenClock();
+                    return new{};
                 case "settings.language":
                     var language=Text("language",128);
                     if(language!="system"&&!DesktopLanguage.IsSupported(language))throw new CommandFault("settings","Выберите язык приложения.");
@@ -79,7 +89,8 @@ sealed partial class Controller
                     var previousSettings=Settings;
                     settings.Validate();
                     var positionChanges=settings.DisplayPositions;
-                    settings=settings with{DisplayPositions=previousSettings.DisplayPositions,Language=previousSettings.Language};
+                    settings=settings with{DisplayPositions=previousSettings.DisplayPositions,Language=previousSettings.Language,
+                        ClockFontSize=previousSettings.ClockFontSize,CompactStripHeight=previousSettings.CompactStripHeight};
                     if(positionChanges is not null)
                         foreach(var entry in positionChanges)settings=settings.WithDisplayPosition(entry.Key,entry.Value);
                     SettingsChanged(settings);
@@ -155,14 +166,6 @@ sealed partial class Controller
                 case "search.open":var path=Text("path",32768);if(!allowedSearch.Contains(path))throw new CommandFault("search","Обновите поиск перед открытием");LauncherService.OpenSearch(path,p.TryGetProperty("reveal",out var reveal)&&reveal.GetBoolean());return new{opened=true};
                 case "quick.open":QuickActions.Open(Text("target",30));return new{opened=true};
                 case "quick.power":var action=Text("action",20);if(await Confirm("Выполнить системное действие?",QuickActions.Description(action))){QuickActions.Power(action);return new{executed=true};}return new{executed=false};
-                case "selly.info":await (sellyRestore??=Selly.Restore());return Selly.Info();
-                case "selly.configure":return await ConfigureSellyBoard();
-                case "selly.disconnect":await Selly.Disconnect();return Selly.Info();
-                case "selly.events":return await Selly.Events(Text("start",10),Text("end",10));
-                case "selly.detail":return await Selly.Detail(Text("id",19),Text("occurrence",100));
-                case "selly.status":return await Selly.SetStatus(Text("id",19),Text("status",20));
-                case "selly.create":return await Selly.Create(Text("title",250),Text("day",10));
-                case "selly.retryCreate":return await Selly.RetryCreate();
                 case "currency.get":return await Online.Currency();case "weather.get":return await Online.Weather(Text("city",120));
                 case "translation.get":return Online.TranslationInfo();case "translation.configure":return await ConfigureTranslation();
                 case "translation.run":

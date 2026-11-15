@@ -73,18 +73,31 @@ Pick a color from the screen, copy it as HEX, RGB, or HSL, and save it to your p
 - File search through a running Everything instance and quick access to pinned apps.
 - **Files and folders.** Organize desktop files, preview folder icons, choose a shared style or set one for each folder, and undo the last icon change.
 - Playback controls for compatible players, a volume mixer, and system metrics.
-- Calendar with optional SellyBoard integration, a local Markdown draft, and translation through external services.
+- Calendar, a local Markdown draft, and translation through external services.
 - Customizable size, keyboard shortcut, and display selection.
 
 ## Getting started
 
-SideWidget requires a compatible 64-bit (x64) edition of Windows 10 or 11.
+For 64-bit (x64) Windows 10 or 11. Open [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) and choose a ZIP.
 
-1. Open [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) and download the portable Windows x64 ZIP.
-2. Extract the entire archive to a writable local folder.
-3. Run `SideWidget.App.exe`. The ZIP includes .NET and WebView2. Keep the extracted folder together when moving SideWidget to another computer.
+- **Lite** (`-lite-win-x64.zip`) uses shared runtimes that you install once.
+- **Full** (`-portable-win-x64.zip`) includes its own runtimes for offline use.
 
-At startup, SideWidget checks GitHub for a newer stable release. Update now, defer until next launch, or skip that version. To update, SideWidget verifies the ZIP against its SHA-256 checksum, extracts the build, and restarts. You can also check manually under **Settings → Updates**.
+Extract the ZIP to its own folder. For Lite, run [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat) from the extracted folder. The script uses WinGet. Then run `SideWidget.exe` beside the `App` folder.
+
+### Install Lite dependencies manually
+
+Install these x64 packages once. The links point to Microsoft installers.
+
+- [.NET Runtime 10.0 x64](https://aka.ms/dotnet/10.0/dotnet-runtime-win-x64.exe)
+- [ASP.NET Core Runtime 10.0 x64](https://aka.ms/dotnet/10.0/aspnetcore-runtime-win-x64.exe)
+- [Windows App Runtime 1.8.12 x64](https://aka.ms/windowsappsdk/1.8/1.8.260921001/windowsappruntimeinstall-x64.exe)
+- [Microsoft Edge WebView2 Evergreen](https://go.microsoft.com/fwlink/p/?LinkId=2124703)
+- [Microsoft Visual C++ Redistributable v14 x64](https://aka.ms/vc14/vc_redist.x64.exe)
+
+SideWidget checks stable GitHub releases on startup. You can also check under **Settings → Updates**. Lite updates use the Lite ZIP. To switch from Full to Lite, exit SideWidget from the tray and launch `SideWidget.exe` from the Lite folder. The full edition also selects Lite for updates when the shared runtimes are already installed.
+
+[Everything](../../README.md#everything) · [voidtools x64](https://www.voidtools.com/downloads/)
 
 ## Project documentation
 

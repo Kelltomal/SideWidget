@@ -44,12 +44,6 @@
   "Тариф API": "Plano da API",
   "Текст отправляется в DeepL только по кнопке «Перевести». Ключ хранится в Windows DPAPI.": "O texto só é enviado ao DeepL ao clicar em Traduzir. A chave salva é protegida pelo Windows DPAPI.",
   "Перевод DeepL": "Tradução com DeepL",
-  "Адрес SellyBoard": "Endereço do SellyBoard",
-  "https://ваш-сервер/": "https://seu-servidor/",
-  "Персональный API-ключ": "Chave pessoal da API",
-  "Создайте ключ календаря в SellyBoard: Настройки · API. Он должен быть привязан к вашему пользователю. Ключ хранится в Windows DPAPI; в интерфейс и браузер не передаётся.": "No SellyBoard, abra Configurações › API e crie uma chave de calendário vinculada à sua conta. O Windows DPAPI protege a chave salva. A interface e o navegador não recebem a chave.",
-  "Подключить SellyBoard": "Conectar ao SellyBoard",
-  "Подключить": "Conectar",
   "SideWidget — печать QR-стикеров": "SideWidget — imprimir etiquetas QR",
   "Печать…": "Imprimir…",
   "Документ печати слишком большой. Уменьшите количество стикеров.": "O documento de impressão é grande demais. Reduza o número de etiquetas.",
@@ -114,5 +108,8 @@
   "Повреждённое изображение": "A imagem está corrompida.",
   "SVG содержит неподдерживаемые элементы": "O SVG contém elementos incompatíveis.",
   "Внешние ресурсы SVG не разрешены": "O SVG não pode referenciar recursos externos.",
-  "Выберите SVG, PNG или JPEG": "Escolha SVG, PNG ou JPEG."
+  "Выберите SVG, PNG или JPEG": "Escolha SVG, PNG ou JPEG.",
+  "Часы на весь экран": "Relógio em tela cheia",
+  "Выйти из полноэкранного режима": "Sair da tela cheia",
+  "Проверьте размер часов и высоту полоски": "Confira o tamanho do relógio e a altura da barra"
 }

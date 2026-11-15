@@ -4,19 +4,18 @@ import type {Snapshot} from './types';
 import type {LocalProps,SessionText} from './LocalTools';
 import {QrTool} from './LocalTools';
 import {CopyButton,Icon,invoke,localDate,nativeAvailable,Notice,Panel,useAction} from './ui';
-import {SellyBoardPanel} from './SellyBoardPanel';
 import {type TranslationProvider} from './translation';
 
-export function Calendar({state,compact=false,open}:{state:Snapshot;compact?:boolean;open?:()=>void}) {
+export function Calendar({compact=false,open}:{compact?:boolean;open?:()=>void}) {
  const [month,setMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));const [selected,setSelected]=useState(localDate());
  const today=localDate();const start=(month.getDay()+6)%7;const days=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
  const dates=Array.from({length:start+days},(_,index)=>index<start?null:new Date(month.getFullYear(),month.getMonth(),index-start+1));
  function move(delta:number){setMonth(new Date(month.getFullYear(),month.getMonth()+delta,1));}
- if(compact)return <button className="day-glance" onClick={open}><span>{t('Календарь и задачи')}</span><strong>{new Date().toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'short'})}</strong></button>;
- return <Panel title={t('Календарь')} action={compact&&<button className="quiet" onClick={open}>{t('Открыть')}</button>}>
+ if(compact)return <button className="day-glance" onClick={open}><span>{t('Календарь')}</span><strong>{new Date().toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'short'})}</strong></button>;
+ return <Panel title={t('Календарь')}>
   <div className="month-heading"><button className="icon-button" aria-label={t('Предыдущий месяц')} onClick={()=>move(-1)}><Icon name="back" size={16}/></button><strong>{month.toLocaleDateString(locale(),{month:'long',year:'numeric'})}</strong><button className="icon-button" aria-label={t('Следующий месяц')} onClick={()=>move(1)}><Icon name="arrow" size={16}/></button></div>
   <div className="calendar-grid" aria-label={t('Выбор даты')}>{[t('Пн'),t('Вт'),t('Ср'),t('Чт'),t('Пт'),t('Сб'),t('Вс')].map(day=><span className="weekday" key={day}>{day}</span>)}{dates.map((date,index)=>date?<button key={localDate(date)} className={`${localDate(date)===today?'today ':''}${localDate(date)===selected?'chosen':''}`} aria-label={date.toLocaleDateString(locale(),{day:'numeric',month:'long',year:'numeric'})} aria-pressed={localDate(date)===selected} onClick={()=>setSelected(localDate(date))}>{date.getDate()}</button>:<span key={`blank-${index}`}/>)}</div>
-  {!compact&&<><div className="section-heading"><h3>{new Date(`${selected}T12:00:00`).toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'long'})}</h3><button className="quiet" onClick={()=>{setSelected(today);setMonth(new Date(new Date().getFullYear(),new Date().getMonth(),1));}}>{t('Сегодня')}</button></div><SellyBoardPanel day={selected} start={localDate(month)} end={localDate(new Date(month.getFullYear(),month.getMonth()+1,1))}/></>}
+  <div className="section-heading"><h3>{new Date(`${selected}T12:00:00`).toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'long'})}</h3><button className="quiet" onClick={()=>{setSelected(today);setMonth(new Date(new Date().getFullYear(),new Date().getMonth(),1));}}>{t('Сегодня')}</button></div>
  </Panel>;
 }
 
@@ -32,7 +31,7 @@ export function Diary({state,setState}:LocalProps) {
  useEffect(()=>{if(latest.current===lastSaved.current){lastSaved.current=state.drafts.diary;latest.current=state.drafts.diary;setText(state.drafts.diary);try{localStorage.setItem(recoveryKey,state.drafts.diary);}catch{}}},[state.drafts.diary,recoveryKey]);
  function change(value:string){setText(value);latest.current=value;try{localStorage.setItem(recoveryKey,value);setStatus('Черновик сохранён на этом компьютере.');}catch{setStatus('Не удалось сохранить черновик. Скопируйте текст перед закрытием.');}}
  useEffect(()=>{if(text===lastSaved.current)return;const timer=setTimeout(()=>{const value=text;if(nativeAvailable){pending.current=pending.current.then(async()=>{try {const next=await invoke<Snapshot>('diary.draft',{text:value});lastSaved.current=value;if(latest.current===value){setState(next);setStatus('Черновик сохранён на этом компьютере.');}}catch{if(latest.current===value)setStatus('Текст сохранён локально; хранилище приложения пока недоступно.');}});}else {lastSaved.current=value;setState({...state,drafts:{diary:value}});}},450);return()=>clearTimeout(timer);},[text]);
- return <div className="stack"><p>{t('Личный черновик. Синхронизация с дневником SellyBoard пока недоступна.')}</p><div className="actions"><button aria-pressed={!preview} onClick={()=>setPreview(false)}>{t('Редактор')}</button><button aria-pressed={preview} onClick={()=>setPreview(true)}>{t('Предпросмотр')}</button></div>
+ return <div className="stack"><div className="actions"><button aria-pressed={!preview} onClick={()=>setPreview(false)}>{t('Редактор')}</button><button aria-pressed={preview} onClick={()=>setPreview(true)}>{t('Предпросмотр')}</button></div>
   {preview?<div className="markdown-preview">{text?<MarkdownPreview text={text}/>:<p>{t('Здесь появится запись.')}</p>}</div>:<label>{t('Запись')}<textarea autoFocus rows={12} value={text} onChange={e=>change(e.target.value)} placeholder={t('# Сегодня\n\nЧто важно запомнить?')} maxLength={50000}/></label>}
   <small>{t('Заголовки, списки, чекбоксы, выделение и код. HTML и внешние изображения не исполняются и не загружаются.')}</small><Notice>{t(status||'Черновик хранится только на этом компьютере.')}</Notice>
   <div className="actions"><CopyButton text={text}/><button disabled={!nativeAvailable} onClick={()=>void run(async()=>{setState(await invoke<Snapshot>('diary.draft',{text}));setStatus('Черновик сохранён на этом компьютере.');})}>{t('Сохранить черновик')}</button></div>{error&&<Notice error>{t(error)}</Notice>}

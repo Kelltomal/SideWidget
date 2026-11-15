@@ -8,6 +8,7 @@ sealed class DesktopWindows
     readonly DesktopState state;
     readonly List<MainWindow> windows=[];
     IReadOnlyList<DesktopDisplay> displays=[];
+    FullscreenClockWindow? fullscreenClock;
     bool refreshing,queued,stopping;
     readonly DispatcherQueue dispatcher=DispatcherQueue.GetForCurrentThread();
     public IReadOnlyList<DisplayDescriptor> Displays=>displays.Select(display=>display.Descriptor).ToArray();
@@ -97,7 +98,30 @@ sealed class DesktopWindows
         Native.GetCursorPos(out var point);
         return windows.FirstOrDefault(window=>{var bounds=Monitor(window.DisplayId).Monitor;return point.X>=bounds.Left&&point.X<bounds.Right&&point.Y>=bounds.Top&&point.Y<bounds.Bottom;})??windows.FirstOrDefault();
     }
-    public void ToggleAtPointer(long receivedAt)=>AtPointer()?.ToggleFromHotkey(receivedAt);
+    public void ToggleAtPointer(long receivedAt)
+    {
+        if(fullscreenClock is not null){fullscreenClock.Close();return;}
+        AtPointer()?.ToggleFromHotkey(receivedAt);
+    }
+    public void ShowFullscreenClockAtPointer(Native.Point point,bool light)
+    {
+        var display=displays.FirstOrDefault(display=>
+        {
+            var bounds=display.Bounds.Monitor;
+            return point.X>=bounds.Left&&point.X<bounds.Right&&point.Y>=bounds.Top&&point.Y<bounds.Bottom;
+        })??displays.First();
+        ShowFullscreenClock(display.Bounds.Monitor,light);
+    }
+    public void ShowFullscreenClock(Native.Rect monitor,bool light)
+    {
+        if(stopping)return;
+        fullscreenClock?.Close();
+        var window=new FullscreenClockWindow(light);
+        fullscreenClock=window;
+        window.Closed+=(_,_)=>{if(fullscreenClock==window)fullscreenClock=null;};
+        try{window.ShowOn(monitor);}
+        catch{window.Close();throw;}
+    }
     public void OpenAtPointer()=>AtPointer()?.OpenFromTray();
     public void WindowClosed(MainWindow window,bool primary)
     {
@@ -106,6 +130,7 @@ sealed class DesktopWindows
     public void Stop()
     {
         if(stopping)return;stopping=true;
+        fullscreenClock?.Close();
         foreach(var window in windows.ToArray())window.Close();windows.Clear();state.Dispose();
         Microsoft.UI.Xaml.Application.Current.Exit();
     }

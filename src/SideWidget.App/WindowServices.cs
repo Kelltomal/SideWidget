@@ -71,6 +71,7 @@ public sealed partial class MainWindow
     {
         if(closing)return;
         RefreshNativeLanguage();
+        UpdateClock();
         RefreshAudioVisualizerSettings();ApplyTheme();Place();
         if(motion.State!=PanelState.Collapsed){motion.Target(true,MaximumHeight(),true);ApplyGeometry();}
         UpdateCompactSurface();
@@ -136,6 +137,7 @@ public sealed partial class MainWindow
             {
                 var menu=Native.CreatePopupMenu();
                 Native.AppendMenu(menu,0,1,DesktopLanguage.Text("Открыть панель"));
+                Native.AppendMenu(menu,0,6,DesktopLanguage.Text("Часы на весь экран"));
                 Native.AppendMenu(menu,0,2,DesktopLanguage.Text(motion.Pinned?"Открепить":"Закрепить"));
                 Native.AppendMenu(menu,0,4,DesktopLanguage.Text("Перезапустить"));
                 Native.AppendMenu(menu,0,5,DesktopLanguage.Text("Запустить новую сборку"));
@@ -145,6 +147,7 @@ public sealed partial class MainWindow
                 var selected=Native.TrackPopupMenu(menu,0x100|0x2,point.X,point.Y,0,hwnd,0);
                 Native.DestroyMenu(menu);
                 if(selected==1)desktop.OpenAtPointer();
+                if(selected==6)desktop.ShowFullscreenClockAtPointer(point,currentLightTheme==true);
                 if(selected==2){motion.Pinned=!motion.Pinned;OpenInteractive();}
                 if(selected==4){Program.RestartRequested=true;desktop.Stop();}
                 if(selected==5)DispatcherQueue.TryEnqueue(async()=>await LaunchNewBuild());
@@ -210,7 +213,7 @@ public sealed partial class MainWindow
             {
                 var data=await controller.Handle(command);
                 Send(new{protocolVersion=1,requestId=command.RequestId,status="result",data});
-                if(command.ActionId is "settings.save" or "settings.theme" or "settings.language" or "visualizer.settings" or "history.add" or "history.delete" or "history.clear" or "color.remember" or "units.favorite" or "diary.draft" or "apps.undo" or "apps.add" or "apps.pickWindow" or "apps.icon" or "apps.remove" or "apps.rename" or "apps.reorder")desktop.Synchronize(this);
+                if(command.ActionId is "settings.save" or "settings.theme" or "settings.clock" or "settings.language" or "visualizer.settings" or "history.add" or "history.delete" or "history.clear" or "color.remember" or "units.favorite" or "diary.draft" or "apps.undo" or "apps.add" or "apps.pickWindow" or "apps.icon" or "apps.remove" or "apps.rename" or "apps.reorder")desktop.Synchronize(this);
                 if(command.ActionId is "updates.skip" or "updates.defer")
                 {
                     startupUpdateOffer=null;

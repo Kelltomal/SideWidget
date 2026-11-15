@@ -7,7 +7,7 @@ import type {Snapshot} from './types';
 import {invoke} from './ui';
 vi.mock('./ui',async original=>({...await original<typeof import('./ui')>(),nativeAvailable:true,invoke:vi.fn()}));
 afterEach(()=>{cleanup();vi.resetAllMocks();});
-const initial={settings:{width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:['search','hidden','music'],disabled:['hidden']},calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''},selly:{configured:false,message:''}} satisfies Snapshot;
+const initial={settings:{width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:['search','hidden','music'],disabled:['hidden']},calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''}} satisfies Snapshot;
 function Fixture({editing=true}:{editing?:boolean}){const [state,setState]=useState<Snapshot>(initial);return <ModuleLayout state={state} setState={setState} editing={editing} finish={vi.fn()} modules={['search','hidden','music'].map(id=>[id,id])} renderModule={id=><span>{id}</span>}/>;}
 it('reorders by drag and persists immediately while retaining hidden modules',async()=>{
  vi.mocked(invoke).mockResolvedValue(initial);const view=render(<Fixture/>);

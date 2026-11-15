@@ -22,7 +22,13 @@ try {
     $signature=Get-AuthenticodeSignature (Join-Path $extracted 'msedgewebview2.exe')
     if($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notlike '*O=Microsoft Corporation,*'){throw 'WebView2 Microsoft signature verification failed'}
     New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-    Copy-Item -Path (Join-Path $extracted '*') -Destination $Destination -Recurse -Force
+    # These Copilot executables ship in the upstream CAB. SideWidget uses the WebView2 browser.
+    & robocopy.exe $extracted $Destination /E /XF copilot_setup.exe mscopilot.exe /R:2 /W:1 /NJH /NJS /NFL /NDL /NP
+    if($LASTEXITCODE -ge 8){throw "WebView2 copy failed (robocopy exit code $LASTEXITCODE)"}
+    $global:LASTEXITCODE=0
+    $copilot=Get-ChildItem -LiteralPath $Destination -File -Recurse |
+        Where-Object Name -In 'copilot_setup.exe','mscopilot.exe' | Select-Object -First 1
+    if($copilot){throw "Unexpected Copilot executable in WebView2 payload: $($copilot.Name)"}
 } finally {
     $cacheRoot=[IO.Path]::GetFullPath($cache)+'\'
     if(!$expandDirectory.StartsWith($cacheRoot,[StringComparison]::OrdinalIgnoreCase)){throw 'Unsafe extraction cleanup path'}
