@@ -1,0 +1,16 @@
+.tools/
+.venv/
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+__pycache__/
+.pytest_cache/
+.env
+artifacts/
+**/output/
+/.codex-remote-attachments/
+**/.playwright-cli/
+*.user
+.taste-skill/
+.impeccable/review/

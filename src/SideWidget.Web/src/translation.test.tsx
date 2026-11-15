@@ -1,0 +1,125 @@
+// @vitest-environment jsdom
+import {act,cleanup,fireEvent,render,screen,within} from '@testing-library/react';
+import {afterEach,expect,it,vi} from 'vitest';
+import {Translation} from './PersonalPanels';
+import {invoke} from './ui';
+vi.mock('./ui',async original=>({...await original<typeof import('./ui')>(),invoke:vi.fn()}));
+afterEach(()=>{cleanup();localStorage.clear();vi.resetAllMocks();});
+it('translates with MyMemory without configuring a key and sends only on click',async()=>{
+ vi.mocked(invoke).mockImplementation(async action=>(action==='translation.get'?{configured:false,defaultProvider:'mymemory'}:{text:'Привет, мир!',provider:'MyMemory'}) as never);
+ await act(async()=>render(<Translation/>));
+ expect(screen.queryByRole('button',{name:'Настроить ключ DeepL'})).toBeNull();
+ fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Hello world'}});
+ expect(invoke).toHaveBeenCalledTimes(1);
+ const button=screen.getByRole('button',{name:'Перевести'}) as HTMLButtonElement;
+ expect(button.disabled).toBe(false);
+ await act(async()=>fireEvent.click(button));
+ expect(invoke).toHaveBeenCalledWith('translation.run',{text:'Hello world',source:'en',target:'ru',provider:'mymemory'});
+ expect((screen.getByLabelText('Результат') as HTMLTextAreaElement).value).toBe('Привет, мир!');
+});
+it('counts UTF-8 bytes and offers Google/Yandex without website navigation',async()=>{
+ vi.mocked(invoke).mockResolvedValue({configured:false});await act(async()=>render(<Translation/>));
+ fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'я'.repeat(251)}});
+ expect((screen.getByRole('button',{name:'Перевести'}) as HTMLButtonElement).disabled).toBe(true);
+ expect(screen.getByText(/502 \/ 500 байт/)).toBeTruthy();
+ expect(screen.getByRole('option',{name:/Google/})).toBeTruthy();
+ expect(screen.getByRole('option',{name:/Яндекс/})).toBeTruthy();
+ expect(screen.queryByRole('button',{name:/Открыть/})).toBeNull();
+});
+it('ignores a late translation after cancellation and permits a new request',async()=>{
+ let finish:(value:unknown)=>void=()=>{};
+ vi.mocked(invoke).mockImplementation((action)=>action==='translation.run'?new Promise(resolve=>{finish=resolve;}):Promise.resolve({configured:false}) as never);
+ await act(async()=>render(<Translation/>));fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Hello'}});
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Перевести'})));
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Отменить запрос'})));
+ await act(async()=>finish({text:'late',provider:'MyMemory'}));
+ expect((screen.getByLabelText('Результат') as HTMLTextAreaElement).value).toBe('');expect((screen.getByRole('button',{name:'Перевести'}) as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('keeps recent languages at the top of both lists after reopening',async()=>{
+ vi.mocked(invoke).mockResolvedValue({configured:false});
+ const view=render(<Translation/>);
+ fireEvent.change(screen.getByLabelText('Исходный язык'),{target:{value:'de'}});
+ fireEvent.change(screen.getByLabelText('Язык перевода'),{target:{value:'ja'}});
+ view.unmount();
+ await act(async()=>render(<Translation/>));
+ expect(screen.getByLabelText<HTMLSelectElement>('Исходный язык').value).toBe('de');
+ expect(screen.getByLabelText<HTMLSelectElement>('Язык перевода').value).toBe('ja');
+ for(const label of ['Исходный язык','Язык перевода']){
+  expect(within(screen.getByLabelText(label)).getAllByRole('option').slice(0,2).map(option=>option.textContent)).toEqual(['Японский','Немецкий']);
+ }
+});
+
+it('restores automatic source detection with its compatible provider',async()=>{
+ vi.mocked(invoke).mockResolvedValue({configured:false});
+ const view=render(<Translation/>);
+ fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:'yandex'}});
+ fireEvent.change(screen.getByLabelText('Исходный язык'),{target:{value:'auto'}});
+ view.unmount();
+ await act(async()=>render(<Translation/>));
+ expect(screen.getByLabelText<HTMLSelectElement>('Исходный язык').value).toBe('auto');
+ expect(screen.getByLabelText<HTMLSelectElement>('Переводчик').value).toBe('yandex');
+});
+
+it('translates on Ctrl+Enter in the source field and respects request limits',async()=>{
+ vi.mocked(invoke).mockImplementation(async action=>(action==='translation.get'?{configured:false}:{text:'Привет',provider:'MyMemory'}) as never);
+ await act(async()=>render(<Translation/>));
+ const input=screen.getByLabelText('Исходный текст');
+ const shortcut={key:'Enter',ctrlKey:true};
+ fireEvent.change(input,{target:{value:'я'.repeat(251)}});
+ fireEvent.keyDown(input,shortcut);
+ fireEvent.change(input,{target:{value:'Hello'}});
+ fireEvent.keyDown(input,{key:'Enter'});
+ fireEvent.keyDown(input,{...shortcut,repeat:true});
+ expect(invoke).not.toHaveBeenCalledWith('translation.run',expect.anything());
+ await act(async()=>fireEvent.keyDown(input,shortcut));
+ expect(invoke).toHaveBeenCalledWith('translation.run',{text:'Hello',source:'en',target:'ru',provider:'mymemory'});
+ expect(screen.getByLabelText<HTMLTextAreaElement>('Результат').value).toBe('Привет');
+});
+
+it('places the SVG swap between the language fields and swaps them',async()=>{
+ vi.mocked(invoke).mockResolvedValue({configured:false});
+ await act(async()=>render(<Translation/>));
+ const source=screen.getByLabelText<HTMLSelectElement>('Исходный язык');
+ const target=screen.getByLabelText<HTMLSelectElement>('Язык перевода');
+ const swap=screen.getByRole('button',{name:'Поменять языки местами'});
+ expect(swap.querySelector('svg')).toBeTruthy();
+ expect(swap.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ fireEvent.click(swap);
+ expect([source.value,target.value]).toEqual(['ru','en']);
+});
+it('disables duplicate configuration and recovers when the native form is cancelled',async()=>{
+ let close:()=>void=()=>{};
+ vi.mocked(invoke).mockImplementation(action=>action==='translation.configure'?new Promise(resolve=>{close=()=>resolve({configured:false});}):Promise.resolve({configured:false}) as never);
+ await act(async()=>render(<Translation/>));fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:'deepl'}});
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Настроить ключ DeepL'})));
+ expect((screen.getByRole('button',{name:'Окно настройки открыто…'}) as HTMLButtonElement).disabled).toBe(true);
+ await act(async()=>close());expect((screen.getByRole('button',{name:'Настроить ключ DeepL'}) as HTMLButtonElement).disabled).toBe(false);
+});
+
+
+it('keeps input and reports provider failure without opening a site or sending elsewhere',async()=>{
+ vi.mocked(invoke).mockImplementation(async action=>{if(action==='translation.run')throw new Error('Дневной лимит MyMemory исчерпан. Повторите завтра.');return {configured:false} as never;});
+ await act(async()=>render(<Translation/>));
+ fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Hello'}});
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Перевести'})));
+ expect(screen.getByRole('alert').textContent).toContain('лимит MyMemory');
+ expect((screen.getByLabelText('Исходный текст') as HTMLTextAreaElement).value).toBe('Hello');
+ expect(invoke).toHaveBeenCalledTimes(2);
+ expect(invoke).not.toHaveBeenCalledWith('links.open',expect.anything());
+ expect(invoke).not.toHaveBeenCalledWith('translation.open',expect.anything());
+});
+
+it.each(['google','yandex'])('returns %s translation into our result field without a site',async provider=>{
+ vi.mocked(invoke).mockImplementation(async action=>(action==='translation.get'?{configured:false}:{text:'Привет, мир',provider}) as never);
+ await act(async()=>render(<Translation/>));
+ fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:provider}});
+ fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Hello world'}});
+ expect(invoke).toHaveBeenCalledTimes(1);
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Перевести'})));
+ expect(invoke).toHaveBeenCalledWith('translation.run',{text:'Hello world',source:'en',target:'ru',provider});
+ expect((screen.getByLabelText('Результат') as HTMLTextAreaElement).value).toBe('Привет, мир');
+ expect(invoke).not.toHaveBeenCalledWith('translation.open',expect.anything());
+ expect(invoke).not.toHaveBeenCalledWith('links.open',expect.anything());
+ expect(document.querySelector('iframe')).toBeNull();
+});

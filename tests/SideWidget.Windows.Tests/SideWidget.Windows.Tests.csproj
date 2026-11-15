@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <SelfContained>false</SelfContained>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/SideWidget.App/ExplorerReveal.cs" Link="Services/ExplorerReveal.cs" />
+    <Compile Include="../../src/SideWidget.App/StartupService.cs" Link="Services/StartupService.cs" />
+    <Compile Include="../../src/SideWidget.App/BuildSwitch.cs" Link="Services/BuildSwitch.cs" />
+    <ProjectReference Include="../../src/SideWidget.Infrastructure/SideWidget.Infrastructure.csproj" />
+    <Compile Include="../../src/SideWidget.App/LauncherService.cs" Link="Services/LauncherService.cs" />
+    <Compile Include="../../src/SideWidget.App/AudioSpectrumService.cs" Link="Services/AudioSpectrumService.cs" />
+    <Compile Include="../../src/SideWidget.App/AudioService.LevelNotifications.cs" Link="Services/AudioService.LevelNotifications.cs" />
+    <Compile Include="../../src/SideWidget.App/AudioService.cs" Link="Services/AudioService.cs" />
+    <Compile Include="../../src/SideWidget.App/CoreAudioInterop.cs" Link="Services/CoreAudioInterop.cs" />
+    <Compile Include="../../src/SideWidget.App/EverythingService.cs" Link="Services/EverythingService.cs" />
+    <Compile Include="../../src/SideWidget.App/InternetService.cs" Link="Services/InternetService.cs" />
+    <Compile Include="../../src/SideWidget.App/MediaService.cs" Link="Services/MediaService.cs" />
+    <Compile Include="../../src/SideWidget.App/SystemMetrics.cs" Link="Services/SystemMetrics.cs" />
+    <!-- Compile the picker, but never invoke it or install hooks from this harness. -->
+    <Compile Include="../../src/SideWidget.App/ScreenPicker.cs" Link="Services/ScreenPicker.cs" />
+    <Content Include="../../src/SideWidget.App/Assets/Native/Everything64.dll" Link="Everything64.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../src/SideWidget.App/Assets/Native/Everything-SDK-LICENSE.txt" Link="Everything-SDK-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

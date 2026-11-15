@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/SideWidget.Remote/SideWidget.Remote.csproj" /><ProjectReference Include="../../src/SideWidget.Infrastructure/SideWidget.Infrastructure.csproj" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../src/SideWidget.App/PhoneNetworkSetup.cs" Link="Native/PhoneNetworkSetup.cs" />
+    <Compile Include="../../src/SideWidget.App/NetworkProfileInterop.cs" Link="Native/NetworkProfileInterop.cs" />
+    <Compile Include="../../src/SideWidget.App/PhoneRemoteService.cs" Link="Native/PhoneRemoteService.cs" />
+    <Compile Include="../../src/SideWidget.App/StartupService.cs" Link="Native/StartupService.cs" />
+  </ItemGroup>
+</Project>

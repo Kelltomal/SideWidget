@@ -1,0 +1,77 @@
+.desktop-cleanup-group {
+ margin: 0;
+ padding: 0;
+ min-width: 0;
+ border: 0;
+}
+
+.desktop-cleanup-group legend {
+ display: flex;
+ align-items: center;
+ gap: 7px;
+ margin-bottom: 4px;
+ padding: 0;
+ font-weight: 600;
+}
+
+.desktop-cleanup-row {
+ display: grid;
+ gap: 4px;
+ padding-block: 4px;
+ border-bottom: 1px solid var(--line);
+}
+
+.desktop-cleanup-group label {
+ min-height: 34px;
+ overflow-wrap: anywhere;
+}
+
+.desktop-cleanup-row select { width: auto; max-width: 100%; justify-self: start; min-height: 32px; padding-block: 5px; }
+.desktop-drag-handle { cursor: grab; touch-action: none; user-select: none; }
+.desktop-drag-handle:active { cursor: grabbing; }
+.desktop-drag-preview { position: fixed; inset: 0 auto auto 0; z-index: 4; max-width: 220px; padding: 6px 10px; background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; pointer-events: none; overflow-wrap: anywhere; }
+.desktop-topic-targets { display: flex; flex-wrap: wrap; gap: 6px; }
+.desktop-topic-target { padding: 7px 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.desktop-topic-target[data-dragging] { border-style: dashed; }
+.desktop-topic-target[data-drop-target] { border-color: var(--accent); background: var(--control-hover); }
+
+.desktop-cleanup-select { align-self: flex-start; }
+
+.desktop-cleanup-answer {
+ display: grid;
+ gap: 5px;
+ padding-block: 10px;
+ border-block: 1px solid var(--line);
+}
+
+.desktop-cleanup-issues {
+ display: grid;
+ gap: 8px;
+ margin: 0;
+ padding-inline-start: 18px;
+}
+
+.desktop-folder-icons { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; }
+.desktop-folder-icons th { font-size: 13px; color: var(--muted); font-weight: 600; }
+.desktop-folder-icons th, .desktop-folder-icons td { padding: 4px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.desktop-folder-icons th:first-child { width: 53%; }
+.desktop-folder-icons .checkbox small { display: block; color: var(--muted); }
+.desktop-folder-icon-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.desktop-folder-icon-preview { display: flex; align-items: center; gap: 6px; }
+.desktop-folder-icon-preview img { flex: none; }
+.desktop-folder-icons td select { min-height: 34px; padding-block: 4px; }
+.desktop-folder-icon-styles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); max-width: 204px; gap: 3px; }
+.desktop-folder-icon-choice {
+ display: grid;
+ place-items: center;
+ min-width: 0;
+ min-height: 36px;
+ border: 1px solid var(--line);
+ border-radius: 6px;
+ cursor: pointer;
+}
+.desktop-folder-icon-choice img { display: block; max-width: 100%; height: auto; }
+.desktop-folder-icons img[data-light-preview] { background: #e9eaec; border-radius: 3px; }
+.desktop-folder-icon-choice:has(input:checked) { background: var(--selected); border-color: var(--accent); }
+.desktop-folder-icon-choice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.desktop-folder-icon-choice:has(input:disabled) { opacity: .6; cursor: default; }

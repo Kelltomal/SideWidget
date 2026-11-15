@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a problem you can reproduce in SideWidget.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a security vulnerability, follow the repository’s security policy. Remove credentials, personal data, and private URLs from logs and screenshots.
+  - type: input
+    id: version
+    attributes:
+      label: SideWidget version
+      description: Include the release tag or commit if you know it.
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version and build
+      description: Run winver to find the version and OS build.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the relevant settings and integrations.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Additional details
+      description: For display issues, include the monitor count, resolutions, and scaling.

@@ -1,0 +1,8 @@
+.layout-module {min-width:0}
+.is-editing .layout-module {border-radius:16px;background:var(--surface);cursor:grab}
+.is-editing .layout-module:active {cursor:grabbing}
+.layout-module.is-dragging {opacity:.5}
+.module-handle {display:flex;justify-content:flex-start;width:100%;min-height:36px;padding:7px 12px;background:transparent;color:var(--muted);cursor:grab;touch-action:auto}
+.module-handle:active {cursor:grabbing}
+.is-editing .layout-module>div {pointer-events:none;user-select:none}
+.layout-help {font-size:12px;line-height:1.5;color:var(--muted)}
