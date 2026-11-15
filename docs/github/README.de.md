@@ -80,7 +80,7 @@ Wähle eine Bildschirmfarbe, kopiere HEX, RGB oder HSL und speichere die Farbe i
 
 Für Windows 10 oder 11 x64. Öffne [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) und wähle eine ZIP-Datei.
 
-- **Lite** (`-lite-win-x64.zip`) nutzt gemeinsam installierte Laufzeitbibliotheken. Die Einrichtung ist einmalig.
+- **Lite** (`-lite-win-x64.zip`) ist die empfohlene Version. Die Update-Downloads sind kleiner. Die Laufzeitbibliotheken müssen nur einmal installiert werden.
 - **Vollversion** (`-portable-win-x64.zip`) enthält die Laufzeitbibliotheken und lässt sich offline starten.
 
 Entpacke die ZIP-Datei in einen eigenen Ordner. Führe bei Lite dort [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat) aus. Das Skript nutzt WinGet. Starte anschließend `SideWidget.exe` neben dem Ordner `App`.

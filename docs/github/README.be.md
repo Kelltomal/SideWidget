@@ -80,7 +80,7 @@ SideWidget распрацоўваецца са здаровым сэнсам і 
 
 Для Windows 10 або 11 x64. Адкрыйце [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) і выберыце ZIP.
 
-- **Lite** (`-lite-win-x64.zip`) выкарыстоўвае агульныя бібліятэкі, якія дастаткова ўсталяваць адзін раз.
+- **Lite** (`-lite-win-x64.zip`) — рэкамендаваны варыянт. Абнаўленні займаюць менш месца. Агульныя бібліятэкі дастаткова ўсталяваць адзін раз.
 - **Поўная версія** (`-portable-win-x64.zip`) уключае бібліятэкі для аўтаномнага запуску.
 
 Распакуйце ZIP у асобную папку. Для Lite запусціце ў ёй [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat). Скрыпт выкарыстоўвае WinGet. Потым адкрыйце `SideWidget.exe` побач з папкай `App`.

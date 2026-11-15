@@ -80,10 +80,20 @@ Pick a color from the screen, copy it as HEX, RGB, or HSL, and save it to your p
 
 For 64-bit (x64) Windows 10 or 11. Open [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) and choose a ZIP.
 
-- **Lite** (`-lite-win-x64.zip`) uses shared runtimes that you install once.
+- **Lite** (`-lite-win-x64.zip`) is recommended. The 0.3.2 ZIP is about 20 MB, and Lite downloads smaller updates. Install the shared runtimes once before the first launch.
 - **Full** (`-portable-win-x64.zip`) includes its own runtimes for offline use.
 
-Extract the ZIP to its own folder. For Lite, run [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat) from the extracted folder. The script uses WinGet. Then run `SideWidget.exe` beside the `App` folder.
+For the full edition, extract the ZIP and open `SideWidget.exe`.
+
+### First launch with Lite
+
+1. Download and extract the entire `-lite-win-x64.zip`. Keep `SideWidget.exe`, `Install-Dependencies.bat`, and the `App` folder together. [Download Lite](https://github.com/Kelltomal/SideWidget/releases/latest)
+2. Run `Install-Dependencies.bat` from the extracted folder with an internet connection. It uses WinGet and skips packages already installed. Approve the Windows installation prompt if it appears, then wait for `SideWidget Lite prerequisites are ready`. [View the script](../../scripts/Install-Dependencies.bat)
+3. If SideWidget is running, choose **Exit** from its tray menu. Open the Lite copy of `SideWidget.exe`. Your settings are available under the same Windows account. Press `Ctrl+Alt+Space` to open the panel.
+
+If you switched from the full edition and use autostart, enable **Start when signing in to Windows** in Lite settings. Windows will start this copy at the next sign-in.
+
+If WinGet is unavailable or the script stops on a package, use the links below. Then open `SideWidget.exe` again.
 
 ### Install Lite dependencies manually
 
@@ -95,7 +105,11 @@ Install these x64 packages once. The links point to Microsoft installers.
 - [Microsoft Edge WebView2 Evergreen](https://go.microsoft.com/fwlink/p/?LinkId=2124703)
 - [Microsoft Visual C++ Redistributable v14 x64](https://aka.ms/vc14/vc_redist.x64.exe)
 
-SideWidget checks stable GitHub releases on startup. You can also check under **Settings → Updates**. Lite updates use the Lite ZIP. To switch from Full to Lite, exit SideWidget from the tray and launch `SideWidget.exe` from the Lite folder. The full edition also selects Lite for updates when the shared runtimes are already installed.
+### Update Lite
+
+SideWidget checks for stable releases on startup. To check manually, open **Updates** in settings and select **Check for updates**. **Update now** downloads the Lite ZIP, installs the new version, and restarts the widget. The dependency installer is only needed for initial setup.
+
+When upgrading from 0.3.1, install 0.3.2 manually. Follow the Lite setup above or extract the full edition and open `SideWidget.exe`. Starting with 0.3.2, the full edition selects Lite for updates when the required shared runtimes are already installed.
 
 [Everything](../../README.md#everything) · [voidtools x64](https://www.voidtools.com/downloads/)
 
