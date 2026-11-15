@@ -109,13 +109,15 @@ describe('local QR export', () => {
     useCanvas();
     const {png} = await makeQr('A', {size: 290, level: 'L'});
     const {data, info} = await sharp(Buffer.from(png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer({resolveWithObject: true});
+    expect(info.channels).toBe(4);
     for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
-      const pixel = data.subarray((y * info.width + x) * 4, (y * info.width + x) * 4 + 4);
-      expect(pixel[3]).toBe(255);
-      expect([0,255]).toContain(pixel[0]);
-      expect(pixel[1]).toBe(pixel[0]);
-      expect(pixel[2]).toBe(pixel[0]);
-      if (x < 40 || y < 40 || x >= 250 || y >= 250) expect(pixel[0]).toBe(255);
+      const index = (y * info.width + x) * 4;
+      const red = data[index];
+      const margin = x < 40 || y < 40 || x >= 250 || y >= 250;
+      if (data[index + 3] !== 255 || data[index + 1] !== red || data[index + 2] !== red ||
+          (red !== 255 && (red !== 0 || margin))) {
+        throw new Error(`Unexpected QR pixel at (${x}, ${y}): ${data.subarray(index, index + 4).join(', ')}`);
+      }
     }
   });
   it('handles every correction level and preserves leading/trailing whitespace', async () => {
