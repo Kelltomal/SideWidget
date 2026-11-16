@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.UI.Xaml;
 
 namespace SideWidget.App;
@@ -7,12 +9,22 @@ internal static class Program
     internal static bool RestartRequested { get; set; }
     internal static bool Updating { get; set; }
     internal static ProcessStartInfo? NextBuild { get; set; }
+    internal static string? MeasurementDirectory { get; private set; }
     [STAThread]
     static void Main(string[] args)
     {
         if(PortableVerification.TryRun(args))return;
         if(PhoneNetworkSetup.TryRun(args,out var networkExitCode)){Environment.ExitCode=networkExitCode;return;}
-        using(var instance=new Mutex(true,"Local\\SideWidget.Desktop",out var first))
+        const string desktopMutex = "Local\\SideWidget.Desktop";
+        var mutexName = desktopMutex;
+        if (args.Contains("--measure-opening") &&
+            Environment.GetEnvironmentVariable("SIDEWIDGET_MEASUREMENT_DIRECTORY") is { Length: > 0 } measurementDirectory)
+        {
+            MeasurementDirectory = Path.GetFullPath(measurementDirectory);
+            var profileHash = SHA256.HashData(Encoding.UTF8.GetBytes(MeasurementDirectory.ToUpperInvariant()));
+            mutexName = desktopMutex + ".Measurement-" + Convert.ToHexString(profileHash);
+        }
+        using(var instance=new Mutex(true,mutexName,out var first))
         {
             if(!first)return;
             try
@@ -36,7 +48,7 @@ internal static class Program
                 {
                     if(Updating)
                     {
-                        try { new StartupService(Environment.ProcessPath!).TransferTo(NextBuild.FileName); }
+                        try { LiteInstallation.Startup().TransferTo(NextBuild.FileName); }
                         catch(SideWidget.Core.CommandFault) { }
                     }
                     return;
@@ -47,7 +59,7 @@ internal static class Program
             RestartRequested=true;
         }
         if(!RestartRequested)return;
-        var start=new ProcessStartInfo(Environment.ProcessPath!){UseShellExecute=false,WorkingDirectory=Environment.CurrentDirectory};
+        var start=new ProcessStartInfo(LiteInstallation.Launcher){UseShellExecute=false,WorkingDirectory=Environment.CurrentDirectory};
         foreach(var argument in args)start.ArgumentList.Add(argument);
         using var restarted=Process.Start(start);
     }
@@ -61,10 +73,8 @@ sealed partial class DesktopApp : Application
     {
         try
         {
-            var directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"SideWidget");
-            if(Environment.GetCommandLineArgs().Contains("--measure-opening")&&
-               Environment.GetEnvironmentVariable("SIDEWIDGET_MEASUREMENT_DIRECTORY") is {Length:>0} measurementDirectory)
-                directory=Path.GetFullPath(measurementDirectory);
+            var directory=Program.MeasurementDirectory ??
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"SideWidget");
             windows=new DesktopWindows(directory);
             windows.Start();
         }

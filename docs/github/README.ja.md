@@ -80,10 +80,10 @@ SideWidget は常識を大切にし、GPT-6.1 Sol の支援を受けて開発し
 
 Windows 10 または 11 x64 が必要です。[Releases](https://github.com/Kelltomal/SideWidget/releases/latest) を開き、ZIP を選びます。
 
-- **Lite**（`-lite-win-x64.zip`）をおすすめします。更新時のダウンロード容量が小さく、共有ランタイムは PC ごとに一度インストールすれば使えます。
+- **Lite**（`-lite-win-x64.zip`）をおすすめします。不足するランタイムは個別にダウンロードします。
 - **フル版**（`-portable-win-x64.zip`）はランタイムを同梱し、オフラインで使えます。
 
-ZIP を専用のフォルダーに展開します。Lite の場合は展開先の [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat) を実行します。このスクリプトは WinGet を使用します。その後、`App` フォルダーの隣にある `SideWidget.exe` を実行します。
+ZIP を専用のフォルダーに展開し、`App` フォルダーの隣にある `SideWidget.exe` を実行します。新しい Lite 版では、不足するパッケージを GitHub から `Dependencies` フォルダーにダウンロードします。
 
 ### Lite の依存関係を手動でインストール
 

@@ -53,7 +53,7 @@ sealed class PhoneRemoteService : IDisposable
         secureUrl = listening is null ? null : $"https://{listening.Address}:{config.Port}/",
         setupUrl = listening is null ? null : $"http://{listening.Address}:{config.SetupPort}/",
         fingerprint = certificates?.Fingerprint, access = access.Info(), message = error,
-        startup = new StartupService(Environment.ProcessPath!).Get()
+        startup = LiteInstallation.Startup().Get()
     };
 
     public Task<object> Configure(bool enabled, string? adapterId, int port, int setupPort, bool startup)
@@ -69,7 +69,7 @@ sealed class PhoneRemoteService : IDisposable
             if (disposed) throw new ObjectDisposedException(nameof(PhoneRemoteService));
             if (generation != Volatile.Read(ref networkGeneration)) throw new CommandFault("remote_network", "Настройка отменена более новым действием в другом окне.");
             if (enabled && !Adapters().Any(a => a.Id == adapterId)) throw new RemoteFault("Выберите доступный домашний адаптер. Сеть Windows должна быть частной.");
-            new StartupService(Environment.ProcessPath!).Set(startup);
+            LiteInstallation.Startup().Set(startup);
             var temporary = SettingsPath + ".tmp";
             File.WriteAllText(temporary, JsonSerializer.Serialize(proposed)); File.Move(temporary, SettingsPath, true);
             config = proposed; access.ClearEphemeral(); await StopListener();

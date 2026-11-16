@@ -15,6 +15,9 @@
     <SelfContained>false</SelfContained><WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <DistributionArguments>-Lite</DistributionArguments>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(SideWidgetLiteDesktop)' == 'true'">
+    <SelfContained>false</SelfContained><WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  </PropertyGroup>
   <ItemGroup><PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../SideWidget.Core/SideWidget.Core.csproj" /><ProjectReference Include="../SideWidget.Infrastructure/SideWidget.Infrastructure.csproj" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../SideWidget.Remote/SideWidget.Remote.csproj" /><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
@@ -23,7 +26,7 @@
   <ItemGroup><EmbeddedResource Include="Assets/Translation/*.js" /></ItemGroup>
   <ItemGroup><Content Include="../SideWidget.Web/dist/**" Link="Web/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/><Content Include="../../licenses/*" Link="Licenses/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/></ItemGroup>
 <ItemGroup><Content Include="Assets/Native/Everything64.dll" Link="Everything64.dll" CopyToOutputDirectory="PreserveNewest"/><Content Include="Assets/Native/Everything-SDK-LICENSE.txt" Link="Licenses/Everything-SDK-LICENSE.txt" CopyToOutputDirectory="PreserveNewest"/></ItemGroup>
-  <Target Name="PreparePortableDistribution" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+  <Target Name="PreparePortableDistribution" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'win-x64' And '$(SideWidgetLiteDesktop)' != 'true'">
     <Error Condition="'$(SideWidgetLite)' != 'true' And ('$(SelfContained)' != 'true' Or '$(WindowsAppSDKSelfContained)' != 'true')" Text="Portable SideWidget requires self-contained .NET and Windows App SDK." />
     <Error Condition="'$(SideWidgetLite)' == 'true' And ('$(SelfContained)' != 'false' Or '$(WindowsAppSDKSelfContained)' != 'false')" Text="Lite SideWidget requires shared .NET and Windows App SDK." />
     <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="pwsh.exe -NoProfile -File &quot;$(MSBuildThisFileDirectory)..\..\scripts\finalize-distribution.ps1&quot; -ReleaseDirectory &quot;$(PublishDir)\.&quot; $(DistributionArguments)" />

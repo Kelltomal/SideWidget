@@ -80,10 +80,10 @@ Capture uma cor da tela, copie em HEX, RGB ou HSL e salve na paleta.
 
 Para Windows 10 ou 11 x64. Abra [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) e escolha um ZIP.
 
-- **Lite** (`-lite-win-x64.zip`) é a versão recomendada. Os downloads das atualizações são menores, e você só precisa instalar as dependências compartilhadas uma vez.
+- **Lite** (`-lite-win-x64.zip`) é a versão recomendada. As dependências que faltam são baixadas separadamente.
 - **Completa** (`-portable-win-x64.zip`) inclui as dependências para execução offline.
 
-Extraia o ZIP em uma pasta própria. Para Lite, execute [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat) nela. O script usa o WinGet. Depois, abra `SideWidget.exe` ao lado da pasta `App`.
+Extraia o ZIP em uma pasta própria e abra `SideWidget.exe` ao lado da pasta `App`. As novas versões Lite baixam do GitHub os pacotes que faltam e os instalam na pasta `Dependencies`.
 
 ### Instalar manualmente as dependências do Lite
 

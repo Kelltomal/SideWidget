@@ -53,7 +53,7 @@ sealed partial class Controller
         try {
             switch(c.ActionId){
                 case "bridge.ready":Ready=true;return Snapshot();case "state.get":return Snapshot();
-                case "startup.get":return new StartupService(Environment.ProcessPath!).Get();
+                case "startup.get":return LiteInstallation.Startup().Get();
                 case "app.share":return await ShareApplication();
                 case "updates.check":return await CheckUpdate();
                 case "updates.defer":return new{};
@@ -61,7 +61,7 @@ sealed partial class Controller
                 case "updates.install":await InstallUpdate(Text("version",32));return new{};
                 case "startup.set":
                     if(!p.TryGetProperty("enabled",out var startupEnabled)||startupEnabled.ValueKind is not (JsonValueKind.True or JsonValueKind.False))throw new CommandFault("schema","Укажите состояние автозапуска");
-                    return new StartupService(Environment.ProcessPath!).Set(startupEnabled.GetBoolean());
+                    return LiteInstallation.Startup().Set(startupEnabled.GetBoolean());
                 case "shell.pin":Shell("pin");return new{};case "shell.collapse":Shell("collapse");return new{};case "shell.interactive":Shell("interactive");return new{};
                 case "shell.editing":Shell(p.GetProperty("value").GetBoolean()?"editing":"idle");return new{};
                 case "shell.tooltip":Tooltip(p.GetProperty("visible").GetBoolean()?TooltipContent.Read(p):null);return new{};
@@ -221,7 +221,8 @@ sealed partial class Controller
         if(Interlocked.Exchange(ref sharing,1)!=0)throw new CommandFault("busy","Упаковка уже выполняется. Дождитесь готового архива.");
         try
         {
-            var path=await Task.Run(()=>DistributionArchive.CreateNextToApplication(AppContext.BaseDirectory));
+            var path=await Task.Run(()=>DistributionArchive.Create(LiteInstallation.ApplicationDirectory,
+                LiteInstallation.Root ?? AppContext.BaseDirectory, LiteInstallation.Root));
             var revealed=await ExplorerReveal.TryRevealAsync(path);
             return new{path,revealed};
         }

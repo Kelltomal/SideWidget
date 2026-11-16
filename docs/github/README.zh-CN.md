@@ -80,10 +80,10 @@ SideWidget 的开发以常识为基础，并借助 GPT-6.1 Sol。
 
 适用于 Windows 10 或 11 x64。打开 [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) 并选择 ZIP。
 
-- **推荐 Lite 轻量版**（`-lite-win-x64.zip`）。更新包更小，共享运行库在每台电脑上只需安装一次。
+- **推荐 Lite 轻量版**（`-lite-win-x64.zip`）。缺少的运行库单独下载。
 - **完整版**（`-portable-win-x64.zip`）内置运行库，支持离线运行。
 
-将 ZIP 解压到单独的文件夹。使用 Lite 时，运行解压目录中的 [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat)。该脚本使用 WinGet。然后运行与 `App` 文件夹并列的 `SideWidget.exe`。
+将 ZIP 解压到单独的文件夹，然后运行与 `App` 文件夹并列的 `SideWidget.exe`。新版 Lite 会从 GitHub 下载缺少的依赖包，并解压到 `Dependencies` 文件夹。
 
 ### 手动安装 Lite 的依赖
 

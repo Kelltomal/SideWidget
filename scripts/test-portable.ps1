@@ -1,5 +1,6 @@
-param([string]$ReleaseDirectory, [switch]$Lite, [string]$DotnetRoot, [string]$Archive)
+param([string]$ReleaseDirectory, [switch]$Lite, [string]$DotnetRoot, [string]$Archive, [string]$DependencyCatalog)
 $ErrorActionPreference='Stop'
+if ($DependencyCatalog -and (!$Lite -or !$Archive)) { throw '-DependencyCatalog requires a clean Lite archive.' }
 $root=Split-Path $PSScriptRoot -Parent
 $releaseName=if($Lite){'release-lite'}else{'release'}
 $release=if($ReleaseDirectory){[IO.Path]::GetFullPath($ReleaseDirectory)}else{Join-Path $root "artifacts/$releaseName"}
@@ -48,6 +49,16 @@ if($Lite -and ($zipFile.Name -notlike '*-lite-win-x64.zip' -or $zipFile.Length -
     throw "Unexpected Lite ZIP name or size: $($zipFile.Name), $($zipFile.Length) bytes"
 }
 [IO.Compression.ZipFile]::ExtractToDirectory($zipFile.FullName,$unpacked)
+if ($DependencyCatalog) {
+    $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
+    $fixture = Join-Path $root 'tests/LiteDependencyPackChecks.cs'
+    $check = Join-Path $testRoot 'LiteDependencyPackChecks.exe'
+    & $compiler /nologo /target:exe /platform:x64 /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll `
+        "/out:$check" $fixture (Join-Path $PSScriptRoot 'SideWidgetPrerequisites.cs') (Join-Path $PSScriptRoot 'DependencyProgress.cs')
+    if ($LASTEXITCODE) { throw 'Could not compile the Lite dependency checks.' }
+    & $check $unpacked ([IO.Path]::GetFullPath($DependencyCatalog))
+    if ($LASTEXITCODE) { throw 'Lite dependency installation failed.' }
+}
 if(!$Lite -and (Get-ChildItem -LiteralPath (Join-Path $application 'WebView2Runtime') -Recurse -File |
     Where-Object { $_.Name -in @('copilot_setup.exe','mscopilot.exe') })){
     throw 'Unexpected Copilot executable in the WebView2 runtime'
@@ -58,14 +69,32 @@ $result=Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
 if(!$result.passed){throw "Portable verification failed: $($result.error)"}
 if($result.lite -ne [bool]$Lite){throw 'Unexpected distribution variant'}
 if($Lite){
-    if($result.browser -or !$result.browserVersion){throw 'Evergreen WebView2 was not found'}
+    if($DependencyCatalog){
+        $version = Get-Content -LiteralPath $DependencyCatalog -TotalCount 1
+        $dependencies = Join-Path $unpacked "Dependencies/$version"
+        if (!$result.runtime.StartsWith((Join-Path $dependencies 'dotnet')+'\',[StringComparison]::OrdinalIgnoreCase) -or
+            !$result.aspNet.StartsWith((Join-Path $dependencies 'dotnet')+'\',[StringComparison]::OrdinalIgnoreCase) -or
+            !$result.winUi.StartsWith((Join-Path $dependencies 'desktop')+'\',[StringComparison]::OrdinalIgnoreCase) -or
+            $result.browser -ne (Join-Path $dependencies 'webview2') -or !$result.browserVersion) {
+            throw 'Lite did not load all verified local runtimes.'
+        }
+    }elseif($result.browser -or !$result.browserVersion){throw 'Evergreen WebView2 was not found'}
 }else{
     if(!$result.runtime.StartsWith($application+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'System .NET was used'}
     if(!$result.browser.StartsWith($application+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'System WebView2 was used'}
 }
-if(!$Archive){
+if(!$Archive -or $DependencyCatalog){
     $reshared=Join-Path $testRoot 'reshared'
     Run-App (Join-Path $unpacked $executable) @('--share-portable',$reshared)
     if(!(Get-ChildItem -LiteralPath $reshared -Filter '*.zip' -File)){throw 'Unpacked app cannot share again'}
+    if($DependencyCatalog){
+        $shared = [IO.Compression.ZipFile]::OpenRead((Get-ChildItem -LiteralPath $reshared -Filter '*.zip' -File).FullName)
+        try {
+            if (!$shared.GetEntry('SideWidget.exe') -or !$shared.GetEntry('App/distribution-files.json') -or
+                ($shared.Entries | Where-Object FullName -Like 'Dependencies/*')) {
+                throw 'Sharing an installed Lite build must include its launcher and exclude local runtime packages.'
+            }
+        } finally { $shared.Dispose() }
+    }
 }
 Write-Host "PASS $($zipFile.Name): $executable loaded .NET/ASP.NET Core/WinUI/WebView2/SQLite/VC++. Report: $report"

@@ -7,15 +7,18 @@ sealed record StartupState(bool Enabled,string? Message=null);
 
 sealed class StartupService(string executable,
     string runPath=@"Software\Microsoft\Windows\CurrentVersion\Run",
-    string approvedPath=@"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run")
+    string approvedPath=@"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run",
+    string? previousExecutable=null)
 {
     const string Name="SideWidget";
     string Command=>$"\"{Path.GetFullPath(executable)}\"";
+    bool Matches(string entry)=>string.Equals(entry,Command,StringComparison.OrdinalIgnoreCase)||
+        previousExecutable is not null&&string.Equals(entry,$"\"{Path.GetFullPath(previousExecutable)}\"",StringComparison.OrdinalIgnoreCase);
 
     public StartupState Get()=>Access(()=>{
         using var run=Registry.CurrentUser.OpenSubKey(runPath);
         using var approved=Registry.CurrentUser.OpenSubKey(approvedPath);
-        var registered=run?.GetValue(Name) is string value&&string.Equals(value,Command,StringComparison.OrdinalIgnoreCase);
+        var registered=run?.GetValue(Name) is string value&&Matches(value);
         var blocked=approved?.GetValue(Name) is byte[] bytes&&bytes.Length>0&&(bytes[0]&1)==1;
         return new StartupState(registered&&!blocked,registered&&blocked?"Автозапуск отключён в Windows. Включите SideWidget: Параметры Windows → Приложения → Автозагрузка.":null);
     });
@@ -29,7 +32,7 @@ sealed class StartupService(string executable,
 
     public void TransferTo(string updatedExecutable)=>Access(()=>{
         using var run=Registry.CurrentUser.OpenSubKey(runPath,writable:true);
-        if(run?.GetValue(Name) is string entry && string.Equals(entry,Command,StringComparison.OrdinalIgnoreCase))
+        if(run?.GetValue(Name) is string entry && Matches(entry))
             run.SetValue(Name,$"\"{Path.GetFullPath(updatedExecutable)}\"",RegistryValueKind.String);
         return true;
     });
