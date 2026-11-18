@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using SideWidget.Core;
 
 namespace SideWidget.Infrastructure;
@@ -11,7 +12,7 @@ public sealed record WebsiteMonitorCheck(DateTimeOffset CheckedAt,string Status,
 public sealed record WebsiteMonitorSite(string Id,string Url,string ReportUrl,bool Enabled,int IntervalMinutes,
     DateTimeOffset? NextCheckAt,WebsiteMonitorCheck? LastCheck,WebsiteMonitorCheck[] History);
 
-/// <summary>Local HTTP reachability and independently attributed public complaint sources.</summary>
+/// <summary>Local HTTP reachability and independently attributed public incident sources.</summary>
 public sealed class WebsiteMonitorService:IDisposable
 {
     const string Key="personal.websiteMonitor.v1";
@@ -22,7 +23,8 @@ public sealed class WebsiteMonitorService:IDisposable
     readonly CancellationTokenSource lifetime=new();
     readonly CancellationToken stopping;
     readonly System.Threading.Timer timer;
-    readonly Dictionary<string,(DateTimeOffset CheckedAt,string Message)> reportCache=new(StringComparer.OrdinalIgnoreCase);
+    sealed record ReportSourceResult(string Status,string Message);
+    readonly Dictionary<string,(DateTimeOffset CheckedAt,ReportSourceResult Result)> reportCache=new(StringComparer.OrdinalIgnoreCase);
     WebsiteMonitorSite[] sites;
     string? message;
     bool disposed;
@@ -63,8 +65,17 @@ public sealed class WebsiteMonitorService:IDisposable
         if(id.Length>100||id.Any(char.IsControl))throw new CommandFault("website","Некорректный идентификатор сайта");
         if(target.IntervalMinutes is <1 or >1440)throw new CommandFault("website","Интервал проверки — от 1 до 1440 минут");
         var url=ValidateUrl(target.Url);
-        var report=string.IsNullOrWhiteSpace(target.ReportUrl)?new Uri("https://downradar.ru/ne-rabotaet/"+Uri.EscapeDataString(url.IdnHost)):ValidateUrl(target.ReportUrl);
+        var report=string.IsNullOrWhiteSpace(target.ReportUrl)?DefaultReportSource(url):ValidateUrl(target.ReportUrl);
         return target with{Id=id,Url=url.AbsoluteUri,ReportUrl=report.AbsoluteUri};
+    }
+
+    static Uri DefaultReportSource(Uri url)
+    {
+        var host=url.IdnHost.TrimEnd('.');
+        bool IsDomain(string domain)=>host.Equals(domain,StringComparison.OrdinalIgnoreCase)||host.EndsWith("."+domain,StringComparison.OrdinalIgnoreCase);
+        if(IsDomain("github.com"))return new("https://www.githubstatus.com/api/v2/status.json");
+        if(IsDomain("openai.com")||IsDomain("chatgpt.com"))return new("https://status.openai.com/api/v2/status.json");
+        return new("https://downradar.ru/ne-rabotaet/"+Uri.EscapeDataString(url.IdnHost));
     }
 
     static Uri ValidateUrl(string? value)
@@ -175,16 +186,34 @@ public sealed class WebsiteMonitorService:IDisposable
         }
         stopping.ThrowIfCancellationRequested();
         var report=await ReadReportSourceAsync(site,timeout.Token).ConfigureAwait(false);
-        return new(DateTimeOffset.UtcNow,status,httpStatus,responseMs,localMessage+" "+report,"unknown",null);
+        return new(DateTimeOffset.UtcNow,status,httpStatus,responseMs,localMessage+" "+report.Message,report.Status,null);
     }
 
-    async Task<string> ReadReportSourceAsync(WebsiteMonitorSite site,CancellationToken cancellation)
+    static ReportSourceResult? ParseStatusPage(string json)
+    {
+        try
+        {
+            using var document=JsonDocument.Parse(json);var root=document.RootElement;
+            if(root.ValueKind!=JsonValueKind.Object||!root.TryGetProperty("page",out var page)||page.ValueKind!=JsonValueKind.Object||
+                !root.TryGetProperty("status",out var status)||status.ValueKind!=JsonValueKind.Object||
+                !status.TryGetProperty("indicator",out var indicator)||indicator.ValueKind!=JsonValueKind.String)return null;
+            return indicator.GetString() switch
+            {
+                "none"=>new("none","Публичный источник не сообщает об инцидентах."),
+                "minor" or "major" or "critical"=>new("reports","Публичный источник сообщает об инциденте."),
+                _=>null
+            };
+        }
+        catch(JsonException){return null;}
+    }
+
+    async Task<ReportSourceResult> ReadReportSourceAsync(WebsiteMonitorSite site,CancellationToken cancellation)
     {
         var source=new Uri(site.ReportUrl);var domain=new Uri(site.Url).IdnHost;
         var cacheKey=domain+"|"+source.AbsoluteUri;
         var now=DateTimeOffset.UtcNow;
-        if(reportCache.TryGetValue(cacheKey,out var cache)&&now-cache.CheckedAt<TimeSpan.FromMinutes(1))return cache.Message;
-        var result="Сведения о жалобах не подтверждены; откройте источник.";
+        if(reportCache.TryGetValue(cacheKey,out var cache)&&now-cache.CheckedAt<TimeSpan.FromMinutes(1))return cache.Result;
+        var result=new ReportSourceResult("unknown","Сведения о сбоях не подтверждены; откройте источник.");
         using var timeout=CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         try
         {
@@ -192,28 +221,31 @@ public sealed class WebsiteMonitorService:IDisposable
             using var response=await client.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,timeout.Token).ConfigureAwait(false);
             if(response.IsSuccessStatusCode)
             {
-                if(response.Content.Headers.ContentLength is >512*1024)result="Источник жалоб вернул слишком большой ответ.";
+                if(response.Content.Headers.ContentLength is >512*1024)result=result with{Message="Источник сведений о сбоях вернул слишком большой ответ."};
                 else
                 {
                     await using var stream=await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-                    using var body=new MemoryStream();var buffer=new byte[8192];int read;
+                    using var body=new MemoryStream();var buffer=new byte[8192];int read;var oversized=false;
                     while((read=await stream.ReadAsync(buffer,timeout.Token).ConfigureAwait(false))>0)
                     {
-                        if(body.Length+read>512*1024){result="Источник жалоб вернул слишком большой ответ.";break;}
+                        if(body.Length+read>512*1024){oversized=true;result=result with{Message="Источник сведений о сбоях вернул слишком большой ответ."};break;}
                         body.Write(buffer,0,read);
                     }
                     var html=Encoding.UTF8.GetString(body.GetBuffer(),0,checked((int)body.Length));
-                    if(html.Contains("captcha",StringComparison.OrdinalIgnoreCase)||html.Contains("user verification",StringComparison.OrdinalIgnoreCase))
-                        result="Источник жалоб требует проверки в браузере.";
-                    // Public pages observed on this host are blocked, protected, or ambiguous.
-                    // HTTP 200 and complaint-like prose are insufficient evidence for a count.
+                    if(!oversized)
+                    {
+                        if(ParseStatusPage(html) is {} parsed)result=parsed;
+                        else if(html.Contains("captcha",StringComparison.OrdinalIgnoreCase)||html.Contains("user verification",StringComparison.OrdinalIgnoreCase))
+                            result=result with{Message="Источник сведений о сбоях требует проверки в браузере."};
+                    }
+                    // Incident indicators are not complaint counts. Unverified HTML stays unknown.
                 }
             }
-            else result="Источник жалоб недоступен (HTTP "+(int)response.StatusCode+").";
+            else result=result with{Message="Источник сведений о сбоях недоступен (HTTP "+(int)response.StatusCode+")."};
         }
-        catch(OperationCanceledException) when(!stopping.IsCancellationRequested){result="Источник жалоб не ответил за 8 секунд.";}
-        catch(HttpRequestException){result="Источник жалоб недоступен по сети.";}
-        catch(IOException){result="Не удалось прочитать источник жалоб.";}
+        catch(OperationCanceledException) when(!stopping.IsCancellationRequested){result=result with{Message="Источник сведений о сбоях не ответил за 8 секунд."};}
+        catch(HttpRequestException){result=result with{Message="Источник сведений о сбоях недоступен по сети."};}
+        catch(IOException){result=result with{Message="Не удалось прочитать источник сведений о сбоях."};}
         reportCache[cacheKey]=(DateTimeOffset.UtcNow,result);
         if(reportCache.Count>40)
             foreach(var key in reportCache.OrderBy(x=>x.Value.CheckedAt).Take(reportCache.Count-40).Select(x=>x.Key).ToArray())reportCache.Remove(key);

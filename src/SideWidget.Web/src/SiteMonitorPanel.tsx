@@ -11,9 +11,10 @@ const key='sidewidget.sites.v1';
 const labels={up:'Доступен',down:'Недоступен',restricted:'Доступ ограничен',unknown:'Результат неизвестен'};
 const time=(value:string|null)=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString(locale()):t('Неизвестно');
 function hostname(url:string){try{return new URL(url).host;}catch{return url;}}
+function sourceLink(value:string){try{const url=new URL(value);return url.pathname==='/api/v2/status.json'?url.origin+'/':value;}catch{return value;}}
 function webUrl(value:string){const url=new URL(value);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('invalid');return url.href;}
 function readPreview():MonitoredSite[]{const value:unknown=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(value)||value.some(site=>!site||typeof site.id!=='string'||typeof site.url!=='string'||typeof site.reportUrl!=='string'||typeof site.enabled!=='boolean'||!Number.isInteger(site.intervalMinutes)))throw new Error('invalid');return value.map(site=>({...site,nextCheckAt:null,lastCheck:null,history:[]}));}
-function Report({check}:{check:SiteCheck|null}){return <small>{!check||check.reportStatus==='unknown'?t('Сведения о жалобах недоступны'):check.reportStatus==='reports'?(check.reportCount===null?t('Есть сообщения о сбоях'):t('Сообщений о сбоях: {count}',{count:check.reportCount})):t('Источник не сообщает о сбоях')}</small>;}
+function Report({check}:{check:SiteCheck|null}){return <small>{!check||check.reportStatus==='unknown'?t('Сводка источника недоступна'):check.reportStatus==='reports'?(check.reportCount===null?t('Есть сообщения о сбоях'):t('Сообщений о сбоях: {count}',{count:check.reportCount})):t('Источник не сообщает о сбоях')}</small>;}
 
 export function SiteMonitorPanel(){
  useLocale();const [sites,setSites]=useState<MonitoredSite[]>([]);const [loaded,setLoaded]=useState(!nativeAvailable);const [draft,setDraft]=useState<SiteDraft|null>(null);const [editing,setEditing]=useState(false);const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [status,setStatus]=useState('');const [serverMessage,setServerMessage]=useState('');
@@ -46,8 +47,8 @@ export function SiteMonitorPanel(){
   {draft&&<form className="panel site-monitor-editor" aria-label={t(editing?'Настройки сайта':'Новый сайт')} onSubmit={event=>void save(event)}>
    <h2>{t(editing?'Настройки сайта':'Новый сайт')}</h2>
    <label>{t('Адрес сайта')}<input ref={address} type="url" required value={draft.url} disabled={busy} placeholder="https://example.com" onChange={e=>setDraft({...draft,url:e.target.value})}/></label>
-   <label>{t('Страница источника жалоб')}<input type="url" value={draft.reportUrl} disabled={busy} placeholder="https://downradar.ru/…" onChange={e=>setDraft({...draft,reportUrl:e.target.value})}/></label>
-   <small>{t('Необязательно. Без ссылки подберём страницу DownRadar. Если источник недоступен, количество жалоб неизвестно.')}</small>
+   <label>{t('Источник сведений о сбоях')}<input type="url" value={draft.reportUrl} disabled={busy} placeholder="https://downradar.ru/…" onChange={e=>setDraft({...draft,reportUrl:e.target.value})}/></label>
+   <small>{t('Необязательно. Для GitHub и ChatGPT используем официальную сводку, для остальных — DownRadar или вашу ссылку.')}</small>
    <label>{t('Интервал, мин')}<input type="number" required min={1} max={1440} step={1} value={draft.intervalMinutes} disabled={busy} onChange={e=>setDraft({...draft,intervalMinutes:Number(e.target.value)})}/></label>
    <label className="site-monitor-check"><input type="checkbox" checked={draft.enabled} disabled={busy} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/>{t('Проверять автоматически')}</label>
    <small>{t('Автоматические проверки работают, пока SideWidget запущен.')}</small>
@@ -60,7 +61,7 @@ export function SiteMonitorPanel(){
    <div className="site-monitor-result"><strong>{check?t(labels[check.status]||labels.unknown):t('Ещё не проверен')}</strong><small>{t('Проверка с этого ПК')}</small></div>
    {check&&<><div className="actions site-monitor-facts">{check.httpStatus!==null&&<span>{t('HTTP {status}',{status:check.httpStatus})}</span>}{check.responseMs!==null&&<span>{t('{time} мс',{time:Math.round(check.responseMs)})}</span>}</div><small>{t('Проверено: {time}',{time:time(check.checkedAt)})}</small></>}
    <small>{site.enabled?t('Каждые {minutes} мин · следующая проверка: {time}',{minutes:site.intervalMinutes,time:nativeAvailable?time(site.nextCheckAt):t('Только в Windows')}):t('Автоматические проверки выключены')}</small>
-   <div className="site-monitor-reports"><h3>{t('Публичные сообщения о сбоях')}</h3><Report check={check}/>{site.reportUrl&&<button type="button" className="quiet" disabled={busy||!nativeAvailable} aria-label={t('Открыть источник жалоб: {site}',{site:name})} onClick={()=>void action('links.open',{url:site.reportUrl})}>{t('Открыть источник: {source}',{source:hostname(site.reportUrl)})}</button>}</div>
+   <div className="site-monitor-reports"><h3>{t('Публичные сообщения о сбоях')}</h3><Report check={check}/>{site.reportUrl&&<button type="button" className="quiet" disabled={busy||!nativeAvailable} aria-label={t('Открыть источник жалоб: {site}',{site:name})} onClick={()=>void action('links.open',{url:sourceLink(site.reportUrl)})}>{t('Открыть источник: {source}',{source:hostname(site.reportUrl)})}</button>}</div>
    <button type="button" disabled={busy||!nativeAvailable} aria-label={t('Проверить {site}',{site:name})} onClick={()=>void action('sites.check',{id:site.id})}>{t('Проверить сейчас')}</button>
    <details className="site-monitor-history"><summary>{t('История проверок')}</summary>{site.history.length?<ul>{site.history.slice(0,20).map((item,index)=><li key={item.checkedAt+index}><span>{time(item.checkedAt)}</span><strong>{t(labels[item.status]||labels.unknown)}</strong>{item.httpStatus!==null&&<small>{t('HTTP {status}',{status:item.httpStatus})}</small>}<Report check={item}/></li>)}</ul>:<small>{t('История пока пуста.')}</small>}</details>
   </section>;})}

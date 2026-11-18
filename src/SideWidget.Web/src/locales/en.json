@@ -1003,5 +1003,8 @@
   "Проверить сейчас": "Check now",
   "История проверок": "Check history",
   "История пока пуста.": "No checks recorded yet.",
-  "Только текущие активные чаты. Новые чаты не добавляются. Отслеживается завершение текущего ответа Codex. Ошибки, прерывание и активные запросы не считаются завершением. Перед выключением — 60 секунд на отмену.": "Only currently active chats are tracked. New chats are not added. The current Codex response is monitored for completion. Errors, interruptions and active requests do not count as completion. You have 60 seconds to cancel before shutdown."
+  "Только текущие активные чаты. Новые чаты не добавляются. Отслеживается завершение текущего ответа Codex. Ошибки, прерывание и активные запросы не считаются завершением. Перед выключением — 60 секунд на отмену.": "Only currently active chats are tracked. New chats are not added. The current Codex response is monitored for completion. Errors, interruptions and active requests do not count as completion. You have 60 seconds to cancel before shutdown.",
+  "Сводка источника недоступна": "Status source is unavailable",
+  "Источник сведений о сбоях": "Outage information source",
+  "Необязательно. Для GitHub и ChatGPT используем официальную сводку, для остальных — DownRadar или вашу ссылку.": "Optional. GitHub and ChatGPT use official status summaries; other sites use DownRadar or your link."
 }
