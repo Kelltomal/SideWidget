@@ -121,5 +121,9 @@
   "Укажите целое число часов и минут": "Enter whole hours and minutes",
   "Выберите выключение или перезагрузку": "Choose shutdown or restart",
   "Укажите хотя бы 1 минуту": "Enter at least 1 minute",
-  "Задержка: до 24 часов, минуты — от 0 до 59": "Delay: up to 24 hours; minutes must be between 0 and 59"
+  "Задержка: до 24 часов, минуты — от 0 до 59": "Delay: up to 24 hours; minutes must be between 0 and 59",
+  "Запланировать выключение ПК?": "Schedule PC shutdown?",
+  "Напоминание: {0} · {1}": "Reminder: {0} · {1}",
+  "После успешного завершения выбранных чатов компьютер выключится через 60 секунд. Ошибки и ожидание ответа не считаются завершением.": "The PC will shut down 60 seconds after the selected chats complete successfully. Errors and waiting for input do not count as completion.",
+  "При исчерпании лимита Codex компьютер выключится через 60 секунд. Один раз до следующей перезагрузки ПК.": "The PC will shut down 60 seconds after the Codex limit is exhausted. Once before the next PC reboot."
 }

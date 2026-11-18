@@ -5,20 +5,12 @@ import type {LocalProps,SessionText} from './LocalTools';
 import {QrTool} from './LocalTools';
 import {CopyButton,Icon,invoke,localDate,nativeAvailable,Notice,Panel,useAction} from './ui';
 import {type TranslationProvider} from './translation';
+import {CalendarPanel} from './CalendarPanel';
 
 export function Calendar({compact=false,open}:{compact?:boolean;open?:()=>void}) {
- const [month,setMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));const [selected,setSelected]=useState(localDate());
- const today=localDate();const start=(month.getDay()+6)%7;const days=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
- const dates=Array.from({length:start+days},(_,index)=>index<start?null:new Date(month.getFullYear(),month.getMonth(),index-start+1));
- function move(delta:number){setMonth(new Date(month.getFullYear(),month.getMonth()+delta,1));}
  if(compact)return <button className="day-glance" onClick={open}><span>{t('Календарь')}</span><strong>{new Date().toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'short'})}</strong></button>;
- return <Panel title={t('Календарь')}>
-  <div className="month-heading"><button className="icon-button" aria-label={t('Предыдущий месяц')} onClick={()=>move(-1)}><Icon name="back" size={16}/></button><strong>{month.toLocaleDateString(locale(),{month:'long',year:'numeric'})}</strong><button className="icon-button" aria-label={t('Следующий месяц')} onClick={()=>move(1)}><Icon name="arrow" size={16}/></button></div>
-  <div className="calendar-grid" aria-label={t('Выбор даты')}>{[t('Пн'),t('Вт'),t('Ср'),t('Чт'),t('Пт'),t('Сб'),t('Вс')].map(day=><span className="weekday" key={day}>{day}</span>)}{dates.map((date,index)=>date?<button key={localDate(date)} className={`${localDate(date)===today?'today ':''}${localDate(date)===selected?'chosen':''}`} aria-label={date.toLocaleDateString(locale(),{day:'numeric',month:'long',year:'numeric'})} aria-pressed={localDate(date)===selected} onClick={()=>setSelected(localDate(date))}>{date.getDate()}</button>:<span key={`blank-${index}`}/>)}</div>
-  <div className="section-heading"><h3>{new Date(`${selected}T12:00:00`).toLocaleDateString(locale(),{day:'numeric',month:'long',weekday:'long'})}</h3><button className="quiet" onClick={()=>{setSelected(today);setMonth(new Date(new Date().getFullYear(),new Date().getMonth(),1));}}>{t('Сегодня')}</button></div>
- </Panel>;
+ return <CalendarPanel/>;
 }
-
 export function Diary({state,setState}:LocalProps) {
  const [recoveryKey]=useState(()=>{const id=new URLSearchParams(location.search).get('windowId');return 'sidewidget.diary.recovery'+(id?'.'+id:'');});
  const [text,setText]=useState(()=>{

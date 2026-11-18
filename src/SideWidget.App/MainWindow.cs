@@ -163,7 +163,19 @@ public sealed partial class MainWindow : Window
     Preferences Placement=>resizePreview??controller.Settings;
     double PanelPosition=>dragPosition??Placement.PositionForDisplay(DisplayId);
     internal object Snapshot()=>controller.Snapshot();
-    internal void DeliverEvent(string type,object data)=>SendEvent(type,data);
+    internal void DeliverEvent(string type,object data)
+    {
+        if(type=="calendar.reminder"){
+            if(primaryWindow){
+                var message=System.Text.Json.JsonSerializer.SerializeToElement(data,Protocol.Json).GetProperty("message").GetString()??"";
+                var balloon=tray;balloon.Flags=0x10;balloon.Info=message[..Math.Min(message.Length,255)];
+                balloon.InfoTitle="SideWidget · "+DesktopLanguage.Text("Календарь");balloon.InfoFlags=1;balloon.Timeout=10000;
+                Native.Shell_NotifyIcon(1,ref balloon);
+            }
+            SendEvent("notice",data);return;
+        }
+        SendEvent(type,data);
+    }
     internal void AssignDisplay(string id){if(id==DisplayId)return;DisplayId=id;compactPanel.Update(false);Collapse();Place();}
     double MaximumHeight()
     {

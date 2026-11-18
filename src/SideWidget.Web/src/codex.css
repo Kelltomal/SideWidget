@@ -1,0 +1,14 @@
+.codex-panel {gap:14px}
+.codex-threads {display:flex;flex-direction:column;gap:2px;max-height:264px;overflow:auto;margin:0;padding:0 4px 0 0;list-style:none;overscroll-behavior:contain}
+.codex-thread {display:flex;flex-direction:row;align-items:flex-start;gap:10px;min-height:44px;padding:8px 0;font-weight:400}
+.codex-thread input[type=checkbox] {flex:none;width:18px;height:18px;min-height:18px;margin:2px 0 0;padding:0;accent-color:var(--accent)}
+.codex-thread>span {min-width:0;overflow-wrap:anywhere}
+.codex-thread strong {display:block;font-weight:500;line-height:1.4}
+.codex-thread small {margin-top:3px}
+.codex-arm button {flex:1 1 145px;white-space:normal}
+.codex-shutdown p {color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+.codex-bucket {display:flex;flex-direction:column;gap:8px;min-width:0}
+.codex-bucket+.codex-bucket {padding-top:10px;border-top:1px solid var(--line)}
+.codex-limit-window>div {display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
+.codex-limit-window strong {font-variant-numeric:tabular-nums;font-weight:500}
+.codex-limit-toggle {margin-top:3px}

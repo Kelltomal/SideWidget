@@ -52,6 +52,9 @@ sealed partial class Controller
         var p=c.Params;string Text(string k,int max=10000)=>Protocol.Text(p,k,max);
         try {
             switch(c.ActionId){
+                case "sites.get" or "sites.save" or "sites.delete" or "sites.check":return await HandleWebsites(c);
+                case "calendar.get" or "calendar.save" or "calendar.delete":return HandleCalendar(c);
+                case "codex.get" or "codex.refresh" or "codex.arm" or "codex.cancel":return await HandleCodex(c);
                 case "bridge.ready":Ready=true;return Snapshot();case "state.get":return Snapshot();
                 case "startup.get":return LiteInstallation.Startup().Get();
                 case "app.share":return await ShareApplication();

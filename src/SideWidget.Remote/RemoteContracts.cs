@@ -7,7 +7,7 @@ public sealed record RemoteCommand(string RequestId, string Command, string? Id 
     public Func<bool>? StillAuthorized { get; init; }
 }
 
-public sealed record RemoteConfiguration(int Version = 1, bool Enabled = false, string? AdapterId = null, int Port = 47831, int SetupPort = 47830)
+public sealed record RemoteConfiguration(int Version = 1, bool Enabled = false, string? AdapterId = null, int Port = 47831, int SetupPort = 47830, bool LanAccess = true)
 {
     public void Validate()
     {

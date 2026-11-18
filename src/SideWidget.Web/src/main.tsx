@@ -22,10 +22,12 @@ import {ShareSettings} from './ShareSettings';
 import {DisplaySettings,selectedDisplayIds} from './DisplaySettings';
 import {PhoneRemoteSettings} from './PhoneRemoteSettings';
 import {ClockSettings} from './ClockSettings';
+import {CodexPanel} from './CodexPanel';
+import {SiteMonitorPanel} from './SiteMonitorPanel';
 
 const modules=[['search','Поиск'],['pinnedTools','Закреплённые инструменты'],['apps','Приложения'],['music','Музыка'],['calendar','Календарь и погода'],['tools','Инструменты'],['metrics','Текущие показатели ПК'],['quick','Быстрые действия']];
 const defaultPinnedTools=['calculator','translation','qr'];
-const tools=[['calculator','Калькулятор','calculator'],['translation','Перевод','translate'],['qr','QR-код','qr'],['currency','Валюты','currency'],['units','Единицы','units'],['colors','Цвета','color'],['diary','Дневник','diary'],['timer','Таймер','timer'],['desktop','Файлы и папки','folder']];
+const tools=[['calculator','Калькулятор','calculator'],['translation','Перевод','translate'],['qr','QR-код','qr'],['currency','Валюты','currency'],['units','Единицы','units'],['colors','Цвета','color'],['diary','Дневник','diary'],['timer','Таймер','timer'],['desktop','Файлы и папки','folder'],['codex','Codex','codex'],['sites','Монитор сайтов','globe']];
 const titles:Record<string,string>={home:'',timer:'Таймер',settings:'Настройки',apps:'Приложения',music:'Музыка',audio:'Звук',calendar:'Календарь',weather:'Погода',system:'Текущие показатели ПК',quick:'Быстрые действия',...Object.fromEntries(tools.map(([id,title])=>[id,title]))};
 const defaultSettings:Settings={language:'system',width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:modules.map(([id])=>id),disabled:[]};
 const emptyState:Snapshot={settings:defaultSettings,calculatorHistory:[],colorHistory:[],unitFavorites:[],apps:[],drafts:{diary:''}};
@@ -129,6 +131,8 @@ export function App(){
    <div className="page-content" hidden={page!=='home'}><ModuleLayout state={state} setState={setState} editing={layoutEditing} finish={()=>editLayout(false)} modules={modules} renderModule={id=>id==='search'||page==='home'?homeModule(id):null}/></div>
    <div className="page-content" key={page}>
    {page==='timer'&&<TimerPanel timer={focusTimer}/>}
+   {page==='codex'&&<CodexPanel/>}
+   {page==='sites'&&<SiteMonitorPanel/>}
    {page==='desktop'&&<DesktopCleanup/>}
    {page==='calculator'&&<Calculator {...localProps} sessionExpression={[calculatorExpression,setCalculatorExpression]}/>}{page==='qr'&&<QrTool sessionText={[qrText,setQrText]}/>}{page==='units'&&<Units {...localProps}/>}{page==='colors'&&<Colors {...localProps}/>}
    {page==='translation'&&<Translation sessionText={[translationText,setTranslationText]} sessionResult={[translationResult,setTranslationResult]}/>}{page==='currency'&&<Currency/>}{page==='diary'&&<Diary {...localProps}/>}

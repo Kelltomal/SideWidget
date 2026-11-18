@@ -5,7 +5,7 @@ import {RemoteClient,RemoteError,type RemoteState} from './client';
 
 type InstallPrompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:string}>};
 type Pair={id:string;secret:string;code:string};
-type Config={secureUrl:string;fingerprint:string};
+type Config={secureUrl:string;fingerprint:string;lanAccess:boolean;setupUrl:string};
 const paths={play:'m9 5 11 7-11 7Z',pause:'M8 5v14M16 5v14',previous:'M5 5v14m14-14L8 12l11 7Z',next:'M19 5v14M5 5l11 7-11 7Z',music:'M9 18V5l11-2v13M9 5v4l11-2M9 18c0 3-6 3-6 0s6-3 6 0Zm11-2c0 3-6 3-6 0s6-3 6 0Z',sound:'M3 9h4l5-4v14l-5-4H3Zm13-2a7 7 0 0 1 0 10',mute:'M3 9h4l5-4v14l-5-4H3Zm13 0 6 6m0-6-6 6',phone:'M7 2h10v20H7Zm4 17h2',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5'};
 function Glyph({name,size=24}:{name:keyof typeof paths;size?:number}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;}
 function time(seconds:number){const n=Math.max(0,Math.floor(seconds));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;}
@@ -53,6 +53,7 @@ export function PhoneRemoteApp(){
  const [client]=useState(()=>new RemoteClient());
  const secure=location.protocol==='https:';
  const [config,setConfig]=useState<Config>();const [authorized,setAuthorized]=useState(()=>client.hasKey());
+ const lan=!secure&&config?.lanAccess===true;const ready=lan||secure&&authorized;
  const [state,setState]=useState<RemoteState>();const [connected,setConnected]=useState(false);const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');const [notice,setNotice]=useState('');const [selected,setSelected]=useState('');const [refresh,setRefresh]=useState(0);
  const [pair,setPair]=useState<Pair>();const [name,setName]=useState(t("Мой Android"));const [pairBusy,setPairBusy]=useState(false);
@@ -68,7 +69,7 @@ export function PhoneRemoteApp(){
   return()=>{window.removeEventListener('beforeinstallprompt',ready);window.removeEventListener('appinstalled',done);};
  },[]);
  useEffect(()=>{
-  if(!secure||!authorized)return;
+  if(!ready)return;
   let active=true;let timer:ReturnType<typeof setTimeout>;let waiting=false;let delay=1000;
   async function poll(){
    if(!active||waiting)return;waiting=true;const version=revision.current;
@@ -79,7 +80,7 @@ export function PhoneRemoteApp(){
   const wake=()=>{clearTimeout(timer);if(!waiting)void poll();};
   void poll();window.addEventListener('online',wake);document.addEventListener('visibilitychange',wake);
   return()=>{active=false;clearTimeout(timer);window.removeEventListener('online',wake);document.removeEventListener('visibilitychange',wake);};
- },[authorized,secure,refresh]);
+ },[ready,refresh]);
  useEffect(()=>{
   if(!pair)return;let active=true;let timer:ReturnType<typeof setTimeout>;
   async function poll(){try{
@@ -97,15 +98,15 @@ export function PhoneRemoteApp(){
   try{await client.command(body);setRefresh(v=>v+1);}catch(e){setError((e as Error).message);setConnected(false);if(e instanceof RemoteError&&e.status===401)setAuthorized(false);setRefresh(v=>v+1);}finally{sending.current=false;setBusy(false);}
  }
  async function installApp(){if(!install)return;await install.prompt();await install.userChoice;setInstall(undefined);}
- return <div className="remote-shell"><header className="remote-header"><span className="remote-brand"><Glyph name="music" size={22}/>SideWidget</span><span className="remote-connection" role="status">{!secure?t("Настройка"):authorized?(connected?t("Связь с ПК"):t("Нет связи с ПК")):t("Подключение телефона")}</span></header>
+ return <div className="remote-shell"><header className="remote-header"><span className="remote-brand"><Glyph name="music" size={22}/>SideWidget</span><span className="remote-connection" role="status">{ready?(connected?t("Связь с ПК"):t("Нет связи с ПК")):!secure?t("Настройка"):t("Подключение телефона")}</span></header>
   <main className="remote-main">
-   {!secure?<SetupPage config={config} error={error} retry={()=>void loadConfig()}/>:<>
-    {authorized?<RemotePlayer state={state} selected={selected} onSelect={setSelected} connected={connected} busy={busy} send={body=>void send(body)}/>:<div className="remote-pair"><Glyph name="phone" size={44}/><h1>{pair?t("Подтвердите на ПК"):t("Музыка на ПК. Пульт — здесь.")}</h1>
+   {!secure&&!lan?<SetupPage config={config} error={error} retry={()=>void loadConfig()}/>:<>
+    {ready?<RemotePlayer state={state} selected={selected} onSelect={setSelected} connected={connected} busy={busy} send={body=>void send(body)}/>:<div className="remote-pair"><Glyph name="phone" size={44}/><h1>{pair?t("Подтвердите на ПК"):t("Музыка на ПК. Пульт — здесь.")}</h1>
      {pair?<><p>{t("Сравните код и нажмите «Разрешить» в SideWidget на компьютере.")}</p><strong className="pair-code">{pair.code}</strong><p>{t("Ожидаем подтверждение…")}</p></>:invite?<><p>{t("Телефон запомнится после первого подтверждения.")}</p><label>{t("Имя телефона")}<input autoComplete="off" maxLength={60} value={name} onChange={e=>setName(e.target.value)}/></label><button className="remote-button" disabled={pairBusy||!name.trim()} onClick={()=>void begin()}>{pairBusy?t("Подключаем…"):t("Подключить телефон")}</button></>:<><p>{t("На компьютере откройте SideWidget → Музыка → Пульт на телефоне. Отсканируйте QR для подключения.")}</p><button onClick={()=>setRefresh(v=>v+1)}>{t("Проверить подключение")}</button></>}
     </div>}
     {error&&<p className="remote-error" role="alert">{t(error)}</p>}{notice&&<p role="status">{notice}</p>}
-    {authorized&&!connected&&<button className="remote-retry" onClick={()=>setRefresh(v=>v+1)}>{t("Подключиться снова")}</button>}
-    <footer className="remote-footer">{!installed&&(install?<button className="remote-button secondary" onClick={()=>void installApp()}><Glyph name="download" size={18}/>{t("Установить приложение")}</button>:<details><summary>{t("Установить пульт")}</summary><p>{t("В меню Chrome выберите «Установить приложение» или «Добавить на главный экран». Нужны HTTPS и установленный сертификат SideWidget.")}</p></details>)}<p>{t("Домашняя сеть · Звук остаётся на ПК")}</p><details><summary>{t("Если ПК недоступен")}</summary><p>{t("Проверьте питание ПК и домашний Wi-Fi. В VPN включите доступ к локальной сети. В Windows разрешите SideWidget в брандмауэре для частной сети. Если IP ПК изменился, откройте новый QR.")}</p></details></footer>
+    {ready&&!connected&&<button className="remote-retry" onClick={()=>setRefresh(v=>v+1)}>{t("Подключиться снова")}</button>}
+    <footer className="remote-footer">{lan?<details><summary>{t("Сохранить пульт")}</summary><p>{t("Добавьте эту страницу в закладки браузера. Открывайте её с любого телефона в той же домашней сети.")}</p></details>:!installed&&(install?<button className="remote-button secondary" onClick={()=>void installApp()}><Glyph name="download" size={18}/>{t("Установить приложение")}</button>:<details><summary>{t("Установить пульт")}</summary><p>{t("В меню Chrome выберите «Установить приложение» или «Добавить на главный экран». Нужны HTTPS и установленный сертификат SideWidget.")}</p></details>)}<p>{t("Домашняя сеть · Звук остаётся на ПК")}</p><details><summary>{t("Если ПК недоступен")}</summary><p>{t("Проверьте питание ПК и домашний Wi-Fi. В VPN включите доступ к локальной сети. В Windows разрешите SideWidget в брандмауэре для частной сети. Если IP ПК изменился, откройте новый QR.")}</p></details></footer>
    </>}
   </main>
  </div>;

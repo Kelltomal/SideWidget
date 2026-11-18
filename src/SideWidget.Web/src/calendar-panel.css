@@ -1,0 +1,28 @@
+.calendar-panel {gap:14px}
+.calendar-views {gap:6px}
+.calendar-views button {flex:1}
+.calendar-event-grid {gap:3px}
+.calendar-event-grid button {display:flex;flex-direction:column;gap:0;min-height:38px;border-radius:9px}
+.calendar-event-grid .today::after {display:none}
+.calendar-event-grid .today>span:first-child {text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.calendar-event-grid .calendar-other-month {color:var(--muted)}
+.calendar-event-grid .chosen {color:var(--on-accent)}
+.calendar-event-mark {display:flex;align-items:center;justify-content:center;height:6px}
+.calendar-event-mark i {display:block;width:4px;height:4px;border-radius:50%;background:currentColor}
+.calendar-date-actions {justify-content:space-between}
+.calendar-check {flex-direction:row;align-items:center;gap:9px;min-height:36px}
+.calendar-check input[type=checkbox] {width:18px;height:18px;min-height:18px;margin:0;padding:0;accent-color:var(--accent)}
+.calendar-editor {scroll-margin-top:12px}
+.calendar-editor .actions button {flex:1 1 auto}
+.calendar-editor input[type=date],.calendar-editor input[type=time] {min-width:0;max-width:100%}
+.calendar-agenda {display:flex;flex-direction:column;gap:10px;min-width:0}
+.calendar-agenda>h2 {text-transform:capitalize}
+.calendar-agenda ul {display:flex;flex-direction:column;gap:0;list-style:none;margin:0;padding:0}
+.calendar-event {display:flex;align-items:flex-start;gap:8px;padding:10px 0;min-width:0}
+.calendar-event+.calendar-event {border-top:1px solid var(--line)}
+.calendar-event-body {flex:1;min-width:0;padding-top:4px}
+.calendar-event-body strong {font-weight:500;line-height:1.4}
+.calendar-event-body small {margin-top:4px;font-variant-numeric:tabular-nums}
+.calendar-event-notes {font-size:13px;white-space:pre-wrap;line-height:1.5;margin-top:6px}
+.calendar-event.is-done .calendar-event-body strong {text-decoration:line-through;color:var(--muted)}
+.calendar-event .icon-button {flex:none;min-height:36px}

@@ -10,6 +10,10 @@ sealed class DesktopState : IDisposable
     public DesktopCleanup Cleanup {get;}
     public FocusTimerService Timer {get;}
     public SideWidget.Core.PowerSchedule PowerSchedule {get;}=new();
+    public CodexMonitorService Codex {get;}
+    public CalendarService Calendar {get;}
+    public WebsiteMonitorService Websites {get;}
+    public SemaphoreSlim PowerExecution {get;}=new(1,1);
     public OnlineServices Online {get;}
     public AudioSpectrumService Spectrum {get;}=new();
     public AudioService Audio {get;}=new();
@@ -20,6 +24,9 @@ sealed class DesktopState : IDisposable
     public DesktopState(string directory)
     {
         Personal=new(directory);Launcher=new(Personal);Timer=new(Personal.Store);
+        Codex=new(Personal.Store);
+        Calendar=new(Personal.Store);
+        Websites=new(Personal.Store);
         Cleanup=new(Personal.Store,Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),path=>{
             try {return LauncherService.ReadShortcutTarget(path);}
             catch (Exception error) when (error is System.Runtime.InteropServices.COMException or SideWidget.Core.CommandFault or UnauthorizedAccessException) {return null;}
@@ -27,5 +34,5 @@ sealed class DesktopState : IDisposable
         Online=new(Personal.Store,new SecretVault(Path.Combine(directory,"secrets")));
         Spectrum.SetEnabled((Personal.Settings.Visualizer??new()).Enabled);
     }
-    public void Dispose(){PhoneRemote?.Dispose();Spectrum.Dispose();Audio.Dispose();Media.Dispose();Online.Dispose();}
+    public void Dispose(){Websites.Dispose();Codex.Dispose();PhoneRemote?.Dispose();Spectrum.Dispose();Audio.Dispose();Media.Dispose();Online.Dispose();}
 }

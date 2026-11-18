@@ -70,15 +70,17 @@ public sealed class RemoteServer(RemoteAccess access, RemoteAdapter adapter, Rem
             }
             if (request.Method == "GET" && path == "/remote/config")
             {
-                await response.WriteAsJsonAsync(new { secureUrl = $"https://{adapter.Address}:{config.Port}/", fingerprint = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(rootCertificate)) }, context.RequestAborted); return;
+                await response.WriteAsJsonAsync(new { lanAccess = config.LanAccess, setupUrl = $"http://{adapter.Address}:{config.SetupPort}/", secureUrl = $"https://{adapter.Address}:{config.Port}/", fingerprint = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(rootCertificate)) }, context.RequestAborted); return;
             }
             if (path.StartsWith("/api/", StringComparison.Ordinal))
             {
-                if (!request.IsHttps) { response.StatusCode = 403; return; }
+                var lan = !request.IsHttps && config.LanAccess;
+                if (!request.IsHttps && !lan) { response.StatusCode = 403; return; }
                 var origin = request.Headers.Origin.ToString();
-                if ((request.Method != "GET" || origin.Length > 0) && origin != $"https://{adapter.Address}:{config.Port}")
+                if ((request.Method != "GET" || origin.Length > 0) && origin != $"{request.Scheme}://{adapter.Address}:{port}")
                 { response.StatusCode = 403; return; }
                 if (request.Method == "POST" && !request.HasJsonContentType()) { response.StatusCode = 415; return; }
+                if (lan && path is not ("/api/state" or "/api/command")) { response.StatusCode = 403; return; }
                 if (path == "/api/pair/start" && request.Method == "POST")
                 {
                     var data = await Body(context, "invite", "name");
@@ -90,15 +92,15 @@ public sealed class RemoteServer(RemoteAccess access, RemoteAdapter adapter, Rem
                     await response.WriteAsJsonAsync(access.PollPair(Text(data, "id", 32), Text(data, "secret", 64)), context.RequestAborted); return;
                 }
                 var token = request.Headers["X-SideWidget-Key"].ToString();
-                var device = access.Authorize(token);
+                var device = lan ? "lan:" + ip : access.Authorize(token);
                 if (device is null) { response.StatusCode = 401; return; }
                 if (path == "/api/state" && request.Method == "GET")
                 { await response.WriteAsJsonAsync(WithoutKnownArtwork(await snapshot(), request.Headers["X-SideWidget-Artwork"].ToString()), context.RequestAborted); return; }
                 if (path == "/api/command" && request.Method == "POST")
                 {
                     var data = await Body(context, "requestId", "command", "id", "positionSeconds", "volume", "muted");
-                    if (access.Authorize(token) != device) { response.StatusCode = 401; return; }
-                    var parsed = ParseCommand(data) with { StillAuthorized = () => Running && access.Authorize(token) == device };
+                    if (!lan && access.Authorize(token) != device) { response.StatusCode = 401; return; }
+                    var parsed = ParseCommand(data) with { StillAuthorized = () => Running && (lan ? config.LanAccess : access.Authorize(token) == device) };
                     lock (commandGate)
                     {
                         foreach (var expiredKey in requests.Where(p => p.Value < DateTimeOffset.UtcNow.AddMinutes(-5)).Select(p => p.Key).ToArray()) requests.Remove(expiredKey);

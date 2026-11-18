@@ -6,6 +6,8 @@ export const invoke:Invoke = <T,>(action:string,params:object={})=>bridge.reques
 export const nativeAvailable=!!window.chrome?.webview;
 export function Icon({name,size=18}:{name:string;size?:number}) {
  const paths:Record<string,string>={
+  codex:'m8 5-6 7 6 7m8-14 6 7-6 7M14 3l-4 18',
+  globe:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3 12h18M12 3c4 5 4 13 0 18-4-5-4-13 0-18Z',
   back:'m14 6-6 6 6 6',close:'m6 6 12 12M6 18 18 6',pin:'M8 3h8l-1 7 3 3v2h-5v6h-2v-6H6v-2l3-3-1-7Z',
   backspace:'M8 5h13v14H8l-6-7Zm4 4 6 6m0-6-6 6',
   keypad:'M3 6h18v12H3ZM6.5 9.5h1m4 0h1m4 0h1m-11 3h1m4 0h1m4 0h1M8 15.5h8',

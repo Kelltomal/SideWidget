@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
 import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
-import {RemotePlayer} from './PhoneRemoteApp';
+import {PhoneRemoteApp,RemotePlayer} from './PhoneRemoteApp';
 import type {RemoteState} from './client';
 const state:RemoteState={media:{available:true,sessions:[{id:'player',title:'Название композиции',artist:'Исполнитель',source:'Yandex Music',playing:true,positionSeconds:30,durationSeconds:180,canPlay:true,canPause:true,canNext:true,canPrevious:true,canSeek:true}]},audio:{available:true,volume:.5,muted:false}};
-afterEach(cleanup);
+afterEach(()=>{cleanup();vi.unstubAllGlobals();localStorage.clear();});
+it('opens permanent HTTP music player without pairing or certificate setup',async()=>{
+ vi.stubGlobal('fetch',vi.fn(async(path:string)=>new Response(JSON.stringify(path==='/remote/config'?{lanAccess:true,secureUrl:'https://127.0.0.1:47831/',fingerprint:'test'}:state))));
+ render(<PhoneRemoteApp/>);
+ expect(await screen.findByText('Название композиции')).toBeTruthy();
+ expect(screen.queryByText('Скачать сертификат')).toBeNull();
+ expect(screen.queryByRole('button',{name:'Подключить телефон'})).toBeNull();
+});
 it('disables every music and volume control when disconnected',()=>{
  render(<RemotePlayer state={state} connected={false} busy={false} selected="player" onSelect={vi.fn()} send={vi.fn()}/>);
  for(const control of [...screen.getAllByRole('button'),...screen.getAllByRole('slider')])expect((control as HTMLButtonElement).disabled).toBe(true);

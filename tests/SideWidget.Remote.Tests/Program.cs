@@ -92,6 +92,7 @@ Check(!File.ReadAllBytes(Path.Combine(directory, "certificates/root.pfx.dpapi"))
 int Port() { var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start(); var port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop(); return port; }
 var tlsPort = Port(); var httpPort = Port();
 var config = new RemoteConfiguration(Port: tlsPort, SetupPort: httpPort);
+Check(JsonSerializer.Deserialize<RemoteConfiguration>("{\"Enabled\":true,\"Port\":47831,\"SetupPort\":47830}")!.LanAccess, "old settings enable permanent LAN by default");
 var web = Path.Combine(directory, "Web"); Directory.CreateDirectory(web); File.WriteAllText(Path.Combine(web, "remote.html"), "remote shell");
 var httpAccess = new RemoteAccess(Path.Combine(directory, "http-devices.json"));
 var commands = new List<RemoteCommand>();
@@ -110,7 +111,24 @@ using (var evil = new HttpRequestMessage(HttpMethod.Post, "/api/pair/start") { C
 using (var evil = new HttpRequestMessage(HttpMethod.Get, "/") )
 { evil.Headers.Host = "evil.test:" + tlsPort; Check((await client.SendAsync(evil)).StatusCode == HttpStatusCode.Forbidden, "foreign Host rejected"); }
 using var plain = new HttpClient(new HttpClientHandler { UseProxy = false });
-Check((await plain.GetAsync($"http://127.0.0.1:{httpPort}/api/state")).StatusCode == HttpStatusCode.Forbidden, "no control over plaintext HTTP");
+Check((await plain.GetAsync($"http://127.0.0.1:{httpPort}/api/state")).IsSuccessStatusCode, "LAN phone reads state without key or pairing");
+plain.DefaultRequestHeaders.Add("Origin", $"http://127.0.0.1:{httpPort}");
+var lanCommand = new { requestId = Guid.NewGuid().ToString(), command = "volume", volume = .6 };
+Check((await plain.PostAsJsonAsync($"http://127.0.0.1:{httpPort}/api/command", lanCommand)).IsSuccessStatusCode && commands.Count == 1, "LAN music command without key");
+Check((await plain.PostAsJsonAsync($"http://127.0.0.1:{httpPort}/api/command", lanCommand)).StatusCode == HttpStatusCode.BadRequest && commands.Count == 1, "LAN duplicate blocked");
+commands.Clear();
+Check((await plain.PostAsJsonAsync($"http://127.0.0.1:{httpPort}/api/command", new { requestId = Guid.NewGuid().ToString(), command = "shutdown" })).StatusCode == HttpStatusCode.BadRequest, "LAN shutdown excluded");
+Check((await plain.PostAsJsonAsync($"http://127.0.0.1:{httpPort}/api/pair/start", new { invite = "unused", name = "Phone" })).StatusCode == HttpStatusCode.Forbidden, "LAN pairing unavailable");
+plain.DefaultRequestHeaders.Remove("Origin"); plain.DefaultRequestHeaders.Add("Origin", "http://evil.test");
+Check((await plain.PostAsJsonAsync($"http://127.0.0.1:{httpPort}/api/command", lanCommand)).StatusCode == HttpStatusCode.Forbidden, "LAN foreign Origin excluded");
+plain.DefaultRequestHeaders.Remove("Origin");
+Check((await plain.PostAsJsonAsync($"http://127.0.0.1:{httpPort}/api/command", lanCommand)).StatusCode == HttpStatusCode.Forbidden, "LAN POST without Origin excluded");
+var lanConfig = await plain.GetFromJsonAsync<JsonElement>($"http://127.0.0.1:{httpPort}/remote/config");
+Check(lanConfig.GetProperty("lanAccess").GetBoolean() && lanConfig.GetProperty("setupUrl").GetString() == $"http://127.0.0.1:{httpPort}/", "permanent LAN URL published");
+using (var evilLan = new HttpRequestMessage(HttpMethod.Get, $"http://127.0.0.1:{httpPort}/api/state"))
+{ evilLan.Headers.Host = "evil.test:" + httpPort; Check((await plain.SendAsync(evilLan)).StatusCode == HttpStatusCode.Forbidden, "LAN foreign Host excluded"); }
+using (var textLan = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{httpPort}/api/command") { Content = new StringContent("{}") })
+{ textLan.Headers.Add("Origin", $"http://127.0.0.1:{httpPort}"); Check((await plain.SendAsync(textLan)).StatusCode == HttpStatusCode.UnsupportedMediaType, "LAN requires JSON"); }
 Check((await plain.GetAsync($"http://127.0.0.1:{httpPort}/remote/root.crt")).IsSuccessStatusCode, "public CA download");
 var newInvite = httpAccess.CreateInvite();
 var startedResponse = await client.PostAsJsonAsync("/api/pair/start", new { invite = newInvite.Token, name = "Android test" });
@@ -151,6 +169,11 @@ Check((await queuedRequest).StatusCode == HttpStatusCode.BadRequest && commands.
 await server.DisposeAsync();
 await server.StartAsync();
 Check((await client.GetAsync("/")).IsSuccessStatusCode, "listener restarts on same address");
+await server.DisposeAsync();
+await using var lockedServer = new RemoteServer(httpAccess, adapter, config with { LanAccess = false }, leaf, root.RawData, web,
+    () => Task.FromResult<object>(new { }), _ => Task.CompletedTask);
+await lockedServer.StartAsync();
+Check((await plain.GetAsync($"http://127.0.0.1:{httpPort}/api/state")).StatusCode == HttpStatusCode.Forbidden, "advanced paired-only config keeps HTTP closed");
 Console.WriteLine($"PASS {checks} remote access/network/certificate/HTTPS checks; local synthetic media only");
 
 sealed class SlowJsonContent(string json) : HttpContent

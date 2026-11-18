@@ -3,9 +3,21 @@ using SideWidget.Infrastructure;
 using Microsoft.Data.Sqlite;
 using System.Text;
 using System.Text.Json;
+if(args is ["--inspect-codex"]){
+    var home=Environment.GetEnvironmentVariable("CODEX_HOME")??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".codex");
+    var threads=new CodexStateReader(home).Read();var limits=await new CodexRateLimitsReader(home).ReadAsync();
+    var boot=WindowsBootSession.Read();
+    Console.WriteLine(JsonSerializer.Serialize(new{threads.Available,threadCount=threads.Threads.Count,statuses=threads.Threads.GroupBy(t=>t.Status).ToDictionary(g=>g.Key,g=>g.Count()),limitsAvailable=limits.Available,limits.CheckedAt,limits.Buckets,bootAvailable=boot is not null,bootStable=boot==WindowsBootSession.Read()},Protocol.Json));
+    return;
+}
 DesktopCleanupChecks.Run();
 PowerScheduleChecks.Run();
 TimerProtocolChecks.Run();
+CodexPolicyChecks.Run();
+await CodexMonitorServiceChecks.Run();
+CodexReaderChecks.Run();
+CalendarChecks.Run();
+WebsiteMonitorChecks.Run();
 var count=0;
 void Check(bool v,string name){if(!v)throw new Exception(name);count++;}
 void Reject(Action action,string name){try{action();}catch(CommandFault){count++;return;}throw new Exception(name);}

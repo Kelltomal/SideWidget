@@ -24,6 +24,10 @@ public static class Protocol
     public static void ValidateParams(Command c)
     {
         string[] keys=c.ActionId switch {
+            "sites.get"=>[],"sites.save"=>["site"],"sites.delete" or "sites.check"=>["id"],
+            "calendar.get"=>[],"calendar.save"=>["event"],"calendar.delete"=>["id"],
+            "codex.get" or "codex.refresh" or "codex.cancel"=>[],
+            "codex.arm"=>["mode","ids"],
             "power.get" or "power.cancel"=>[],
             "power.schedule"=>["action","hours","minutes"],
             "timer.get"=>[],

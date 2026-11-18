@@ -15,7 +15,7 @@ public sealed record Preferences(int Width=444,int Height=620,int HideDelay=650,
         if(ClockFontSize is <14 or >34||CompactStripHeight is <23 or >120)
             throw new CommandFault("settings","Проверьте размер часов и высоту полоски");
     }
-    static readonly string[] Tools=["calculator","translation","qr","currency","units","colors","diary","timer","desktop"];
+    static readonly string[] Tools=["calculator","translation","qr","currency","units","colors","diary","timer","desktop","codex","sites"];
     public double PositionForDisplay(string id)=>DisplayPositions?.GetValueOrDefault(id,Position)??Position;
     public Preferences WithDisplayPosition(string id,double position)
     {

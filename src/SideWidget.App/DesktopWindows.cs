@@ -78,7 +78,7 @@ sealed class DesktopWindows
             foreach(var window in windows.ToArray())window.RefreshSharedSettings();
             QueueRefresh();
         }
-        var shared=type is "settings.changed" or "timer.changed" or "power.changed" or "launcher.changed" or "audio.level.changed";
+        var shared=type is "settings.changed" or "timer.changed" or "power.changed" or "calendar.changed" or "calendar.reminder" or "launcher.changed" or "audio.level.changed";
         foreach(var window in windows.ToArray())if(shared||window==source)window.DeliverEvent(type,data);
         if(type=="launcher.changed")Synchronize(source);
     }

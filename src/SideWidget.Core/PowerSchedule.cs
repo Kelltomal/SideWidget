@@ -18,6 +18,7 @@ public sealed class PowerSchedule
     public void Schedule(string action,int hours,int minutes,DateTimeOffset now)
         =>State=new(action,now.AddSeconds(Validate(action,hours,minutes)));
     public void Cancel()=>State=null;
+    public void ScheduleDeadline(string action,DateTimeOffset deadline){_=Validate(action,0,1);State=new(action,deadline);}
     public int Remaining(DateTimeOffset now)=>State is {} state?Math.Max(0,(int)Math.Ceiling((state.Deadline-now).TotalSeconds)):0;
     public void Tick(DateTimeOffset now,Action<string> execute)
     {

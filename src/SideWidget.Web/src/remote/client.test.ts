@@ -21,6 +21,13 @@ it('never retries a command after an unknown network outcome',async()=>{
 it('remembers pairing key for later openings',()=>{
  new RemoteClient().remember('paired-key');expect(new RemoteClient().hasKey()).toBe(true);
 });
+it('generates command IDs on HTTP where randomUUID is unavailable',async()=>{
+ const original=crypto.getRandomValues.bind(crypto);
+ vi.stubGlobal('crypto',{getRandomValues:original});
+ const fetcher=vi.fn().mockResolvedValue(new Response('{}'));vi.stubGlobal('fetch',fetcher);
+ await new RemoteClient().command({command:'next',id:'session'});
+ expect(JSON.parse(fetcher.mock.calls[0][1].body).requestId).toMatch(/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/);
+});
 it('reuses known artwork without requesting its bytes every poll',async()=>{
  const fetcher=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({media:{sessions:[{id:'p',artworkKey:'hash',artwork:'data:image/png;base64,dGVzdA=='}]}}))).mockResolvedValueOnce(new Response(JSON.stringify({media:{sessions:[{id:'p',artworkKey:'hash'}]}})));vi.stubGlobal('fetch',fetcher);
  const client=new RemoteClient();await client.state();const second=await client.state();

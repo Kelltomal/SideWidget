@@ -7,7 +7,8 @@ sealed partial class Controller
     public FocusTimerService Timer {get;private set;}=null!;
     public void TickTimer()
     {
-        TickPowerSchedule();
+        TickCalendar();
+        _=TickPowerSchedule();
         var before=Timer.Items;
         try{Timer.Tick(DateTimeOffset.Now);timerStorageError=false;}
         catch(Exception e) when(e is Microsoft.Data.Sqlite.SqliteException or IOException){

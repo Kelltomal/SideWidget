@@ -47,7 +47,7 @@ sealed class PhoneRemoteService : IDisposable
     }
     object InfoUnsafe() => new
     {
-        enabled = config.Enabled, running = server?.Running == true,
+        enabled = config.Enabled, running = server?.Running == true, lanAccess = config.LanAccess,
         adapterId = config.AdapterId, config.Port, config.SetupPort,
         adapters = Adapters(false).Select(a => new { a.Id, a.Name, address = a.Address.ToString() }).ToArray(),
         secureUrl = listening is null ? null : $"https://{listening.Address}:{config.Port}/",
