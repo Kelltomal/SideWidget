@@ -165,6 +165,7 @@ sealed partial class Controller
                 case "search.query":var found=await search.Query(Text("text",500));var data=JsonSerializer.SerializeToElement(found,Protocol.Json);if(data.TryGetProperty("results",out var rows)){if(allowedSearch.Count>950)allowedSearch.Clear();foreach(var row in rows.EnumerateArray())allowedSearch.Add(row.GetProperty("path").GetString()!);}return found;
                 case "search.open":var path=Text("path",32768);if(!allowedSearch.Contains(path))throw new CommandFault("search","Обновите поиск перед открытием");LauncherService.OpenSearch(path,p.TryGetProperty("reveal",out var reveal)&&reveal.GetBoolean());return new{opened=true};
                 case "quick.open":QuickActions.Open(Text("target",30));return new{opened=true};
+                case "power.get" or "power.schedule" or "power.cancel":return (await HandlePowerSchedule(c))!;
                 case "quick.power":var action=Text("action",20);if(await Confirm("Выполнить системное действие?",QuickActions.Description(action))){QuickActions.Power(action);return new{executed=true};}return new{executed=false};
                 case "currency.get":return await Online.Currency();case "weather.get":return await Online.Weather(Text("city",120));
                 case "translation.get":return Online.TranslationInfo();case "translation.configure":return await ConfigureTranslation();

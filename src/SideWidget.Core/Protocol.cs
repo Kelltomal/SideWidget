@@ -22,6 +22,8 @@ public static class Protocol
     public static void ValidateParams(Command c)
     {
         string[] keys=c.ActionId switch {
+            "power.get" or "power.cancel"=>[],
+            "power.schedule"=>["action","hours","minutes"],
             "timer.get" or "timer.pause" or "timer.resume" or "timer.reset" or "timer.dismiss"=>[],
             "timer.start"=>["mode","seconds","alarmTime","workMinutes","breakMinutes","longBreakMinutes"],
             "desktop.undo" or "desktop.open" or "desktop.icons.undo"=>[],

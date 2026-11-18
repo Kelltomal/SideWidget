@@ -4,6 +4,7 @@ import {bridge} from './bridge';
 import {invoke,nativeAvailable,Notice} from './ui';
 import {advanceTimer,formatTime,initialTimer,phaseName,remaining,restoreTimer,restoreTimers,primaryTimer,startTimer,type TimerEntry,type TimerMode,type TimerStart} from './timer';
 import './timer.css';
+import {PowerScheduleStatus} from './PowerSchedule';
 const storageKey='sidewidget.focusTimers.v2';
 function loadTimers():TimerEntry[]{
  if(nativeAvailable)return [];
@@ -51,13 +52,14 @@ export function useFocusTimer(){
 export type TimerControl=ReturnType<typeof useFocusTimer>;
 export function TimerSummary({timer,open}:{timer:TimerControl;open:()=>void}){
  const active=timer.state.status!=='idle';const ringing=timer.state.status==='ringing';
- return <section className="panel timer-summary"><button className="quiet timer-summary-open" onClick={open}><strong>{t('Таймер')}</strong><span>{active?`${phaseName(timer.state)} · ${ringing?t('Время вышло'):formatTime(remaining(timer.state,timer.now))}${timer.items.length>1?t(' · Всего: {count}',{count:timer.items.length}):''}`:t('Будильник · Таймер · Pomodoro')}</span></button>{ringing&&<button className="timer-signal timer-summary-signal" disabled={timer.busy} onClick={()=>void timer.action('dismiss',undefined,primaryTimer(timer.items)?.id)}>{t('Остановить сигнал')}</button>}{timer.error&&<Notice error>{t(timer.error)}</Notice>}</section>;
+ return <section className="panel timer-summary"><PowerScheduleStatus compact/><button className="quiet timer-summary-open" onClick={open}><strong>{t('Таймер')}</strong><span>{active?`${phaseName(timer.state)} · ${ringing?t('Время вышло'):formatTime(remaining(timer.state,timer.now))}${timer.items.length>1?t(' · Всего: {count}',{count:timer.items.length}):''}`:t('Будильник · Таймер · Pomodoro')}</span></button>{ringing&&<button className="timer-signal timer-summary-signal" disabled={timer.busy} onClick={()=>void timer.action('dismiss',undefined,primaryTimer(timer.items)?.id)}>{t('Остановить сигнал')}</button>}{timer.error&&<Notice error>{t(timer.error)}</Notice>}</section>;
 }
 export function TimerPanel({timer}:{timer:TimerControl}){
  const {state,items,now,busy,error,action}=timer;
  const [mode,setMode]=useState<TimerMode>(state.mode);const [minutes,setMinutes]=useState('5');const [seconds,setSeconds]=useState('0');const [alarm,setAlarm]=useState(state.alarmTime);const [work,setWork]=useState(String(state.workMinutes));const [rest,setRest]=useState(String(state.breakMinutes));const [longRest,setLongRest]=useState(String(state.longBreakMinutes));
  const alarmDate=(()=>{const d=new Date(now);const [h,m]=alarm.split(':').map(Number);d.setHours(h,m,0,0);if(d.getTime()<=now)d.setDate(d.getDate()+1);return Number.isNaN(d.getTime())?t('Укажите время'):d.toLocaleString(locale(),{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});})();
  return <div className="stack timer-page">
+  <PowerScheduleStatus/>
   <div className="timer-modes" role="group" aria-label={t('Режим времени')}>{([['alarm','Будильник'],['timer','Таймер'],['pomodoro','Pomodoro']] as const).map(([id,label])=><button key={id} aria-pressed={mode===id} onClick={()=>setMode(id)}>{t(label)}</button>)}</div>
   <form className="stack" noValidate onSubmit={e=>{e.preventDefault();const duration=Number(minutes)*60+Number(seconds);void action('start',{mode,seconds:minutes.trim()&&seconds.trim()&&Number.isInteger(Number(minutes))&&Number.isInteger(Number(seconds))&&Number(minutes)>=0&&Number(seconds)>=0&&Number(seconds)<=59?duration:0,alarmTime:alarm,...(mode==='pomodoro'?{workMinutes:Number(work),breakMinutes:Number(rest),longBreakMinutes:Number(longRest)}:{})});}}>
    <h2>{mode==='alarm'?t('Новый будильник'):mode==='pomodoro'?t('Новый Pomodoro'):t('Новый таймер')}</h2>

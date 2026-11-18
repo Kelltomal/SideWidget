@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using System.Text;
 using System.Text.Json;
 DesktopCleanupChecks.Run();
+PowerScheduleChecks.Run();
 var count=0;
 void Check(bool v,string name){if(!v)throw new Exception(name);count++;}
 void Reject(Action action,string name){try{action();}catch(CommandFault){count++;return;}throw new Exception(name);}

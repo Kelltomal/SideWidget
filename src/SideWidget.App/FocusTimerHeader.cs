@@ -25,6 +25,9 @@ public sealed partial class MainWindow
     {
         controller.TickTimer();
         var timer=FocusTimerPresentation.Create(controller.Timer.State,controller.Timer.Remaining(DateTimeOffset.Now));
+        if(timer==null&&controller.PowerSchedule.State is {} power)
+            timer=new(DesktopLanguage.Text(power.Action=="restart"?"До перезагрузки ПК":"До выключения ПК"),
+                FocusTimer.Format(controller.PowerSchedule.Remaining(DateTimeOffset.Now)),"","running",0);
         var ringing=timer?.Ringing==true;var reduced=ReducedMotion();
         var fontSize=controller.Settings.ClockFontSize;
         if(ringing!=timerRinging||reduced!=timerReduced){

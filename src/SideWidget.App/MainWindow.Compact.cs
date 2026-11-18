@@ -29,6 +29,9 @@ public sealed partial class MainWindow
         var bounds=PanelGeometry.Calculate(monitor.Work.Left,monitor.Work.Right,
             (int)Math.Round(settings.Width*scale),PanelPosition,0);
         var timer=FocusTimerPresentation.Create(controller.Timer.State,controller.Timer.Remaining(DateTimeOffset.Now));
+        if(timer==null&&controller.PowerSchedule.State is {} power)
+            timer=new(DesktopLanguage.Text(power.Action=="restart"?"До перезагрузки ПК":"До выключения ПК"),
+                FocusTimer.Format(controller.PowerSchedule.Remaining(DateTimeOffset.Now)),"","running",0);
         var clockOnly=compactPanel.ClockOnly;
         if(clockOnly&&timer?.NeedsFullWidth!=true)
         {

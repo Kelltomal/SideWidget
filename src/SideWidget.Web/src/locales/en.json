@@ -820,5 +820,20 @@
   "Размер текста часов": "Clock text size",
   "Высота полоски поверх полноэкранного окна": "Strip height over full-screen apps",
   "Часы на весь экран": "Full-screen clock",
-  "Проверьте размер часов и высоту полоски": "Check the clock size and strip height"
+  "Проверьте размер часов и высоту полоски": "Check the clock size and strip height",
+  "Выключить через…": "Shut down after…",
+  "Перезагрузить через…": "Restart after…",
+  "Укажите хотя бы 1 минуту": "Enter at least 1 minute",
+  "Задержка: до 24 часов, минуты — от 0 до 59": "Delay: up to 24 hours; minutes must be between 0 and 59",
+  "Разовый запуск. SideWidget должен оставаться запущен. Отсчёт и отмена — в разделе «Таймер».": "Runs once. Keep SideWidget running. View the countdown or cancel in Timer.",
+  "Разовый запуск. SideWidget должен оставаться запущен.": "Runs once. Keep SideWidget running.",
+  "Назначить перезагрузку": "Schedule restart",
+  "Назначить выключение": "Schedule shutdown",
+  "Таймер питания": "Power timer",
+  "До перезагрузки ПК": "Until PC restart",
+  "До выключения ПК": "Until PC shutdown",
+  "Отменить перезагрузку": "Cancel restart",
+  "Отменить выключение": "Cancel shutdown",
+  "Разовое выключение с обратным отсчётом и отменой.": "One-time shutdown with countdown and cancellation.",
+  "Разовая перезагрузка с обратным отсчётом и отменой.": "One-time restart with countdown and cancellation."
 }
