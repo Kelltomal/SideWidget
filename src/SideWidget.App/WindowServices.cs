@@ -229,7 +229,7 @@ public sealed partial class MainWindow
             }
             Send(new{protocolVersion=1,requestId=command.RequestId,status="result",data=new{}});
         }
-        catch(CommandFault e){if(command!=null)Send(new{protocolVersion=1,requestId=command.RequestId,status="error",error=new{code=e.Code,message=DesktopLanguage.Text(e.Message)}});}
+        catch(CommandFault e){var requestId=command?.RequestId??e.RequestId;if(requestId!=null)Send(new{protocolVersion=1,requestId,status="error",error=new{code=e.Code,message=DesktopLanguage.Text(e.Message)}});}
         catch(Exception){if(command!=null)Send(new{protocolVersion=1,requestId=command.RequestId,status="error",error=new{code="internal",message=DesktopLanguage.Text("Не удалось выполнить действие. Проверьте параметры и повторите действие.")}});}
     }
     void Send(object value){if(!closing&&web.CoreWebView2!=null&&web.Source?.GetLeftPart(UriPartial.Authority)==Protocol.Origin)web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(value,Protocol.Json));}
