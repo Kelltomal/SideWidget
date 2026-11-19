@@ -2,6 +2,7 @@
 import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import {FavoriteApps} from './WindowsPanels';
+import {CodexShortcut} from './CodexShortcut';
 import {ApplicationDropZone} from './ApplicationDropZone';
 import {bridge,Bridge,type Host} from './bridge';
 import {invoke} from './ui';
@@ -10,6 +11,16 @@ vi.mock('./ui',async original=>({...await original<typeof import('./ui')>(),nati
 const initial:Snapshot={settings:{width:444,height:620,hideDelay:650,openDelay:100,hotkey:'Ctrl+Alt+Space',monitor:0,position:1,largeMode:false,order:[],disabled:[]},apps:['a','b','c'].map(id=>({id,name:id,path:id+'.exe'})),calculatorHistory:[],colorHistory:[],unitFavorites:[],drafts:{diary:''}};
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.resetAllMocks();});
 function setup(){vi.mocked(invoke).mockImplementation(async action=>action==='codex.get'?{limits:{available:true,checkedAt:new Date().toISOString(),buckets:[{id:'codex',primary:{usedPercent:86,windowMinutes:10080,resetsAt:null}}]}}:initial);}
+it.each([[7,'7'],[42,'42'],[100,'100'],[0,'0'],[0.4,'<1']] as const)('shows weekly remainder %s in the center rather than the five-hour value',async(remaining,text)=>{
+ vi.mocked(invoke).mockResolvedValue({limits:{available:true,buckets:[{id:'codex',primary:{usedPercent:5,windowMinutes:300,resetsAt:null},secondary:{usedPercent:100-remaining,windowMinutes:10080,resetsAt:null}}]}});
+ await act(async()=>{render(<CodexShortcut open={vi.fn()}/>);});
+ expect(screen.getByRole('button').querySelector('.quota-value')?.textContent).toBe(text);
+});
+it('uses an unknown center when the weekly quota is missing',async()=>{
+ vi.mocked(invoke).mockResolvedValue({limits:{available:true,buckets:[{id:'codex',primary:{usedPercent:20,windowMinutes:300,resetsAt:null}}]}});
+ await act(async()=>{render(<CodexShortcut open={vi.fn()}/>);});
+ expect(screen.getByRole('button').querySelector('.quota-value')?.textContent).toBe('—');
+});
 it('shows real weekly remaining quota and unknown five-hour ring, and opens Codex',async()=>{
  setup();const open=vi.fn();await act(async()=>{render(<FavoriteApps state={initial} setState={vi.fn()} openApps={vi.fn()} openCodex={open}/>);});
  const button=screen.getByRole('button',{name:/Codex.*14%/});expect(button.getAttribute('aria-label')).toContain('5 часов');expect(button.getAttribute('aria-label')).toContain('Неизвестно');expect(button.querySelector('[data-window="10080"]')?.getAttribute('stroke-dasharray')).toBe('14 100');expect(button.querySelector('[data-window="300"]')?.getAttribute('stroke-dasharray')).toBe('2 4');fireEvent.click(button);expect(open).toHaveBeenCalledOnce();

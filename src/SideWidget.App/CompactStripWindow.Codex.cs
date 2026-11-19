@@ -63,15 +63,17 @@ internal sealed partial class CompactStripWindow
                 Draw(remaining is null?(light?0x006E6359u:0x00BAB1A9u):remaining<=15?
                     (light?0x002A39A9u:0x00C1C8FFu):(light?0x00745D45u:0x00D0C3B6u),remaining is null,remaining is null||remaining>=100);
             }
-            var centerBrush=CreateSolidBrush(light?0x006E6359u:0x00BAB1A9u);
-            var centerPen=CreatePen(0,1,light?0x006E6359u:0x00BAB1A9u);
-            var savedBrush=SelectObject(dc,centerBrush);var savedPen=SelectObject(dc,centerPen);
+            var value=codexQuota.WeeklyText;
+            var pixelSize=(int)Math.Round(value.Length>2?Math.Max(6*scale,8*factor):Math.Max(8*scale,10*factor));
+            var valueFont=CreateFontW(-pixelSize,0,0,0,600,0,0,0,1,0,0,4,0,"Medeo Sans");
+            var savedFont=valueFont!=0?SelectObject(dc,valueFont):0;
+            var savedColor=SetTextColor(dc,light?0x002C2620u:0x00F5F4F2u);
             try
             {
-                Native.Point Point(double dx,double dy)=>new(){X=(int)Math.Round(cx+dx*factor),Y=(int)Math.Round(cy+dy*factor)};
-                Polygon(dc,[Point(0,-4),Point(4,0),Point(0,4),Point(-4,0)],4);
+                var valueBounds=new Native.Rect{Left=(int)Math.Floor(cx-size/2),Right=(int)Math.Ceiling(cx+size/2),Top=0,Bottom=height};
+                DrawTextW(dc,value,value.Length,ref valueBounds,0x0001|0x0004|0x0020|0x0800);
             }
-            finally{SelectObject(dc,savedPen);SelectObject(dc,savedBrush);DeleteObject(centerPen);DeleteObject(centerBrush);}
+            finally{SetTextColor(dc,savedColor);if(savedFont!=0)SelectObject(dc,savedFont);if(valueFont!=0)DeleteObject(valueFont);}
         }
         finally{SetArcDirection(dc,oldDirection);SelectObject(dc,oldBrush);}
         return (int)Math.Ceiling(cx+size/2);
@@ -82,5 +84,4 @@ internal sealed partial class CompactStripWindow
     [DllImport("gdi32.dll")] static extern bool Arc(nint dc,int left,int top,int right,int bottom,int startX,int startY,int endX,int endY);
     [DllImport("gdi32.dll")] static extern int SetArcDirection(nint dc,int direction);
     [DllImport("gdi32.dll")] static extern bool SetPixelV(nint dc,int x,int y,uint color);
-    [DllImport("gdi32.dll")] static extern bool Polygon(nint dc,Native.Point[] points,int count);
 }

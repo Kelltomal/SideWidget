@@ -1,7 +1,10 @@
+using System.Globalization;
+
 namespace SideWidget.Core;
 
 public sealed record CodexQuotaIndicator(double? WeeklyRemaining,double? FiveHourRemaining)
 {
+    public string WeeklyText=>WeeklyRemaining is not {} value?"—":value is >0 and <1?"<1":Math.Floor(value).ToString(CultureInfo.InvariantCulture);
     public static CodexQuotaIndicator? Create(bool enabled,bool running,CodexLimitsSnapshot limits,DateTimeOffset now)
     {
         if(!enabled||!running)return null;

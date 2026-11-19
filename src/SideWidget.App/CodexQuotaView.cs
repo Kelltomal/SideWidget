@@ -46,8 +46,12 @@ sealed class CodexQuotaView:Canvas
                 Children.Add(new Microsoft.UI.Xaml.Shapes.Path{Data=geometry,Stroke=stroke,StrokeThickness=1.6});
             }
         }
-        var diamond=new Polygon{Points=new(){new(15,11),new(19,15),new(15,19),new(11,15)},Fill=muted};
-        Children.Add(diamond);
+        var value=new TextBlock{Text=quota.WeeklyText,FontSize=quota.WeeklyText.Length>2?8:10,
+            FontFamily=new FontFamily("ms-appx:///Assets/Fonts/MedeoSans.ttf#Medeo Sans"),
+            FontWeight=Microsoft.UI.Text.FontWeights.SemiBold,TextAlignment=TextAlignment.Center,
+            VerticalAlignment=VerticalAlignment.Center,Foreground=Brush(light?"20262C":"F2F4F5")};
+        var valueBox=new Border{Width=18,Height=18,Child=value};
+        SetLeft(valueBox,6);SetTop(valueBox,6);Children.Add(valueBox);
         AutomationProperties.SetName(this,Description(quota));
     }
 }

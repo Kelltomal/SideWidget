@@ -14,6 +14,8 @@ static class CodexQuotaIndicatorChecks
         Check(CodexQuotaIndicator.Create(true,false,limits,now) is null,"closing Codex hides compact ring");
         var ring=CodexQuotaIndicator.Create(true,true,limits,now)!;
         Check(ring.WeeklyRemaining==12&&ring.FiveHourRemaining==65,"rings map weekly and five-hour quotas by duration");
+        foreach(var (remaining,text) in new (double?,string)[]{(7,"7"),(42,"42"),(100,"100"),(0,"0"),(.4,"<1"),(null,"—")})
+            Check(new CodexQuotaIndicator(remaining,95).WeeklyText==text,"center represents weekly quota without padding or a percent sign");
         ring=CodexQuotaIndicator.Create(true,true,limits with{CheckedAt=now.AddMinutes(-5)},now)!;
         Check(ring.WeeklyRemaining is null&&ring.FiveHourRemaining is null,"stale quotas use dotted unknown rings");
         ring=CodexQuotaIndicator.Create(true,true,limits with{Available=false},now)!;

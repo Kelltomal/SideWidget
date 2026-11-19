@@ -8,7 +8,8 @@
 .quota-remaining {stroke:var(--accent)}
 .quota-low {stroke:var(--error-text)}
 .quota-unknown {stroke:var(--muted)}
-.quota-center {fill:var(--muted)}
+.quota-value {fill:var(--text);font-family:inherit;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:0}
+.quota-value-wide {font-size:8px}
 .application-drop-zone {display:contents}
 .application-drop-hint,.application-drop-error {position:fixed;inset:64px 16px auto;z-index:100;background:var(--surface);color:var(--text);padding:16px;border:1px solid var(--accent);border-radius:12px}
 .application-drop-hint {pointer-events:none}

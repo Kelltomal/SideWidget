@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-18T18:34:50.623256+00:00",
+  "generatedAt": "2026-11-19T03:57:08.447096+00:00",
   "title": "Design System: SideWidget",
   "extensions": {
     "colorMeta": {
@@ -401,6 +401,13 @@
       "description": "Текстовая ошибка в контекстном блоке с role alert.",
       "html": "<p class=\"ds-error\" role=\"alert\">Не удалось выполнить действие. Повторите попытку.</p>",
       "css": ".ds-error{font-size:13px;line-height:1.5;color:var(--muted,#a9b1ba);overflow-wrap:anywhere}.ds-error{color:#ffc8c1;padding:10px 12px;border:1px solid #7d524e;border-radius:8px;background:#352725}.ds-error{font-family:Medeo,'Segoe UI',sans-serif;margin:0}"
+    },
+    {
+      "name": "Codex quota indicator",
+      "kind": "custom",
+      "description": "Weekly remaining percentage in the center; outer weekly and inner five-hour rings. Example: 42%.",
+      "html": "<svg class=\"quota-demo\" width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" aria-label=\"Weekly remaining: 42%\"><circle cx=\"15\" cy=\"15\" r=\"13\" class=\"track\"/><circle cx=\"15\" cy=\"15\" r=\"9\" class=\"track\"/><circle cx=\"15\" cy=\"15\" r=\"13\" class=\"remaining\" pathLength=\"100\" stroke-dasharray=\"42 100\" transform=\"rotate(-90 15 15)\"/><circle cx=\"15\" cy=\"15\" r=\"9\" class=\"low\" pathLength=\"100\" stroke-dasharray=\"12 100\" transform=\"rotate(-90 15 15)\"/><text x=\"15\" y=\"15\" text-anchor=\"middle\" dominant-baseline=\"central\">42</text></svg>",
+      "css": ".quota-demo{font-family:Medeo,Segoe UI,sans-serif}.quota-demo circle{fill:none;stroke-width:1.6}.track{stroke:#30373d}.remaining{stroke:#b6c3d0}.low{stroke:#ffc8c1}.quota-demo text{fill:#f2f4f5;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums}"
     }
   ],
   "narrative": {
