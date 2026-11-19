@@ -28,10 +28,22 @@ static class CodexReaderChecks
             var reader=new CodexStateReader(directory);
             Check(reader.Read().Threads.Single().Status=="running","latest active turn overrides old success");
             Execute("thread_history_1.sqlite","UPDATE thread_turns SET status='completed',completed_at=4,rollout_end_ordinal=5 WHERE turn_id='new';");
-            Check(reader.Read().Threads.Single().Status=="completed","explicit projected success");
-            File.WriteAllText(rollout,"new work\n");
+            Check(reader.Read().Threads.Single().Status=="unknown","SQLite success alone does not prove a completion event");
+            var completion="{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_complete\",\"turn_id\":\"new\",\"completed_at\":4}}\n";
+            void WriteProjected(string contents)
+            {
+                File.WriteAllText(rollout,contents);
+                Execute("thread_history_1.sqlite",$"UPDATE thread_history_projection_state SET next_rollout_byte_offset={new FileInfo(rollout).Length};");
+            }
+            WriteProjected(completion);
+            Check(reader.Read().Threads.Single().Status=="completed","matching server completion event proves success");
+            File.AppendAllText(rollout,"new work\n");
             Check(reader.Read().Threads.Single().Status=="unknown","lagging projection cannot report old success");
-            File.WriteAllText(rollout,"");
+            WriteProjected(completion+"{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_started\",\"turn_id\":\"later\"}}\n");
+            Check(reader.Read().Threads.Single().Status=="unknown","new server start supersedes completion even at the same projection offset");
+            WriteProjected(completion.Replace("\"new\"","\"other\""));
+            Check(reader.Read().Threads.Single().Status=="unknown","a different turn's completion cannot prove success");
+            WriteProjected(completion);
             Execute("queue_1.sqlite","INSERT INTO queued_items VALUES('chat');");
             Check(reader.Read().Threads.Single().HasQueuedInput,"queued input blocks success");
             Execute("thread_history_1.sqlite","UPDATE thread_turns SET status='interrupted' WHERE turn_id='new';");

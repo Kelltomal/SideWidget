@@ -16,6 +16,10 @@ static class CodexPolicyChecks
         }
         policy.Update(Snapshot("completed",true),none,now);Check(policy.State?.Deadline==null,"queued input prevents shutdown");
         policy.Update(Snapshot("completed"),none,now);Check(policy.State?.Deadline==now.AddSeconds(60),"successful completion starts grace");
+        var nextCompletion=new CodexThreadsSnapshot(true,now.AddSeconds(2),[Thread("completed") with{TurnId="next"}]);
+        Check(!policy.CanProceed(nextCompletion,none,now.AddSeconds(2)),"a different completed turn cannot authorize the old countdown");
+        policy.Update(nextCompletion,none,now.AddSeconds(2));
+        Check(policy.State?.Deadline==now.AddSeconds(62),"new turn completed between polls starts a new grace period");
         policy.Update(Snapshot("running"),none,now.AddSeconds(1));Check(policy.State?.Deadline==null,"new work cancels countdown");
         policy.Update(new(false,now,[]),none,now);Check(policy.State?.Deadline==null,"unavailable never complete");
         policy.Cancel();Check(policy.State==null,"manual cancellation");

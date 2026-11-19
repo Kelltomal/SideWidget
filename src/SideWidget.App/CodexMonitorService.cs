@@ -7,6 +7,7 @@ sealed class CodexMonitorService : IDisposable
 {
     const string UsedKey="codex.limitShutdown.boot";
     readonly Func<CodexThreadsSnapshot> readThreads;
+    readonly Func<IReadOnlyList<string>,CodexThreadsSnapshot> readSelectedThreads;
     readonly Func<CancellationToken,Task<CodexLimitsSnapshot>> readLimits;
     readonly bool autoPoll;
     readonly SemaphoreSlim refreshGate=new(1,1);
@@ -15,6 +16,7 @@ sealed class CodexMonitorService : IDisposable
     readonly CodexShutdownPolicy policy;
     readonly string? bootId;
     CodexThreadsSnapshot threads=new(false,DateTimeOffset.MinValue,[],"Получаем данные Codex…");
+    CodexThreadsSnapshot? selectedVerification;
     CodexLimitsSnapshot limits=new(false,DateTimeOffset.MinValue,[],"Получаем лимиты Codex…");
     PowerScheduleState? owned;
     string? error;
@@ -27,6 +29,7 @@ sealed class CodexMonitorService : IDisposable
         if(string.IsNullOrWhiteSpace(home))home=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".codex");
         var reader=new CodexStateReader(home);var limitReader=new CodexRateLimitsReader(home);
         this.readThreads=readThreads??(()=>reader.Read());this.readLimits=readLimits??(token=>limitReader.ReadAsync(token));this.autoPoll=autoPoll;
+        readSelectedThreads=readThreads is null?ids=>reader.Read(ids):_=>readThreads();
         bootId=readBoot is null?WindowsBootSession.Read():readBoot();
         policy=new(bootId is not null&&store.Read<string?>(UsedKey,null)==bootId,()=>{
             if(bootId is null)throw new CommandFault("codex","Не удалось определить текущую сессию ПК. Выключение по лимиту недоступно.");
@@ -69,20 +72,59 @@ sealed class CodexMonitorService : IDisposable
             var chosen=mode=="all"?threads.Threads.Where(t=>t.Status=="running"||t.HasQueuedInput).Select(t=>t.Id).ToArray():ids;
             policy.ArmChats(threads,chosen);
         }
-        power.Cancel();owned=null;error=null;Revision++;Update(DateTimeOffset.UtcNow,power);
+        power.Cancel();owned=null;selectedVerification=null;error=null;Revision++;Update(DateTimeOffset.UtcNow,power);
     }
-    public void Cancel(PowerSchedule power){if(Owns(power.State))power.Cancel();owned=null;policy.Cancel();error=null;Revision++;}
+    public void Cancel(PowerSchedule power){if(Owns(power.State))power.Cancel();owned=null;selectedVerification=null;policy.Cancel();error=null;Revision++;}
     public bool Owns(PowerScheduleState? state)=>state is not null&&ReferenceEquals(owned,state);
     public bool CanProceed(DateTimeOffset now)=>policy.CanProceed(threads,limits,now);
+    public async Task<bool> RevalidateDueAsync(PowerSchedule power,PowerScheduleState due)
+    {
+        if(policy.State is not {Mode:"chats"} watch)
+        {
+            await RefreshForPowerAsync();
+            var now=DateTimeOffset.UtcNow;
+            Update(now,power);
+            return Owns(due)&&CanProceed(now);
+        }
+        await refreshGate.WaitAsync();
+        try
+        {
+            if(disposed||!Owns(due)||!ReferenceEquals(policy.State,watch))return false;
+            var latest=await Task.Run(()=>readSelectedThreads(watch.Ids));
+            if(disposed||!Owns(due)||!ReferenceEquals(policy.State,watch))return false;
+            var now=DateTimeOffset.UtcNow;
+            var safe=policy.CanProceed(latest,limits,now);
+            selectedVerification=latest;
+            Update(now,power,latest);
+            return safe&&Owns(due);
+        }
+        catch(Exception error) when(error is not OutOfMemoryException)
+        {
+            if(!disposed&&Owns(due))
+            {
+                var now=DateTimeOffset.UtcNow;
+                selectedVerification=new(false,now,[]);
+                Update(now,power,selectedVerification);
+            }
+            return false;
+        }
+        finally{refreshGate.Release();}
+    }
     public void Update(DateTimeOffset now,PowerSchedule power)
     {
-        try{policy.Update(threads,limits,now);error=null;}
+        var snapshot=Volatile.Read(ref threads);
+        Update(now,power,selectedVerification is {} verified&&verified.CheckedAt>=snapshot.CheckedAt?verified:snapshot);
+    }
+
+    void Update(DateTimeOffset now,PowerSchedule power,CodexThreadsSnapshot snapshot)
+    {
+        try{policy.Update(snapshot,limits,now);error=null;}
         catch(Exception e) when(e is not OutOfMemoryException){error="Не удалось сохранить одноразовое выключение. Проверьте свободное место.";policy.Cancel();}
         var deadline=policy.State?.Deadline;
         if(deadline is null){if(Owns(power.State))power.Cancel();owned=null;return;}
         if(Owns(power.State)&&owned!.Deadline==deadline)return;
         power.ScheduleDeadline("shutdown",deadline.Value);owned=power.State;
     }
-    public void Complete(){owned=null;policy.Cancel();Revision++;}
+    public void Complete(){owned=null;selectedVerification=null;policy.Cancel();Revision++;}
     public void Dispose(){disposed=true;poll.Dispose();lifetime.Cancel();policy.Cancel();}
 }

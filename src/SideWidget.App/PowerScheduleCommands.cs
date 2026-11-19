@@ -13,11 +13,7 @@ sealed partial class Controller
             desktopState.Codex.Update(DateTimeOffset.UtcNow,PowerSchedule);
             if(PowerSchedule.State is {} due&&due.Deadline<=DateTimeOffset.UtcNow){
                 var watched=desktopState.Codex.Owns(due);
-                if(watched){
-                    await desktopState.Codex.RefreshForPowerAsync();
-                    desktopState.Codex.Update(DateTimeOffset.UtcNow,PowerSchedule);
-                    if(!ReferenceEquals(PowerSchedule.State,due)||!desktopState.Codex.CanProceed(DateTimeOffset.UtcNow))return;
-                }
+                if(watched&&(!await desktopState.Codex.RevalidateDueAsync(PowerSchedule,due)||!ReferenceEquals(PowerSchedule.State,due)))return;
                 PowerSchedule.Tick(DateTimeOffset.Now,action=>{
                     if(watched)desktopState.Codex.Complete(); // Claim the watch even if Windows rejects the action.
                     QuickActions.Power(action);

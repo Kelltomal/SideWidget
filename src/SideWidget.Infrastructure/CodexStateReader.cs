@@ -15,7 +15,9 @@ public sealed class CodexStateReader(string directory)
         try {connection.Open();return connection;}catch{connection.Dispose();throw;}
     }
 
-    public CodexThreadsSnapshot Read()
+    public CodexThreadsSnapshot Read()=>Read(null);
+
+    public CodexThreadsSnapshot Read(IReadOnlyList<string>? selectedIds)
     {
         var now=DateTimeOffset.UtcNow;
         try
@@ -24,16 +26,21 @@ public sealed class CodexStateReader(string directory)
             using var history=OpenReadOnly(directory,"thread_history_1.sqlite");
             using var queue=OpenReadOnly(directory,"queue_1.sqlite");
             using var historyTransaction=history.BeginTransaction(deferred:true);
-            using var queueTransaction=queue.BeginTransaction(deferred:true);
             using var threads=state.CreateCommand();
-            threads.CommandText="SELECT id,title,history_mode,rollout_path,COALESCE(updated_at_ms,updated_at*1000) FROM threads WHERE archived=0 AND source IN ('vscode','cli') ORDER BY recency_at_ms DESC,id DESC";
+            threads.CommandText="SELECT id,title,history_mode,rollout_path,COALESCE(updated_at_ms,updated_at*1000) FROM threads WHERE archived=0 AND source IN ('vscode','cli')";
+            if(selectedIds is not null)
+            {
+                threads.CommandText+=" AND id IN (SELECT value FROM json_each($selected))";
+                threads.Parameters.AddWithValue("$selected",System.Text.Json.JsonSerializer.Serialize(selectedIds));
+            }
+            threads.CommandText+=" ORDER BY recency_at_ms DESC,id DESC";
             using var turns=history.CreateCommand();turns.Transaction=historyTransaction;
             turns.CommandText="SELECT turn_id,status,error_json IS NOT NULL,completed_at,rollout_end_ordinal FROM thread_turns WHERE thread_id=$id ORDER BY rollout_ordinal DESC LIMIT 1";
             var turnIdParameter=turns.Parameters.AddWithValue("$id","");
             using var projection=history.CreateCommand();projection.Transaction=historyTransaction;
             projection.CommandText="SELECT next_rollout_byte_offset FROM thread_history_projection_state WHERE thread_id=$id";
             var projectionId=projection.Parameters.AddWithValue("$id","");
-            using var queued=queue.CreateCommand();queued.Transaction=queueTransaction;
+            using var queued=queue.CreateCommand();
             queued.CommandText="SELECT EXISTS(SELECT 1 FROM queued_items WHERE thread_id=$id)";
             var queuedId=queued.Parameters.AddWithValue("$id","");
             var result=new List<CodexThreadInfo>();
@@ -43,7 +50,6 @@ public sealed class CodexStateReader(string directory)
                 var id=rows.GetString(0);var title=rows.GetString(1);var mode=rows.GetString(2);
                 turnIdParameter.Value=id;projectionId.Value=id;queuedId.Value=id;
                 string? turnId=null;var status="unknown";
-                var hasQueued=Convert.ToInt64(queued.ExecuteScalar())!=0;
                 using(var turn=turns.ExecuteReader())
                 {
                     if(turn.Read()&&mode=="paginated")
@@ -63,16 +69,12 @@ public sealed class CodexStateReader(string directory)
                 if(status=="completed")
                 {
                     var offset=projection.ExecuteScalar();
-                    try
-                    {
-                        var path=rows.GetString(3);
-                        if(offset is not long position||!File.Exists(path)||position!=new FileInfo(path).Length)status="unknown";
-                    }
-                    catch(IOException){status="unknown";}
-                    catch(UnauthorizedAccessException){status="unknown";}
+                    if(offset is not long position||rows.IsDBNull(3)||turnId is null||
+                       !CodexTurnEvents.ConfirmsCompletion(rows.GetString(3),position,turnId))status="unknown";
                 }
                 DateTimeOffset? updated=null;
                 if(!rows.IsDBNull(4))updated=DateTimeOffset.FromUnixTimeMilliseconds(rows.GetInt64(4));
+                var hasQueued=Convert.ToInt64(queued.ExecuteScalar())!=0;
                 result.Add(new(id,title,status,turnId,updated,hasQueued));
             }
             return new(true,now,result);

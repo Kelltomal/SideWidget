@@ -10,12 +10,20 @@ static class CodexMonitorServiceChecks
         var directory=Path.Combine(Path.GetTempPath(),"sidewidget-watch-"+Guid.NewGuid().ToString("N"));
         try{
             var store=new Store(directory);var status="running";var limitCalls=0;var now=DateTimeOffset.UtcNow;
-            CodexThreadsSnapshot Read()=>new(true,now,[new("chat","Test",status,"turn",now)]);
+            var queued=false;
+            CodexThreadsSnapshot Read()=>new(true,now,[new("chat","Test",status,"turn",now,queued)]);
             Task<CodexLimitsSnapshot> Limits(CancellationToken token){limitCalls++;return Task.FromResult(new CodexLimitsSnapshot(true,now,[new("codex",null,new(100,300,now.AddHours(1)),null)]));}
             using(var monitor=new CodexMonitorService(store,Read,Limits,()=>"boot-a",false)){
                 await monitor.RefreshAsync(true);var power=new PowerSchedule();monitor.Arm("selected",["chat"],power);
                 status="completed";await monitor.RefreshForPowerAsync();monitor.Update(now,power);
                 if(power.State is null||limitCalls!=1)throw new Exception("Chat completion revalidation must not fetch quota");
+                var due=power.State;
+                queued=true;
+                if(await monitor.RevalidateDueAsync(power,due)||power.State is not null)
+                    throw new Exception("Fresh queue check must veto a previously authorized countdown");
+                monitor.Update(DateTimeOffset.UtcNow,power);
+                if(power.State is not null)throw new Exception("Older full snapshot must not restore the cancelled countdown");
+                queued=false;
                 status="running";await monitor.RefreshForPowerAsync();monitor.Update(now,power);
                 if(power.State is not null)throw new Exception("Resumed chat must cancel countdown");
                 monitor.Arm("limit",[],power);
