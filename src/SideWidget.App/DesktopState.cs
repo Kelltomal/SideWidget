@@ -11,6 +11,7 @@ sealed class DesktopState : IDisposable
     public FocusTimerService Timer {get;}
     public SideWidget.Core.PowerSchedule PowerSchedule {get;}=new();
     public CodexMonitorService Codex {get;}
+    public CodexDesktopPresence CodexPresence {get;}=new();
     public CalendarService Calendar {get;}
     public WebsiteMonitorService Websites {get;}
     public SemaphoreSlim PowerExecution {get;}=new(1,1);

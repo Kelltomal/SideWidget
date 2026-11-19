@@ -70,8 +70,8 @@ internal sealed partial class CompactStripWindow : IDisposable
     }
     public void RefreshLanguage()=>SetWindowTextW(Handle,ringing
         ?DesktopLanguage.Text("Время вышло. Нажмите, чтобы остановить сигнал")
-        :DesktopLanguage.Text("SideWidget — время и дата"));
-    public object LayoutSnapshot()=>new{left,top,width,height,fontSize,scale,text,ringing,timerProgress,visible};
+        :codexQuota is not null?CodexQuotaView.Description(codexQuota):DesktopLanguage.Text("SideWidget — время и дата"));
+    public object LayoutSnapshot()=>new{left,top,width,height,fontSize,scale,text,ringing,timerProgress,visible,codexQuota};
     nint Procedure(nint window,uint message,nuint wParam,nint lParam,nuint id,nuint data)
     {
         if(message==0x0021)return 3; // MA_NOACTIVATE
@@ -108,7 +108,16 @@ internal sealed partial class CompactStripWindow : IDisposable
             font=CreateFontW(-(int)Math.Round(fontSize*scale),0,0,0,500,0,0,0,1,0,0,4,0,face);
             if(font!=0)oldFont=SelectObject(dc,font);
             bounds.Left+=(int)Math.Round(12*scale);bounds.Right-=(int)Math.Round(12*scale);
-            DrawTextW(dc,text,text.Length,ref bounds,0x0001|0x0004|0x0020|0x0800|0x8000);
+            var displayText=centeredClock??text;
+            var contentRight=PaintCodexQuota(dc,bounds,displayText);
+            DrawTextW(dc,displayText,displayText.Length,ref bounds,0x0001|0x0004|0x0020|0x0800|0x8000);
+            if(clockDate is not null)
+            {
+                var dateBounds=bounds;
+                dateBounds.Left=contentRight+(int)Math.Round(8*scale);
+                if(dateBounds.Right>dateBounds.Left)
+                    DrawTextW(dc,clockDate,clockDate.Length,ref dateBounds,0x0002|0x0004|0x0020|0x0800|0x8000);
+            }
         }
         finally
         {

@@ -33,16 +33,19 @@ public sealed partial class MainWindow
             timer=new(DesktopLanguage.Text(power.Action=="restart"?"До перезагрузки ПК":"До выключения ПК"),
                 FocusTimer.Format(controller.PowerSchedule.Remaining(DateTimeOffset.Now)),"","running",0);
         var clockOnly=compactPanel.ClockOnly;
+        var quota=controller.ReadCompactCodexQuota();
+        compactStrip.SetCodexQuota(quota);
         if(clockOnly&&timer?.NeedsFullWidth!=true)
         {
             // A countdown can be longer than the HH:mm clock when it includes hours.
-            var clockWidth=Math.Min(bounds.Width,(int)Math.Round((timer?.Value.Length>5?88:72)*
+            var clockWidth=Math.Min(bounds.Width,(int)Math.Round(((timer?.Value.Length>5?88:72)+(quota is null?0:38))*
                 Math.Max(1,settings.CompactClockFontSize/13d)*scale));
             bounds=new(bounds.Left+(bounds.Width-clockWidth)/2,clockWidth);
         }
         var culture=DesktopLanguage.Culture;
         var time=now.ToString("HH':'mm",culture);
         var label=timer?.CompactLabel(clockOnly)??(clockOnly?time:time+"   "+DesktopLanguage.HeaderDate(now,culture));
+        compactStrip.SetClockLabels(timer is null?time:null,timer is null&&!clockOnly?DesktopLanguage.HeaderDate(now,culture):null);
         compactStrip.Show(bounds,monitor.Work.Top,scale,settings,label,timer,currentLightTheme==true);
     }
     void UpdateCompactSurface()

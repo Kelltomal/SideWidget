@@ -47,6 +47,15 @@ export function ClockSettings({state,disabled,onSaved}:{
  const {error,busy,run}=useAction();
  return <section className="stack" aria-labelledby="clock-settings-heading">
   <h2 id="clock-settings-heading">{t('Часы')}</h2>
+  <label className="checkbox"><input type="checkbox" checked={state.settings.showCodexLimits??true}
+   disabled={disabled||busy} onChange={event=>{
+    const showCodexLimits=event.currentTarget.checked;
+    void run(async()=>{
+     const change={showCodexLimits};
+     const next=nativeAvailable?await invoke<Snapshot>('settings.clock',change):{...state,settings:{...state.settings,...change}};
+     onSaved(next);
+    });
+   }}/>{t('Кружок лимитов в свёрнутой панели при запущенном Codex')}</label>
   {ranges.map(range=><ClockSlider key={range.key} range={range} saved={state.settings[range.key]??range.initial}
    disabled={disabled||busy} save={value=>run(async()=>{
     const change={[range.key]:value};

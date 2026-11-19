@@ -10,8 +10,13 @@ const statusLabels:Record<CodexThread['status'],string>={running:'Работае
 const active=(thread:CodexThread)=>thread.status==='running'||thread.hasQueuedInput;
 function dateLabel(value:string|null){if(!value||!Number.isFinite(Date.parse(value))||new Date(value).getFullYear()<2000)return t('Неизвестно');return new Date(value).toLocaleString(locale());}
 function windowLabel(minutes:number){return minutes===300?t('5 часов'):minutes===10080?t('Неделя'):t('{minutes} мин',{minutes});}
+function quotaWindows(bucket:CodexSnapshot['limits']['buckets'][number]){
+ const supplied=[bucket.primary,bucket.secondary].filter((window):window is LimitWindow=>!!window);
+ const durations=bucket.id==='codex'?[300,10080,...supplied.map(window=>window.windowMinutes)]:supplied.map(window=>window.windowMinutes);
+ return [...new Set(durations)].map(minutes=>({minutes,window:supplied.find(window=>window.windowMinutes===minutes)}));
+}
 
-export function CodexPanel(){
+export function CodexPanel({shortcutEnabled=true,onShortcutChange}:{shortcutEnabled?:boolean;onShortcutChange?:(enabled:boolean)=>Promise<void>}={}){
  useLocale();
  const [info,setInfo]=useState<CodexSnapshot>();const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [selected,setSelected]=useState<string[]>([]);const [now,setNow]=useState(Date.now());
  const revision=useRef(0);const acting=useRef(false);const mounted=useRef(false);
@@ -52,8 +57,9 @@ export function CodexPanel(){
    <small>{t('Проверено: {time}',{time:dateLabel(info.checkedAt)})}</small>
    <section className="panel codex-limits" aria-label={t('Лимиты Codex')}>
     <h2>{t('Лимиты Codex')}</h2>
+    {onShortcutChange&&<label className="codex-thread"><input type="checkbox" checked={shortcutEnabled} disabled={busy} onChange={async event=>{const enabled=event.target.checked;setBusy(true);try{await onShortcutChange(enabled);}catch(error){setError(error instanceof Error?error.message:t('Не удалось сохранить настройки'));}finally{setBusy(false);}}}/><span>{t('Показывать кружок Codex рядом с приложениями')}</span></label>}
     {info.limits.available&&info.limits.message&&<Notice>{t(info.limits.message)}</Notice>}
-    {!info.limits.available||!info.limits.buckets.length?<Notice>{t(info.limits.message||'Лимиты недоступны')}</Notice>:info.limits.buckets.map(bucket=><div className="codex-bucket" key={bucket.id}><h3>{bucket.name||bucket.id}</h3>{[bucket.primary,bucket.secondary].map((window,index)=>window&&<div className="codex-limit-window" key={index}><div><span>{windowLabel(window.windowMinutes)}</span><strong>{Number.isFinite(window.usedPercent)?t('Осталось {percent}%',{percent:Math.round(Math.max(0,Math.min(100,100-window.usedPercent))*10)/10}):t('Неизвестно')}</strong></div><small>{t('Сброс: {time}',{time:dateLabel(window.resetsAt)})}</small></div>)}</div>)}
+    {!info.limits.available||!info.limits.buckets.length?<Notice>{t(info.limits.message||'Лимиты недоступны')}</Notice>:info.limits.buckets.map(bucket=><div className="codex-bucket" key={bucket.id}><h3>{bucket.name||bucket.id}</h3>{quotaWindows(bucket).map(({minutes,window})=><div className="codex-limit-window" key={minutes}><div><span>{windowLabel(minutes)}</span><strong>{window?(Number.isFinite(window.usedPercent)?t('Осталось {percent}%',{percent:Math.round(Math.max(0,Math.min(100,100-window.usedPercent))*10)/10}):t('Неизвестно')):t('Неизвестно')}</strong></div><small>{window?t('Сброс: {time}',{time:dateLabel(window.resetsAt)}):t('Codex не передал данные')}</small></div>)}</div>)}
     <small>{t('Данные лимитов: {time}',{time:dateLabel(info.limits.checkedAt)})}</small>
     <label className="codex-thread codex-limit-toggle"><input type="checkbox" checked={limitOn} disabled={busy||info.limitUsedThisBoot||(!limitOn&&(!info.limits.available||!info.limits.buckets.length))} onChange={e=>void action(e.target.checked?'codex.arm':'codex.cancel',e.target.checked?{mode:'limit'}:undefined)}/><span>{t('Выключить ПК при исчерпании лимита')}</span></label>
     <small>{info.limitUsedThisBoot?t('Уже использовано до следующей перезагрузки ПК.'):t('Один раз до перезагрузки ПК. При нулевом лимите — 60 секунд на отмену. Новый сценарий заменит предыдущее выключение.')}</small>

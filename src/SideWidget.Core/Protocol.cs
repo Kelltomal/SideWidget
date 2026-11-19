@@ -45,12 +45,12 @@ public static class Protocol
             "shell.editing"=>["value"],"history.add"=>["expression","result"],"history.delete" or "apps.launch" or "apps.remove" or "apps.icon"=>["id"],
             "color.remember"=>["hex"],"units.favorite"=>["from","to"],"clipboard.text"=>["text"],"clipboard.image"=>["dataUrl"],"qr.save"=>["format","data"],
             "qr.print"=>["html"],
-            "apps.rename"=>["id","name"],"apps.reorder"=>["ids"],"media.command"=>["id","command","positionSeconds"],"audio.set"=>["volume","muted","microphoneMuted","sessionId"],
+            "apps.drop"=>[],"apps.rename"=>["id","name"],"apps.reorder"=>["ids"],"media.command"=>["id","command","positionSeconds"],"audio.set"=>["volume","muted","microphoneMuted","sessionId"],
             "internet.get"=>[],"internet.check"=>["method","target"],"links.open"=>["url"],
             "search.query"=>["text"],"search.open"=>["path","reveal"],"quick.open"=>["target"],"quick.power"=>["action"],"diary.draft"=>["text"],"weather.get"=>["city"],"translation.run"=>["text","source","target","provider"],
             "visualizer.settings"=>["enabled","showInHeader","brightness","sensitivity","style"],
             "settings.theme"=>["theme"],
-            "settings.clock"=>["clockFontSize","compactStripHeight"],
+            "settings.clock"=>["clockFontSize","compactStripHeight","showCodexLimits"],
             "clock.fullscreen"=>[],
             "settings.language"=>["language"],
             "app.share" or "startup.get" or "updates.check" or "updates.defer"=>[],"startup.set"=>["enabled"],
@@ -59,7 +59,7 @@ public static class Protocol
             "remote.configure"=>["enabled","adapterId","port","setupPort","startup"],
             "remote.setup"=>["adapterId","port","setupPort","startup"],
             "remote.decide"=>["id","approved"],"remote.revoke"=>["id"],
-            "settings.save"=>["width","height","hideDelay","openDelay","hotkey","monitor","position","largeMode","order","disabled","theme","visualizer","displayIds","pinnedTools","displayPositions","language","clockFontSize","compactStripHeight"],
+            "settings.save"=>["width","height","hideDelay","openDelay","hotkey","monitor","position","largeMode","order","disabled","theme","visualizer","displayIds","pinnedTools","displayPositions","language","clockFontSize","compactStripHeight","codexShortcut","showCodexLimits"],
             _=>throw new CommandFault("unknown_action","Действие не поддерживается")};
         if(c.Params.EnumerateObject().Any(p=>!keys.Contains(p.Name)))throw new CommandFault("schema","Неизвестный параметр");
     }

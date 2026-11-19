@@ -13,6 +13,8 @@ sealed partial class Controller
     readonly bool ownsDesktopState;
     readonly MediaService media;readonly AudioService audio;readonly EverythingService search=new();readonly SystemMetrics metrics=new();readonly InternetService internet=new();
     public AudioSpectrumService Spectrum=>desktopState.Spectrum;
+    public CodexQuotaIndicator? ReadCompactCodexQuota()=>!Settings.ShowCodexLimits||!desktopState.CodexPresence.IsRunning?null:
+        CodexQuotaIndicator.Create(true,true,desktopState.Codex.Limits,DateTimeOffset.UtcNow);
     public Action VisualizerChanged {get;set;}=()=>{};
     readonly HashSet<string> allowedSearch=new(StringComparer.OrdinalIgnoreCase);
     readonly HashSet<string> seen=new();readonly Queue<string> recent=new();int running;
@@ -73,7 +75,8 @@ sealed partial class Controller
                     var clockSettings=Settings with
                     {
                         ClockFontSize=p.TryGetProperty("clockFontSize",out var fontSize)?fontSize.GetInt32():Settings.ClockFontSize,
-                        CompactStripHeight=p.TryGetProperty("compactStripHeight",out var stripHeight)?stripHeight.GetInt32():Settings.CompactStripHeight
+                        CompactStripHeight=p.TryGetProperty("compactStripHeight",out var stripHeight)?stripHeight.GetInt32():Settings.CompactStripHeight,
+                        ShowCodexLimits=p.TryGetProperty("showCodexLimits",out var showCodex)?showCodex.GetBoolean():Settings.ShowCodexLimits
                     };
                     clockSettings.ValidateClock();
                     if(clockSettings!=Settings)state.SaveSettings(clockSettings);
@@ -93,7 +96,8 @@ sealed partial class Controller
                     settings.Validate();
                     var positionChanges=settings.DisplayPositions;
                     settings=settings with{DisplayPositions=previousSettings.DisplayPositions,Language=previousSettings.Language,
-                        ClockFontSize=previousSettings.ClockFontSize,CompactStripHeight=previousSettings.CompactStripHeight};
+                        ClockFontSize=previousSettings.ClockFontSize,CompactStripHeight=previousSettings.CompactStripHeight,
+                        ShowCodexLimits=previousSettings.ShowCodexLimits};
                     if(positionChanges is not null)
                         foreach(var entry in positionChanges)settings=settings.WithDisplayPosition(entry.Key,entry.Value);
                     SettingsChanged(settings);

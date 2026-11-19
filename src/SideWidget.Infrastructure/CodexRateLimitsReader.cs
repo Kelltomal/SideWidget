@@ -35,7 +35,46 @@ public sealed class CodexRateLimitsReader(string directory)
             var path=Path.Combine(part.Trim('"'),"codex.exe");if(File.Exists(path))return path;
         }
         var alias=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Microsoft","WindowsApps","codex.exe");
-        return File.Exists(alias)?alias:null;
+        if(File.Exists(alias))return alias;
+        // Desktop installs need not register a CLI alias or add their resources to PATH.
+        foreach(var process in Process.GetProcessesByName("codex"))
+        {
+            using(process)
+            {
+                try
+                {
+                    var path=process.MainModule?.FileName;
+                    if(path is not null&&File.Exists(path))return path;
+                }
+                catch(Exception ex) when(ex is InvalidOperationException or System.ComponentModel.Win32Exception or UnauthorizedAccessException){}
+            }
+        }
+        if(!OperatingSystem.IsWindows())return null;
+        // Query current-user package registration, including when Codex is closed.
+        // Do not enumerate the protected WindowsApps directory or hardcode a version.
+        using var query=new Process{StartInfo=new ProcessStartInfo(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.System),"WindowsPowerShell","v1.0","powershell.exe"))
+        {UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true}};
+        query.StartInfo.ArgumentList.Add("-NoProfile");
+        query.StartInfo.ArgumentList.Add("-NonInteractive");
+        query.StartInfo.ArgumentList.Add("-Command");
+        query.StartInfo.ArgumentList.Add("[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Get-AppxPackage -Name OpenAI.Codex | Select-Object -ExpandProperty InstallLocation");
+        query.StartInfo.StandardOutputEncoding=Encoding.UTF8;
+        if(!query.Start())return null;
+        var output=query.StandardOutput.ReadToEndAsync();
+        var errors=query.StandardError.ReadToEndAsync();
+        if(!query.WaitForExit(4000))
+        {
+            try{query.Kill(entireProcessTree:true);}catch(InvalidOperationException){}
+            return null;
+        }
+        if(query.ExitCode!=0)return null;
+        foreach(var root in output.GetAwaiter().GetResult().Split(['\r','\n'],StringSplitOptions.RemoveEmptyEntries))
+        {
+            var path=Path.Combine(root.Trim(),"app","resources","codex.exe");
+            if(File.Exists(path))return path;
+        }
+        return null;
     }
 
     async Task<CodexLimitsSnapshot?> ReadLiveAsync(string executable,CancellationToken cancellation)

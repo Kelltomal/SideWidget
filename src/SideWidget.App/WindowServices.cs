@@ -178,7 +178,8 @@ public sealed partial class MainWindow
                 // Finish the WebView2 callback before opening native modal UI.
                 // Nested modal work inside the callback is unsupported reentrancy.
                 var origin=e.Source;var json=e.WebMessageAsJson;
-                DispatcherQueue.TryEnqueue(async()=>{if(!closing)await Message(origin,json);});
+                var files=e.AdditionalObjects?.OfType<CoreWebView2File>().Take(11).Select(file=>file.Path).ToArray()??[];
+                DispatcherQueue.TryEnqueue(async()=>{if(!closing)await Message(origin,json,files);});
             };
             core.ProcessFailed+=(_,_)=>{controller.Ready=false;startupError="Интерфейс перезапущен после ошибки WebView2";core.Reload();};
             await core.AddScriptToExecuteOnDocumentCreatedAsync("document.addEventListener('DOMContentLoaded',()=>document.documentElement.dataset.theme='"+(currentLightTheme==true?"light":"dark")+"',{once:true});");
@@ -189,10 +190,19 @@ public sealed partial class MainWindow
             var error=new TextBlock{Text=DesktopLanguage.Text("Не удалось запустить интерфейс WebView2.\nРаспакуйте полную сборку SideWidget в локальную папку, доступную для записи. Сохраните папку WebView2Runtime рядом с приложением.\n\nТип ошибки: {0}",e.GetType().Name),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(16),Foreground=Brush("F2F4F5")};Grid.SetRow(error,1);root.Children.Add(error);
         }
     }
-    async Task Message(string origin,string json)
+    async Task Message(string origin,string json,string[]? droppedFiles=null)
     {
         Command? command=null;
         try{command=Protocol.Parse(origin,json);
+            if(command.ActionId=="apps.drop")
+            {
+                if(droppedFiles is not {Length:>0 and <=10})throw new CommandFault("application","Перетащите не больше 10 приложений за раз");
+                dialogCount++;motion.Editing=true;
+                try{foreach(var path in droppedFiles)await AddSelectedApplication(path);}
+                finally{dialogCount--;motion.Editing=webEditing||dialogCount>0;}
+                Send(new{protocolVersion=1,requestId=command.RequestId,status="result",data=controller.Snapshot()});
+                desktop.Synchronize(this);return;
+            }
             if(command.ActionId=="shell.homeReady")
             {
                 if(controller.Ready)

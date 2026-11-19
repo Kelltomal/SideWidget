@@ -820,5 +820,17 @@
   "Размер текста часов": "Tamanho do texto do relógio",
   "Высота полоски поверх полноэкранного окна": "Altura da barra sobre apps em tela cheia",
   "Часы на весь экран": "Relógio em tela cheia",
-  "Проверьте размер часов и высоту полоски": "Confira o tamanho do relógio e a altura da barra"
+  "Проверьте размер часов и высоту полоски": "Confira o tamanho do relógio e a altura da barra",
+  "Codex не передал данные": "O Codex não forneceu dados",
+  "Показывать кружок Codex рядом с приложениями": "Mostrar o círculo do Codex ao lado dos aplicativos",
+  "Перетащите не больше 10 приложений за раз": "Arraste no máximo 10 aplicativos por vez",
+  "Отпустите, чтобы закрепить приложение": "Solte para fixar o aplicativo",
+  "Не удалось сохранить порядок приложений": "Não foi possível salvar a ordem dos aplicativos",
+  "Перенос файлов недоступен. Обновите WebView2 или добавьте приложение кнопкой.": "Não é possível soltar arquivos. Atualize o WebView2 ou use o botão para adicionar aplicativos.",
+  "Не удалось передать сообщение приложению": "Não foi possível enviar a mensagem ao aplicativo",
+  "Кружок лимитов в свёрнутой панели при запущенном Codex": "Círculo de cota no painel recolhido enquanto o Codex estiver aberto",
+  "Неделя": "Semana",
+  "5 часов": "5 horas",
+  "Неизвестно": "Desconhecido",
+  "Осталось {0}%": "Restam {0}%"
 }

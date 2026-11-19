@@ -1,0 +1,14 @@
+.app-shortcuts {flex-wrap:wrap;overflow:visible}
+.app-shortcut.is-dragging,.launcher-row.is-dragging {opacity:.5}
+.app-shortcut[draggable=true],.launcher-title[draggable=true] {cursor:grab}
+.app-shortcut img {pointer-events:none}
+.codex-quota-icon {flex:none;overflow:visible}
+.codex-quota-icon circle {stroke-width:1.6}
+.quota-track {stroke:var(--line)}
+.quota-remaining {stroke:var(--accent)}
+.quota-low {stroke:var(--error-text)}
+.quota-unknown {stroke:var(--muted)}
+.quota-center {fill:var(--muted)}
+.application-drop-zone {display:contents}
+.application-drop-hint,.application-drop-error {position:fixed;inset:64px 16px auto;z-index:100;background:var(--surface);color:var(--text);padding:16px;border:1px solid var(--accent);border-radius:12px}
+.application-drop-hint {pointer-events:none}

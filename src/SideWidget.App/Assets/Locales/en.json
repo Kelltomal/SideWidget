@@ -125,5 +125,11 @@
   "Запланировать выключение ПК?": "Schedule PC shutdown?",
   "Напоминание: {0} · {1}": "Reminder: {0} · {1}",
   "После успешного завершения выбранных чатов компьютер выключится через 60 секунд. Ошибки и ожидание ответа не считаются завершением.": "The PC will shut down 60 seconds after the selected chats complete successfully. Errors and waiting for input do not count as completion.",
-  "При исчерпании лимита Codex компьютер выключится через 60 секунд. Один раз до следующей перезагрузки ПК.": "The PC will shut down 60 seconds after the Codex limit is exhausted. Once before the next PC reboot."
+  "При исчерпании лимита Codex компьютер выключится через 60 секунд. Один раз до следующей перезагрузки ПК.": "The PC will shut down 60 seconds after the Codex limit is exhausted. Once before the next PC reboot.",
+  "Перетащите не больше 10 приложений за раз": "Drop no more than 10 apps at a time",
+  "Кружок лимитов в свёрнутой панели при запущенном Codex": "Quota ring in the collapsed panel while Codex is running",
+  "Неделя": "Week",
+  "5 часов": "5 hours",
+  "Неизвестно": "Unknown",
+  "Осталось {0}%": "{0}% remaining"
 }

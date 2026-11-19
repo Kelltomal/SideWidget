@@ -18,7 +18,7 @@ public sealed partial class MainWindow : Window
     readonly DispatcherTimer pulse = new() { Interval = TimeSpan.FromMilliseconds(100) };
     readonly Stopwatch watch = Stopwatch.StartNew();
     readonly ScaleTransform headerGripScale = new();
-    readonly Grid header = new() { Padding = new Thickness(16,0,12,0), HorizontalAlignment=HorizontalAlignment.Left,
+    readonly Grid header = new() { Padding = new Thickness(16,0,16,0), HorizontalAlignment=HorizontalAlignment.Left,
         Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
     readonly HeaderGesture headerGesture = new();
     int hostX;
@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(grip, 1);
         header.Children.Add(grip);
         InitializeTimerHeader(header);
+        InitializeCodexHeader();
         header.PointerPressed += HeaderPressed; header.PointerMoved += HeaderMoved; header.PointerReleased += HeaderReleased; header.PointerCaptureLost += (_,_)=>FinishDrag(false);
         root.Children.Add(header);
         root.AddHandler(UIElement.PointerReleasedEvent,new Microsoft.UI.Xaml.Input.PointerEventHandler(PanelPointerReleased),true);
@@ -142,6 +143,7 @@ public sealed partial class MainWindow : Window
         clock.Text=now.ToString("HH':'mm",culture);
         date.Text=DesktopLanguage.HeaderDate(now,culture);
         UpdateTimerHeader();
+        UpdateCodexHeader();
         if(compactHidden)UpdateCompactStrip(now);
     }
     void RefreshNativeLanguage()
@@ -198,7 +200,7 @@ public sealed partial class MainWindow : Window
         var clockOnly=compactPanel.ClockOnly&&motion.State==PanelState.Collapsed;
         if(clockOnly)
         {
-            var clockWidthDip=100+Math.Max(0,controller.Settings.ClockFontSize-Preferences.DefaultClockFontSize)*3;
+            var clockWidthDip=100+Math.Max(0,controller.Settings.ClockFontSize-Preferences.DefaultClockFontSize)*3+(codexQuota is null?0:76);
             var clockWidth=Math.Min(viewport.ClipWidth,(int)Math.Round(clockWidthDip*scale));
             viewport=viewport with{ClipLeft=viewport.ClipLeft+(viewport.ClipWidth-clockWidth)/2,ClipWidth=clockWidth};
         }
@@ -206,7 +208,7 @@ public sealed partial class MainWindow : Window
         {
             clockOnlyHeader=clockOnly;
             day.Visibility=date.Visibility=clockOnly?Visibility.Collapsed:Visibility.Visible;
-            header.Padding=clockOnly?new Thickness(12,0,12,0):new Thickness(16,0,12,0);
+            header.Padding=clockOnly?new Thickness(12,0,12,0):new Thickness(16,0,16,0);
             UpdateClock();
         }
         hostX=viewport.Host.Left;x=hostX+viewport.ClipLeft;width=viewport.ClipWidth;y=monitor.Work.Top;

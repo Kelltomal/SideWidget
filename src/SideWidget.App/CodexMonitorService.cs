@@ -35,6 +35,7 @@ sealed class CodexMonitorService : IDisposable
         poll=new(async _=>await RefreshAsync(false),null,Timeout.Infinite,Timeout.Infinite);
     }
     public void Wake(){if(started||disposed)return;started=true;if(autoPoll)poll.Change(TimeSpan.Zero,TimeSpan.FromSeconds(5));}
+    public CodexLimitsSnapshot Limits {get{Wake();return Volatile.Read(ref limits);}}
     public object Snapshot(){Wake();return new{threads.Available,threads.CheckedAt,threads.Threads,message=error??threads.Message,limits,shutdown=policy.State,policy.LimitUsedThisBoot};}
     public async Task RefreshAsync(bool forceLimits)
     {

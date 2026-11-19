@@ -1,8 +1,10 @@
 export type VisualizerOptions={enabled:boolean;showInHeader:boolean;brightness:number;sensitivity:number;style:'wave'|'bars'};
 export type AudioSpectrumFrame={available:boolean;message?:string;bands:number[];rms:number;sequence:number;settings:VisualizerOptions};
 export type Settings = {
+  codexShortcut?:boolean;
   clockFontSize?:number;
   compactStripHeight?:number;
+  showCodexLimits?:boolean;
   language?: import('./i18n').LanguagePreference|null;
   displayIds?:string[]|null;
   displayPositions?:Record<string,number>|null;

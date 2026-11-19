@@ -1,3 +1,4 @@
+import {ApplicationDropZone} from './ApplicationDropZone';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {bridge} from './bridge';
@@ -112,7 +113,7 @@ export function App(){
    tools={state.settings.disabled.includes('tools')?[]:visibleTools.map(([id,name,icon])=>({id,name:t(name),icon}))}
    apps={state.apps} openTool={openFromSearch}/>;
   case 'pinnedTools':return pinnedTools.length>0&&<div role="group" aria-label={t("Закреплённые инструменты")} className="tool-grid pinned-tools">{pinnedTools.map(toolButton)}</div>;
-  case 'apps':return <FavoriteApps {...localProps} openApps={()=>go('apps')}/>;
+  case 'apps':return <FavoriteApps {...localProps} openApps={()=>go('apps')} openCodex={()=>go('codex')} active={expanded&&page==='home'}/>;
   case 'music':return <Music expanded={expanded} openAudio={()=>go('audio')}/>;
   case 'calendar':return <div className="day-overview"><Calendar compact open={()=>go('calendar')}/><Weather compact open={()=>go('weather')}/></div>;
   case 'tools':{
@@ -123,7 +124,7 @@ export function App(){
   case 'quick':return <QuickActions compact open={()=>go('quick')}/>;
   default:return null;
  }}
- return <div className={`app ${state.settings.largeMode?'large-mode':''}`} onPointerDown={()=>shell('shell.interactive')} onFocusCapture={event=>{if((event.target as HTMLElement).matches('input,textarea,select,button[aria-expanded="true"]'))shell('shell.editing',{value:true});}} onBlurCapture={()=>{setTimeout(()=>{const focused=document.activeElement;if(pageRef.current==='home'&&!layoutEditingRef.current&&!(focused instanceof HTMLElement&&focused.matches('input,textarea,select')))shell('shell.editing',{value:false});},0);}}>
+ return <ApplicationDropZone onAdded={setState}><div className={`app ${state.settings.largeMode?'large-mode':''}`} onPointerDown={()=>shell('shell.interactive')} onFocusCapture={event=>{if((event.target as HTMLElement).matches('input,textarea,select,button[aria-expanded="true"]'))shell('shell.editing',{value:true});}} onBlurCapture={()=>{setTimeout(()=>{const focused=document.activeElement;if(pageRef.current==='home'&&!layoutEditingRef.current&&!(focused instanceof HTMLElement&&focused.matches('input,textarea,select')))shell('shell.editing',{value:false});},0);}}>
   <nav className="toolbar" aria-label={t("Управление панелью")}><div className="toolbar-title">{page!=='home'&&<><button className="icon-button" onClick={()=>go('home')} aria-label={t("Вернуться на главную")}><Icon name="back"/></button><h1>{t(titles[page])}</h1></>}</div><div className="toolbar-actions">{page==='home'&&<button className="icon-button" aria-label={t(layoutEditing?'Завершить редактирование':'Редактировать расположение')} aria-pressed={layoutEditing} onClick={()=>editLayout(!layoutEditing)}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m4 16 11-11 4 4L8 20H4Zm9-9 4 4"/></svg></button>}<button className="icon-button" aria-label={t(pinned?'Открепить панель':'Закрепить панель')} aria-pressed={pinned} disabled={!nativeAvailable} onClick={()=>shell('shell.pin')}><Icon name="pin" size={16}/></button><button className="icon-button" aria-label={t("Настройки")} aria-pressed={page==='settings'} onClick={()=>go(page==='settings'?'home':'settings')}><Icon name="gear" size={17}/></button></div></nav>
   <ButtonHelp/>
   <main ref={main}>
@@ -131,7 +132,7 @@ export function App(){
    <div className="page-content" hidden={page!=='home'}><ModuleLayout state={state} setState={setState} editing={layoutEditing} finish={()=>editLayout(false)} modules={modules} renderModule={id=>id==='search'||page==='home'?homeModule(id):null}/></div>
    <div className="page-content" key={page}>
    {page==='timer'&&<TimerPanel timer={focusTimer}/>}
-   {page==='codex'&&<CodexPanel/>}
+   {page==='codex'&&<CodexPanel shortcutEnabled={state.settings.codexShortcut!==false} onShortcutChange={async codexShortcut=>{setState(await invoke<Snapshot>('settings.save',{...state.settings,displayPositions:undefined,codexShortcut}));}}/>}
    {page==='sites'&&<SiteMonitorPanel/>}
    {page==='desktop'&&<DesktopCleanup/>}
    {page==='calculator'&&<Calculator {...localProps} sessionExpression={[calculatorExpression,setCalculatorExpression]}/>}{page==='qr'&&<QrTool sessionText={[qrText,setQrText]}/>}{page==='units'&&<Units {...localProps}/>}{page==='colors'&&<Colors {...localProps}/>}
@@ -143,7 +144,7 @@ export function App(){
    {(page==='home'||page==='settings')&&state.appVersion&&<footer className="app-version"><small>{t('Версия {version}',{version:state.appVersion})}</small></footer>}
   </main>
   <StartupUpdate/>
- </div>;
+ </div></ApplicationDropZone>;
 }
 export function SettingsPage({state,setState}:{state:Snapshot;setState:(state:Snapshot)=>void}) {
  const [settings,setSettings]=useState(state.settings);const {error,busy,run}=useAction();const [saved,setSaved]=useState(false);

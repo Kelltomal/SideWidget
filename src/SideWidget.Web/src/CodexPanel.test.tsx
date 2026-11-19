@@ -8,6 +8,15 @@ vi.mock('./ui',async original=>({...await original<typeof import('./ui')>(),invo
 const snapshot=():CodexSnapshot=>({available:true,checkedAt:'2026-11-18T12:00:00Z',threads:[{id:'a',title:'Release build',status:'running',turnId:'turn',updatedAt:null,hasQueuedInput:false},{id:'b',title:'Needs reply',status:'interrupted',turnId:'turn2',updatedAt:null,hasQueuedInput:false}],limits:{available:true,checkedAt:'2026-11-18T12:00:00Z',buckets:[{id:'codex',primary:{usedPercent:25,windowMinutes:300,resetsAt:'2026-11-18T16:00:00Z'}}]},shutdown:null,limitUsedThisBoot:false});
 afterEach(()=>{cleanup();vi.useRealTimers();vi.resetAllMocks();host.native=true;});
 async function show(value=snapshot()){vi.mocked(invoke).mockResolvedValue(value);await act(async()=>{render(<CodexPanel/>);});}
+it('keeps five-hour quota visible when Codex only supplies a weekly window',async()=>{
+ const value=snapshot();value.limits.buckets=[{id:'codex',primary:{usedPercent:86,windowMinutes:10080,resetsAt:null}}];await show(value);
+ expect(screen.getByText('5 часов')).toBeTruthy();expect(screen.getByText('Неделя')).toBeTruthy();
+ expect(screen.getByText('Codex не передал данные')).toBeTruthy();expect(screen.getByText('Осталось 14%')).toBeTruthy();expect(screen.queryByText('Осталось 100%')).toBeNull();
+});
+it('shows both quotas by duration even when API slots are reversed',async()=>{
+ const value=snapshot();value.limits.buckets=[{id:'codex',primary:{usedPercent:86,windowMinutes:10080,resetsAt:null},secondary:{usedPercent:12,windowMinutes:300,resetsAt:null}}];await show(value);
+ const rows=document.querySelectorAll('.codex-limit-window');expect(rows[0].textContent).toContain('5 часов');expect(rows[0].textContent).toContain('Осталось 88%');expect(rows[1].textContent).toContain('Неделя');expect(rows[1].textContent).toContain('Осталось 14%');expect(screen.queryByText('Codex не передал данные')).toBeNull();
+});
 it('shows actual remaining quota, source timestamp and distinct non-success states',async()=>{
  await show();expect(screen.getByText('Осталось 75%')).toBeTruthy();expect(screen.getByText('5 часов')).toBeTruthy();expect(screen.getByText('Прерван')).toBeTruthy();expect(screen.getByText(/Данные лимитов:/)).toBeTruthy();
  expect((screen.getByRole('checkbox',{name:/Needs reply/}) as HTMLInputElement).disabled).toBe(true);

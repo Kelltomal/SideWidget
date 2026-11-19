@@ -1006,5 +1006,14 @@
   "Только текущие активные чаты. Новые чаты не добавляются. Отслеживается завершение текущего ответа Codex. Ошибки, прерывание и активные запросы не считаются завершением. Перед выключением — 60 секунд на отмену.": "Only currently active chats are tracked. New chats are not added. The current Codex response is monitored for completion. Errors, interruptions and active requests do not count as completion. You have 60 seconds to cancel before shutdown.",
   "Сводка источника недоступна": "Status source is unavailable",
   "Источник сведений о сбоях": "Outage information source",
-  "Необязательно. Для GitHub и ChatGPT используем официальную сводку, для остальных — DownRadar или вашу ссылку.": "Optional. GitHub and ChatGPT use official status summaries; other sites use DownRadar or your link."
+  "Необязательно. Для GitHub и ChatGPT используем официальную сводку, для остальных — DownRadar или вашу ссылку.": "Optional. GitHub and ChatGPT use official status summaries; other sites use DownRadar or your link.",
+  "Codex не передал данные": "Codex did not provide data",
+  "Показывать кружок Codex рядом с приложениями": "Show Codex ring beside apps",
+  "Перетащите не больше 10 приложений за раз": "Drop no more than 10 apps at a time",
+  "Отпустите, чтобы закрепить приложение": "Drop to pin the app",
+  "Не удалось сохранить порядок приложений": "Could not save app order",
+  "Перенос файлов недоступен. Обновите WebView2 или добавьте приложение кнопкой.": "File dropping is unavailable. Update WebView2 or use the Add app button.",
+  "Не удалось передать сообщение приложению": "Could not send the message to the app",
+  "Кружок лимитов в свёрнутой панели при запущенном Codex": "Quota ring in the collapsed panel while Codex is running",
+  "Осталось {0}%": "{0}% remaining"
 }

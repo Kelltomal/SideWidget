@@ -111,5 +111,11 @@
   "Выберите SVG, PNG или JPEG": "Elige SVG, PNG o JPEG.",
   "Часы на весь экран": "Reloj a pantalla completa",
   "Выйти из полноэкранного режима": "Salir de pantalla completa",
-  "Проверьте размер часов и высоту полоски": "Comprueba el tamaño del reloj y la altura de la barra"
+  "Проверьте размер часов и высоту полоски": "Comprueba el tamaño del reloj y la altura de la barra",
+  "Перетащите не больше 10 приложений за раз": "Arrastra como máximo 10 aplicaciones a la vez",
+  "Кружок лимитов в свёрнутой панели при запущенном Codex": "Círculo de cuota en el panel contraído mientras Codex está abierto",
+  "Неделя": "Semana",
+  "5 часов": "5 horas",
+  "Неизвестно": "Desconocido",
+  "Осталось {0}%": "Queda {0}%"
 }

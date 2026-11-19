@@ -3,6 +3,15 @@ using SideWidget.Infrastructure;
 using Microsoft.Data.Sqlite;
 using System.Text;
 using System.Text.Json;
+if(args is ["--check-codex-discovery"]){
+    Environment.SetEnvironmentVariable("CODEX_EXECUTABLE",null);
+    Environment.SetEnvironmentVariable("PATH",Environment.GetFolderPath(Environment.SpecialFolder.System));
+    var home=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".codex");
+    var limits=await new CodexRateLimitsReader(home).ReadAsync();
+    if(!limits.Available||limits.Buckets.Count==0)throw new Exception("Installed Codex must supply live limits without PATH or CODEX_EXECUTABLE");
+    Console.WriteLine("PASS installed Codex discovery without PATH: live quota available");
+    return;
+}
 if(args is ["--inspect-codex"]){
     var home=Environment.GetEnvironmentVariable("CODEX_HOME")??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".codex");
     var threads=new CodexStateReader(home).Read();var limits=await new CodexRateLimitsReader(home).ReadAsync();
@@ -70,6 +79,7 @@ count += PanelGeometryChecks.Run();
 count += TooltipChecks.Run();
 count += PanelInteractionChecks.Run();
 count += CompactPanelChecks.Run();
+count += CodexQuotaIndicatorChecks.Run();
 count += PhoneNetworkChecks.Run();
 count += LauncherPersistenceChecks.Run();
 count += await OnlineChecks.Run();
