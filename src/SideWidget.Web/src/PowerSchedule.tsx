@@ -39,10 +39,10 @@ export function PowerScheduleForm({action,onClose}:{action:'shutdown'|'restart';
 
 export function PowerScheduleStatus({compact=false}:{compact?:boolean}){
  const {schedule,setSchedule,error:readError}=usePowerSchedule();const {busy,error,run}=useAction();
- const [now,setNow]=useState(Date.now());
- useEffect(()=>{if(!schedule)return;setNow(Date.now());const id=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(id);},[schedule]);
+ const [,setTick]=useState(0);
+ useEffect(()=>{if(!schedule)return;const id=setInterval(()=>setTick(tick=>tick+1),1000);return()=>clearInterval(id);},[schedule]);
  if(!schedule)return readError?<Notice error>{readError}</Notice>:null;
- const restart=schedule.action==='restart';const seconds=Math.max(0,Math.ceil((Date.parse(schedule.deadline)-now)/1000));
+ const restart=schedule.action==='restart';const seconds=Math.max(0,Math.ceil((Date.parse(schedule.deadline)-Date.now())/1000));
  return <section className={compact?'stack power-schedule-summary':'panel timer-session'} aria-label={t('Таймер питания')}>
   <strong>{restart?t('До перезагрузки ПК'):t('До выключения ПК')}</strong>
   <div className={compact?'':'timer-digits'} aria-label={t('Осталось')}>{formatTime(seconds)}</div>

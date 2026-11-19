@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {Profiler} from 'react';
 import {afterEach,expect,it,vi} from 'vitest';
 const {invoke}=vi.hoisted(()=>({invoke:vi.fn()}));
 vi.mock('./ui',async()=>({...await vi.importActual<typeof import('./ui')>('./ui'),invoke,nativeAvailable:true}));
 import {PowerScheduleForm,PowerScheduleStatus} from './PowerSchedule';
 import {QuickActions} from './WindowsPanels';
-afterEach(()=>{cleanup();vi.clearAllMocks();});
+afterEach(()=>{cleanup();vi.useRealTimers();vi.clearAllMocks();});
 it('shows delayed power actions in the power menu',()=>{
  render(<QuickActions/>);fireEvent.click(screen.getByRole('button',{name:'Питание'}));
  expect(screen.getByRole('menuitem',{name:'Выключить через…'})).toBeTruthy();
@@ -52,4 +53,20 @@ it('shows countdown and cancels through the native bridge',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Отменить выключение'}));
  await waitFor(()=>expect(invoke).toHaveBeenCalledWith('power.cancel'));
  await waitFor(()=>expect(screen.queryByText('До выключения ПК')).toBeNull());
+});
+it('uses current time on the first committed frame after a delayed schedule response',async()=>{
+ vi.useFakeTimers();
+ const started=Date.parse('2026-11-19T10:00:00Z');vi.setSystemTime(started);
+ let respond!:(schedule:{action:string;deadline:string})=>void;
+ invoke.mockImplementation((command:string)=>command==='power.get'?new Promise(resolve=>{respond=resolve;}):Promise.resolve(null));
+ const frames:string[]=[];
+ render(<Profiler id="power-countdown" onRender={()=>{
+  const value=document.querySelector('[aria-label="Осталось"]')?.textContent;
+  if(value)frames.push(value);
+ }}><PowerScheduleStatus/></Profiler>);
+ vi.setSystemTime(started+1500);
+ await act(async()=>respond({action:'shutdown',deadline:new Date(Date.now()+1800000).toISOString()}));
+ expect(frames[0]).toBe('30:00');
+ await act(async()=>{vi.advanceTimersByTime(1000);});
+ expect(screen.getByLabelText('Осталось').textContent).toBe('29:59');
 });
