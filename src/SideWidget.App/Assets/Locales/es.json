@@ -117,5 +117,6 @@
   "Неделя": "Semana",
   "5 часов": "5 horas",
   "Неизвестно": "Desconocido",
-  "Осталось {0}%": "Queda {0}%"
+  "Осталось {0}%": "Queda {0}%",
+  "Введите допустимое имя папки.": "Introduce un nombre de carpeta válido."
 }

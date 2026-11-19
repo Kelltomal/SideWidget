@@ -14,20 +14,14 @@ SideWidget is developed with common sense and help from GPT-6.1 Sol.
   <img src="images/sidewidget-home.png" width="760" alt="SideWidget home panel with search, media controls and quick tools">
 </p>
 
-<p align="center">
-  <img src="images/sidewidget-commands-en.png" width="590" alt="Sorting files in SideWidget in English">
-</p>
-
 The player was captured on Windows during music playback. Tool screenshots use sample data.
 
 ## Example commands
 
-Open **Files and folders**, paste a command, and review the plan before applying it.
+Open **Files and folders** and choose an action.
 
-- **Sorting.** `Sort invoices by year and leave screenshots on the desktop`
-- **Folder icons.** `Change desktop folder icons`<br>`Change the folder icon to photos`
-
-[All nine languages](../../README.md#примеры-команд)
+- **Organize files.** Select **Invoices by year** and add a **Screenshots / Leave in place** rule. Open **Preview**, review the files, and confirm the move.
+- **Folder icons.** Select **Desktop folders** to edit several folders or use **Choose folder** to pick one.
 
 ## More tools
 

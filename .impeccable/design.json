@@ -1,0 +1,424 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T18:34:50.623256+00:00",
+  "title": "Design System: SideWidget",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Графит",
+        "tonalRamp": [
+          "oklch(0.150 0.00498 248.06)",
+          "oklch(0.264 0.00498 248.06)",
+          "oklch(0.379 0.00498 248.06)",
+          "oklch(0.493 0.00498 248.06)",
+          "oklch(0.607 0.00498 248.06)",
+          "oklch(0.721 0.00498 248.06)",
+          "oklch(0.836 0.00498 248.06)",
+          "oklch(0.950 0.00498 248.06)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Приподнятый графит",
+        "tonalRamp": [
+          "oklch(0.150 0.01036 242.08)",
+          "oklch(0.264 0.01036 242.08)",
+          "oklch(0.379 0.01036 242.08)",
+          "oklch(0.493 0.01036 242.08)",
+          "oklch(0.607 0.01036 242.08)",
+          "oklch(0.721 0.01036 242.08)",
+          "oklch(0.836 0.01036 242.08)",
+          "oklch(0.950 0.01036 242.08)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Светлый текст",
+        "tonalRamp": [
+          "oklch(0.150 0.00253 228.78)",
+          "oklch(0.264 0.00253 228.78)",
+          "oklch(0.379 0.00253 228.78)",
+          "oklch(0.493 0.00253 228.78)",
+          "oklch(0.607 0.00253 228.78)",
+          "oklch(0.721 0.00253 228.78)",
+          "oklch(0.836 0.00253 228.78)",
+          "oklch(0.950 0.00253 228.78)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Вторичный серый",
+        "tonalRamp": [
+          "oklch(0.150 0.01572 251.20)",
+          "oklch(0.264 0.01572 251.20)",
+          "oklch(0.379 0.01572 251.20)",
+          "oklch(0.493 0.01572 251.20)",
+          "oklch(0.607 0.01572 251.20)",
+          "oklch(0.721 0.01572 251.20)",
+          "oklch(0.836 0.01572 251.20)",
+          "oklch(0.950 0.01572 251.20)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Серебристый акцент",
+        "tonalRamp": [
+          "oklch(0.150 0.02327 248.11)",
+          "oklch(0.264 0.02327 248.11)",
+          "oklch(0.379 0.02327 248.11)",
+          "oklch(0.493 0.02327 248.11)",
+          "oklch(0.607 0.02327 248.11)",
+          "oklch(0.721 0.02327 248.11)",
+          "oklch(0.836 0.02327 248.11)",
+          "oklch(0.950 0.02327 248.11)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Светлый акцент наведения",
+        "tonalRamp": [
+          "oklch(0.150 0.01647 245.11)",
+          "oklch(0.264 0.01647 245.11)",
+          "oklch(0.379 0.01647 245.11)",
+          "oklch(0.493 0.01647 245.11)",
+          "oklch(0.607 0.01647 245.11)",
+          "oklch(0.721 0.01647 245.11)",
+          "oklch(0.836 0.01647 245.11)",
+          "oklch(0.950 0.01647 245.11)"
+        ]
+      },
+      "on-accent": {
+        "role": "primary",
+        "displayName": "Тёмный текст действия",
+        "tonalRamp": [
+          "oklch(0.150 0.00607 236.86)",
+          "oklch(0.264 0.00607 236.86)",
+          "oklch(0.379 0.00607 236.86)",
+          "oklch(0.493 0.00607 236.86)",
+          "oklch(0.607 0.00607 236.86)",
+          "oklch(0.721 0.00607 236.86)",
+          "oklch(0.836 0.00607 236.86)",
+          "oklch(0.950 0.00607 236.86)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Граница",
+        "tonalRamp": [
+          "oklch(0.150 0.01364 243.94)",
+          "oklch(0.264 0.01364 243.94)",
+          "oklch(0.379 0.01364 243.94)",
+          "oklch(0.493 0.01364 243.94)",
+          "oklch(0.607 0.01364 243.94)",
+          "oklch(0.721 0.01364 243.94)",
+          "oklch(0.836 0.01364 243.94)",
+          "oklch(0.950 0.01364 243.94)"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Фон поля",
+        "tonalRamp": [
+          "oklch(0.150 0.00733 248.14)",
+          "oklch(0.264 0.00733 248.14)",
+          "oklch(0.379 0.00733 248.14)",
+          "oklch(0.493 0.00733 248.14)",
+          "oklch(0.607 0.00733 248.14)",
+          "oklch(0.721 0.00733 248.14)",
+          "oklch(0.836 0.00733 248.14)",
+          "oklch(0.950 0.00733 248.14)"
+        ]
+      },
+      "button": {
+        "role": "neutral",
+        "displayName": "Вторичная кнопка",
+        "tonalRamp": [
+          "oklch(0.150 0.01227 243.23)",
+          "oklch(0.264 0.01227 243.23)",
+          "oklch(0.379 0.01227 243.23)",
+          "oklch(0.493 0.01227 243.23)",
+          "oklch(0.607 0.01227 243.23)",
+          "oklch(0.721 0.01227 243.23)",
+          "oklch(0.836 0.01227 243.23)",
+          "oklch(0.950 0.01227 243.23)"
+        ]
+      },
+      "button-hover": {
+        "role": "neutral",
+        "displayName": "Наведение кнопки",
+        "tonalRamp": [
+          "oklch(0.150 0.01602 244.62)",
+          "oklch(0.264 0.01602 244.62)",
+          "oklch(0.379 0.01602 244.62)",
+          "oklch(0.493 0.01602 244.62)",
+          "oklch(0.607 0.01602 244.62)",
+          "oklch(0.721 0.01602 244.62)",
+          "oklch(0.836 0.01602 244.62)",
+          "oklch(0.950 0.01602 244.62)"
+        ]
+      },
+      "button-active": {
+        "role": "neutral",
+        "displayName": "Нажатие кнопки",
+        "tonalRamp": [
+          "oklch(0.150 0.01562 244.56)",
+          "oklch(0.264 0.01562 244.56)",
+          "oklch(0.379 0.01562 244.56)",
+          "oklch(0.493 0.01562 244.56)",
+          "oklch(0.607 0.01562 244.56)",
+          "oklch(0.721 0.01562 244.56)",
+          "oklch(0.836 0.01562 244.56)",
+          "oklch(0.950 0.01562 244.56)"
+        ]
+      },
+      "selected": {
+        "role": "neutral",
+        "displayName": "Выбранное действие",
+        "tonalRamp": [
+          "oklch(0.150 0.02018 245.52)",
+          "oklch(0.264 0.02018 245.52)",
+          "oklch(0.379 0.02018 245.52)",
+          "oklch(0.493 0.02018 245.52)",
+          "oklch(0.607 0.02018 245.52)",
+          "oklch(0.721 0.02018 245.52)",
+          "oklch(0.836 0.02018 245.52)",
+          "oklch(0.950 0.02018 245.52)"
+        ]
+      },
+      "tool-hover": {
+        "role": "neutral",
+        "displayName": "Наведение инструмента",
+        "tonalRamp": [
+          "oklch(0.150 0.01626 244.67)",
+          "oklch(0.264 0.01626 244.67)",
+          "oklch(0.379 0.01626 244.67)",
+          "oklch(0.493 0.01626 244.67)",
+          "oklch(0.607 0.01626 244.67)",
+          "oklch(0.721 0.01626 244.67)",
+          "oklch(0.836 0.01626 244.67)",
+          "oklch(0.950 0.01626 244.67)"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "Белая подложка",
+        "tonalRamp": [
+          "oklch(0.150 0.00000 89.88)",
+          "oklch(0.264 0.00000 89.88)",
+          "oklch(0.379 0.00000 89.88)",
+          "oklch(0.493 0.00000 89.88)",
+          "oklch(0.607 0.00000 89.88)",
+          "oklch(0.721 0.00000 89.88)",
+          "oklch(0.836 0.00000 89.88)",
+          "oklch(0.950 0.00000 89.88)"
+        ]
+      },
+      "error-text": {
+        "role": "error",
+        "displayName": "Текст ошибки",
+        "tonalRamp": [
+          "oklch(0.150 0.06384 26.79)",
+          "oklch(0.264 0.06384 26.79)",
+          "oklch(0.379 0.06384 26.79)",
+          "oklch(0.493 0.06384 26.79)",
+          "oklch(0.607 0.06384 26.79)",
+          "oklch(0.721 0.06384 26.79)",
+          "oklch(0.836 0.06384 26.79)",
+          "oklch(0.950 0.06384 26.79)"
+        ]
+      },
+      "error-surface": {
+        "role": "error",
+        "displayName": "Фон ошибки",
+        "tonalRamp": [
+          "oklch(0.150 0.02156 27.81)",
+          "oklch(0.264 0.02156 27.81)",
+          "oklch(0.379 0.02156 27.81)",
+          "oklch(0.493 0.02156 27.81)",
+          "oklch(0.607 0.02156 27.81)",
+          "oklch(0.721 0.02156 27.81)",
+          "oklch(0.836 0.02156 27.81)",
+          "oklch(0.950 0.02156 27.81)"
+        ]
+      },
+      "error-line": {
+        "role": "error",
+        "displayName": "Граница ошибки",
+        "tonalRamp": [
+          "oklch(0.150 0.05854 25.30)",
+          "oklch(0.264 0.05854 25.30)",
+          "oklch(0.379 0.05854 25.30)",
+          "oklch(0.493 0.05854 25.30)",
+          "oklch(0.607 0.05854 25.30)",
+          "oklch(0.721 0.05854 25.30)",
+          "oklch(0.836 0.05854 25.30)",
+          "oklch(0.950 0.05854 25.30)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "body",
+        "purpose": "Основной текст интерфейса."
+      },
+      "title": {
+        "displayName": "title",
+        "purpose": "Заголовок вложенной страницы."
+      },
+      "heading": {
+        "displayName": "heading",
+        "purpose": "Заголовок секции."
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "Пояснения и небольшие подписи."
+      },
+      "button": {
+        "displayName": "button",
+        "purpose": "Обычная кнопка."
+      },
+      "code": {
+        "displayName": "code",
+        "purpose": "Коды цвета и моноширинные данные."
+      },
+      "result": {
+        "displayName": "result",
+        "purpose": "Числовой результат калькулятора."
+      },
+      "clock": {
+        "displayName": "clock",
+        "purpose": "Нативные часы; значение в DIP."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "native-curtain-duration",
+        "value": "180ms",
+        "purpose": "Высота нативного окна; разворот с текущего значения."
+      },
+      {
+        "name": "native-curtain-easing",
+        "value": "1 - (1 - t)^3",
+        "purpose": "Точная интерполяция PanelMotion; не CSS-кривая."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "immediate",
+        "purpose": "Немедленное конечное состояние нативного раскрытия."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-insets",
+        "value": "380px"
+      },
+      {
+        "name": "three-tool-columns",
+        "value": "400px"
+      }
+    ],
+    "tonalRampNote": "Только сгенерированные OKLCH-полосы предпросмотра, не дополнительные токены приложения; hue/chroma взяты из исходного цвета."
+  },
+  "components": [
+    {
+      "name": "Основная кнопка",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Главное действие формы; светлая заливка и тёмный текст.",
+      "html": "<button class=\"ds-button ds-primary\">Посчитать</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--line,#42494f);border-radius:8px;background:#2b3136;color:inherit;cursor:pointer;font-weight:500;line-height:1.3}.ds-button:active:not(:disabled){background:#454d54}.ds-button:disabled{opacity:.5;cursor:default}.ds-button[aria-pressed=true]{background:#3b454e;color:#fff}.ds-button{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;outline-offset:3px}.ds-button:focus-visible{outline:2px solid var(--accent,#b6c3d0)}@media(hover:hover) and (pointer:fine){.ds-button:hover:not(:disabled){background:#3a4249}}.ds-primary{color:#16191b;background:var(--accent,#b6c3d0);border-color:var(--accent,#b6c3d0)}@media(hover:hover) and (pointer:fine){.ds-primary:hover:not(:disabled){background:#d0dae3}} .ds-primary:active:not(:disabled){color:#16191b;background:var(--muted,#a9b1ba)}@media(hover:hover) and (pointer:fine){.ds-primary:hover:not(:disabled){background:#d0dae3}}"
+    },
+    {
+      "name": "Вторичная кнопка",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Обычное действие, например копирование результата.",
+      "html": "<button class=\"ds-button\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 8h12v13H8ZM4 16H2V2h12v2\"/></svg>Копировать</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--line,#42494f);border-radius:8px;background:#2b3136;color:inherit;cursor:pointer;font-weight:500;line-height:1.3}.ds-button:active:not(:disabled){background:#454d54}.ds-button:disabled{opacity:.5;cursor:default}.ds-button[aria-pressed=true]{background:#3b454e;color:#fff}.ds-button{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;outline-offset:3px}.ds-button:focus-visible{outline:2px solid var(--accent,#b6c3d0)}@media(hover:hover) and (pointer:fine){.ds-button:hover:not(:disabled){background:#3a4249}}"
+    },
+    {
+      "name": "Тихое действие",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Небольшое действие внутри секции.",
+      "html": "<button class=\"ds-button ds-quiet\">Подробнее</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--line,#42494f);border-radius:8px;background:#2b3136;color:inherit;cursor:pointer;font-weight:500;line-height:1.3}.ds-button:active:not(:disabled){background:#454d54}.ds-button:disabled{opacity:.5;cursor:default}.ds-button[aria-pressed=true]{background:#3b454e;color:#fff}.ds-button{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;outline-offset:3px}.ds-button:focus-visible{outline:2px solid var(--accent,#b6c3d0)}@media(hover:hover) and (pointer:fine){.ds-button:hover:not(:disabled){background:#3a4249}}.ds-quiet{padding:3px 4px;min-height:28px;border:0;background:transparent;color:var(--muted,#a9b1ba);font-size:12px}@media(hover:hover) and (pointer:fine){.ds-quiet:hover:not(:disabled){background:#2b3136;color:#fff}}"
+    },
+    {
+      "name": "Подписанное поле",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Подпись над вводом, видимый фокус.",
+      "html": "<label class=\"ds-label\">Выражение<input class=\"ds-field\" placeholder=\"(1250 + 350) × 0,2\" /></label>",
+      "css": ".ds-field{font:inherit}.ds-field{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;outline-offset:3px}.ds-field:focus-visible{outline:2px solid var(--accent,#b6c3d0)}.ds-field::placeholder{color:var(--muted,#a9b1ba);opacity:1}.ds-label{display:flex;flex-direction:column;gap:7px;line-height:1.4;font-weight:500;min-width:0}.ds-label{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;}"
+    },
+    {
+      "name": "Поиск",
+      "kind": "input",
+      "refersTo": "search",
+      "description": "Одно поле с иконкой и общей обводкой фокуса.",
+      "html": "<label class=\"ds-search\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 6 6\"/></svg><input aria-label=\"Найти файл в Everything\" placeholder=\"Найти файл в Everything\" /></label>",
+      "css": ".ds-search{position:relative;display:flex;flex-direction:row;align-items:center;gap:9px;background:var(--surface,#22272b);padding:0 12px;border-radius:10px;border:1px solid var(--line,#42494f)}.ds-search{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;}.ds-search input{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;width:100%;border-radius:8px;caret-color:var(--accent,#b6c3d0)}.ds-search input{background:transparent;border:0;padding:11px 0;min-height:43px;min-width:0}.ds-search:focus-within{outline:2px solid var(--accent,#b6c3d0);outline-offset:2px}.ds-search input:focus-visible{outline:none}.ds-search input::placeholder{color:var(--muted,#a9b1ba);opacity:1}"
+    },
+    {
+      "name": "Навигация и кнопка-иконка",
+      "kind": "nav",
+      "refersTo": "button-icon",
+      "description": "Возврат, название страницы и компактное действие. При выборе сохраняется aria-pressed.",
+      "html": "<nav class=\"ds-toolbar\" aria-label=\"Управление панелью\"><div class=\"ds-title\"><button class=\"ds-button ds-icon\" aria-label=\"Вернуться на главную\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m14 6-6 6 6 6\"/></svg></button><h1>Настройки</h1></div><button class=\"ds-button ds-icon\" aria-label=\"Настройки\" aria-pressed=\"true\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M4 17h16M8 4v6M16 14v6\"/></svg></button></nav>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--line,#42494f);border-radius:8px;background:#2b3136;color:inherit;cursor:pointer;font-weight:500;line-height:1.3}.ds-button:active:not(:disabled){background:#454d54}.ds-button:disabled{opacity:.5;cursor:default}.ds-button[aria-pressed=true]{background:#3b454e;color:#fff}.ds-button{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;outline-offset:3px}.ds-button:focus-visible{outline:2px solid var(--accent,#b6c3d0)}@media(hover:hover) and (pointer:fine){.ds-button:hover:not(:disabled){background:#3a4249}}.ds-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:35px;padding:0 12px 3px;flex:none}.ds-title{display:flex;align-items:center;gap:5px}.ds-icon{width:32px;min-height:30px;padding:6px;border:0;background:transparent;flex:none}.ds-toolbar{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;}.ds-title h1{margin:0;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(hover:hover) and (pointer:fine){.ds-icon:hover:not(:disabled){background:#2b3136;color:#fff}}"
+    },
+    {
+      "name": "Панель",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Тональное выделение секции без тени.",
+      "html": "<section class=\"ds-panel\"><h2>Этот компьютер</h2><p>Показатели недоступны</p></section>",
+      "css": ".ds-panel{background:var(--surface,#22272b);border-radius:14px;padding:14px;min-width:0;display:flex;flex-direction:column;gap:10px}.ds-panel{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;}.ds-panel h2{margin:0;font-size:14px;font-weight:600;line-height:1.4}.ds-panel p{margin:0;color:var(--muted,#a9b1ba);line-height:1.55}"
+    },
+    {
+      "name": "Плитка инструмента",
+      "kind": "button",
+      "refersTo": "tool-tile",
+      "description": "Иконка над короткой подписью; в приложении 3 или 4 колонки.",
+      "html": "<button class=\"ds-button ds-tool\"><svg width=\"21\" height=\"21\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 3h14v18H5ZM8 7h8M8 12h1m6 0h1m-8 5h1m6 0h1\"/></svg><span>Калькулятор</span></button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--line,#42494f);border-radius:8px;background:#2b3136;color:inherit;cursor:pointer;font-weight:500;line-height:1.3}.ds-button:active:not(:disabled){background:#454d54}.ds-button:disabled{opacity:.5;cursor:default}.ds-button[aria-pressed=true]{background:#3b454e;color:#fff}.ds-button{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;outline-offset:3px}.ds-button:focus-visible{outline:2px solid var(--accent,#b6c3d0)}@media(hover:hover) and (pointer:fine){.ds-button:hover:not(:disabled){background:#3a4249}}.ds-tool{display:flex;flex-direction:column;gap:9px;padding:11px 3px;border:0;border-radius:10px;background:var(--surface,#22272b);min-height:70px;min-width:0;font-size:12px}.ds-tool span{max-width:100%;overflow-wrap:anywhere}@media(hover:hover) and (pointer:fine){.ds-tool:hover:not(:disabled){background:#343c43}}"
+    },
+    {
+      "name": "Сохранённый цвет",
+      "kind": "chip",
+      "refersTo": "color-swatch",
+      "description": "Образец и точный код: цвет содержимого не задаёт палитру интерфейса.",
+      "html": "<button class=\"ds-button ds-swatch\" aria-label=\"Выбрать #B6C3D0\"><span></span>#B6C3D0</button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--line,#42494f);border-radius:8px;background:#2b3136;color:inherit;cursor:pointer;font-weight:500;line-height:1.3}.ds-button:active:not(:disabled){background:#454d54}.ds-button:disabled{opacity:.5;cursor:default}.ds-button[aria-pressed=true]{background:#3b454e;color:#fff}.ds-button{font-family:Medeo,'Segoe UI',sans-serif;font-size:14px;color:#f2f4f5;outline-offset:3px}.ds-button:focus-visible{outline:2px solid var(--accent,#b6c3d0)}@media(hover:hover) and (pointer:fine){.ds-button:hover:not(:disabled){background:#3a4249}}.ds-swatch{font-size:12px;padding:6px 8px;min-height:36px}.ds-swatch span{width:20px;height:20px;border:1px solid #717980;border-radius:4px}.ds-swatch span{background:#b6c3d0}"
+    },
+    {
+      "name": "Ошибка операции",
+      "kind": "custom",
+      "refersTo": "error",
+      "description": "Текстовая ошибка в контекстном блоке с role alert.",
+      "html": "<p class=\"ds-error\" role=\"alert\">Не удалось выполнить действие. Повторите попытку.</p>",
+      "css": ".ds-error{font-size:13px;line-height:1.5;color:var(--muted,#a9b1ba);overflow-wrap:anywhere}.ds-error{color:#ffc8c1;padding:10px 12px;border:1px solid #7d524e;border-radius:8px;background:#352725}.ds-error{font-family:Medeo,'Segoe UI',sans-serif;margin:0}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Повседневная шторка Windows",
+    "overview": "",
+    "keyCharacteristics": [],
+    "rules": [],
+    "dos": [
+      "Do сохранять одну поверхность, неподвижную шапку и прокрутку под строкой управления.",
+      "Do использовать встроенный Medeo, реальные значения и текстовые состояния.",
+      "Do сохранять видимый фокус, подписи полей и перенос длинных значений.",
+      "Do проверять главный экран и формы при ширине 360 и 444 DIP, отдельно проверять крупный режим и DPI."
+    ],
+    "donts": [
+      "Don't возвращать сетку панели разработчика из архива 0.1.",
+      "Don't добавлять отдельные окна-капсулы, декоративное свечение или тяжёлое стекло.",
+      "Don't подменять отсутствующие подключения и данные придуманными показателями.",
+      "Don't дублировать нативные часы веб-имитацией или менять локальные шрифты на сетевую загрузку."
+    ]
+  }
+}

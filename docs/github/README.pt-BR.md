@@ -22,12 +22,10 @@ O player foi capturado no Windows durante a reprodução de música. As ferramen
 
 ## Exemplos de comandos
 
-Abra **Arquivos e pastas**, cole um comando e revise o plano antes de aplicá-lo.
+Abra **Arquivos e pastas** e escolha uma ação.
 
-- **Organizar arquivos.** `Organize as faturas por ano e deixe as capturas de tela na área de trabalho`
-- **Ícones de pastas.** `Altere os ícones das pastas da área de trabalho`<br>`Troque o ícone da pasta por fotos`
-
-[Todos os nove idiomas](../../README.md#примеры-команд)
+- **Organizar arquivos.** Escolha **Faturas por ano** e adicione uma regra para deixar as capturas de tela no lugar. Confira a lista na prévia e confirme a movimentação.
+- **Ícones de pastas.** Abra as pastas da área de trabalho para editar várias ou escolha uma pasta específica.
 
 ## Mais ferramentas
 

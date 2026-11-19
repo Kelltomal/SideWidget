@@ -14,20 +14,14 @@ SideWidget se desarrolla con sentido común y con la ayuda de GPT-6.1 Sol.
   <img src="images/sidewidget-home.png" width="760" alt="Panel principal de SideWidget con búsqueda, reproductor y accesos rápidos a las herramientas">
 </p>
 
-<p align="center">
-  <img src="images/sidewidget-commands-es.png" width="590" alt="Ordenación de archivos en SideWidget en español">
-</p>
-
 La captura del reproductor se hizo en Windows mientras sonaba música. Las herramientas muestran datos de ejemplo.
 
 ## Ejemplos de comandos
 
-Abre **Archivos y carpetas**, pega un comando y revisa el plan antes de aplicarlo.
+Abre **Archivos y carpetas** y elige una acción.
 
-- **Ordenar archivos.** `Ordena las facturas por año y deja las capturas de pantalla en el escritorio`
-- **Iconos de carpetas.** `Cambia los iconos de las carpetas del escritorio`<br>`Cambia el icono de la carpeta a fotos`
-
-[Los nueve idiomas](../../README.md#примеры-команд)
+- **Organizar archivos.** Selecciona **Facturas por año** y añade una regla para dejar las capturas de pantalla en su sitio. Revisa la lista en la vista previa y confirma el traslado.
+- **Iconos de carpetas.** Abre las carpetas del escritorio para editar varias o elige una carpeta concreta.
 
 ## Más herramientas
 

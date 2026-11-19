@@ -22,12 +22,10 @@ Der Player wurde unter Windows während der Musikwiedergabe aufgenommen. Die Wer
 
 ## Beispielbefehle
 
-Öffne **Dateien und Ordner**, füge einen Befehl ein und prüfe den Vorschauplan vor dem Anwenden.
+Öffne **Dateien und Ordner** und wähle eine Aktion.
 
-- **Sortieren.** `Sortiere Rechnungen nach Jahren und lass Screenshots auf dem Desktop`
-- **Ordnersymbole.** `Ändere die Ordnersymbole auf dem Desktop`<br>`Ändere das Ordnersymbol zu Fotos`
-
-[Alle neun Sprachen](../../README.md#примеры-команд)
+- **Dateien sortieren.** Wähle **Rechnungen nach Jahr** und ergänze die Regel **Screenshots / Am aktuellen Ort belassen**. Prüfe die Dateien in der **Vorschau** und bestätige das Verschieben.
+- **Ordnersymbole.** Öffne die Desktop-Ordner für die gemeinsame Bearbeitung oder wähle einen einzelnen Ordner aus.
 
 ## Weitere Werkzeuge
 

@@ -18,6 +18,22 @@ internal static class LauncherChecks
             WriteShortcut(shortcut, executable, "--profile preserved");
             var state = new PersonalState(Path.Combine(directory, "data"));
             var service = new LauncherService(state);
+            var iconExecutable = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+            var iconShortcut = Path.Combine(directory, "Explorer.lnk");
+            WriteShortcut(iconShortcut, iconExecutable, "--profile preserved");
+            await service.Add(iconExecutable);
+            var expectedIcon = state.Apps.Single().Icon;
+            Require(expectedIcon?.StartsWith("data:image/", StringComparison.Ordinal) == true, "Executable supplies an image");
+            service.Remove(state.Apps.Single().Id);
+
+            await service.Add(iconShortcut);
+            var pinnedShortcut = state.Apps.Single();
+            Require(pinnedShortcut.Icon == expectedIcon && pinnedShortcut.Path == iconShortcut, "Shortcut uses the target executable icon and keeps its launch path");
+            state.SaveApps([pinnedShortcut with { Icon = null, Name = "Renamed Explorer" }]);
+            await service.Add(iconShortcut);
+            Require(state.Apps.Single() == pinnedShortcut with { Name = "Renamed Explorer" }, "Re-adding a shortcut fills its missing icon and preserves its record");
+            service.Remove(pinnedShortcut.Id);
+
             await service.Add(shortcut, "data:image/png;base64,AA==");
             Require(state.Apps.Single().Path == shortcut, "Shortcut remains launch target");
             Require(state.Apps.Single().Identity == executable, "Shortcut records ordinary executable identity");

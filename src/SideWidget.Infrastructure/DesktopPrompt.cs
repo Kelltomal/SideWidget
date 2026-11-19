@@ -26,6 +26,8 @@ sealed class DesktopPrompt
     readonly List<Instruction> instructions = [];
     public bool IncludesLaunchFiles => instructions.Any(rule => rule.Subject is "Игры" or "Программы" or "Скрипты" or "Запуски серверов");
 
+    internal DesktopPrompt(IEnumerable<Instruction> rules) => instructions.AddRange(rules);
+
     public DesktopPrompt(string text)
     {
         if (DesktopCommandLanguages.ReadSorting(text) is { } translatedRules)

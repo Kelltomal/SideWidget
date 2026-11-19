@@ -14,27 +14,14 @@ SideWidget выбирает язык Windows. Если его нет в спис
   <img src="docs/github/images/sidewidget-home.png" width="760" alt="Главная панель SideWidget с поиском, плеером и быстрыми инструментами">
 </p>
 
-<p align="center">
-  <img src="docs/github/images/sidewidget-commands-ru.png" width="590" alt="Сортировка файлов в SideWidget по-русски">
-</p>
-
 Плеер снят на Windows во время воспроизведения музыки. Снимки инструментов используют демонстрационные данные.
 
 ## Примеры команд
 
-Откройте **Файлы и папки**, вставьте команду и проверьте план перед применением.
+Откройте **Файлы и папки** и выберите действие.
 
-| Язык и снимок | Сортировка | Значки папок |
-| --- | --- | --- |
-| [Русский](docs/github/images/sidewidget-commands-ru.png) | `Разложи счета по годам, а скриншоты оставь на столе` | `Поменяй значки на рабочем столе`<br>`Поменяй значок папки на фото` |
-| [English](docs/github/images/sidewidget-commands-en.png) | `Sort invoices by year and leave screenshots on the desktop` | `Change desktop folder icons`<br>`Change the folder icon to photos` |
-| [简体中文](docs/github/images/sidewidget-commands-zh-CN.png) | `把发票按年份整理，截图留在桌面` | `更改桌面文件夹图标`<br>`将文件夹图标改为照片` |
-| [日本語](docs/github/images/sidewidget-commands-ja.png) | `請求書を年別に整理して、スクリーンショットはデスクトップに残して` | `デスクトップのフォルダーアイコンを変更して`<br>`フォルダーアイコンを写真に変更して` |
-| [Deutsch](docs/github/images/sidewidget-commands-de.png) | `Sortiere Rechnungen nach Jahren und lass Screenshots auf dem Desktop` | `Ändere die Ordnersymbole auf dem Desktop`<br>`Ändere das Ordnersymbol zu Fotos` |
-| [Українська](docs/github/images/sidewidget-commands-uk.png) | `Розклади рахунки за роками, а знімки екрана залиш на робочому столі` | `Зміни значки папок на робочому столі`<br>`Зміни значок папки на фото` |
-| [Беларуская](docs/github/images/sidewidget-commands-be.png) | `Раскладзі рахункі па гадах, а здымкі экрана пакінь на працоўным стале` | `Змяні значкі папак на працоўным стале`<br>`Змяні значок папкі на фота` |
-| [Español](docs/github/images/sidewidget-commands-es.png) | `Ordena las facturas por año y deja las capturas de pantalla en el escritorio` | `Cambia los iconos de las carpetas del escritorio`<br>`Cambia el icono de la carpeta a fotos` |
-| [Português (Brasil)](docs/github/images/sidewidget-commands-pt-BR.png) | `Organize as faturas por ano e deixe as capturas de tela na área de trabalho` | `Altere os ícones das pastas da área de trabalho`<br>`Troque o ícone da pasta por fotos` |
+- **Разобрать файлы.** Выберите **Счета по годам** и добавьте правило **Скриншоты / Оставить на месте**. Откройте **Предпросмотр**, проверьте список и подтвердите перенос.
+- **Значки папок.** Откройте **Папки на рабочем столе** для групповой настройки или нажмите **Выбрать папку**.
 
 ## Другие инструменты
 

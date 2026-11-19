@@ -62,6 +62,7 @@ static class DesktopCleanupChecks
             RussianBenchmark(store, Directory.CreateDirectory(Path.Combine(root, "russian")).FullName);
             TopicBenchmark(store, Directory.CreateDirectory(Path.Combine(root, "topics")).FullName);
             NaturalPrompt(store, Directory.CreateDirectory(Path.Combine(root, "natural")).FullName);
+            StructuredCommands(store, Directory.CreateDirectory(Path.Combine(root, "commands")).FullName);
             MultilingualPrompts(store, Directory.CreateDirectory(Path.Combine(root, "multilingual")).FullName);
             TopicPrompt(store, Directory.CreateDirectory(Path.Combine(root, "topic-prompt")).FullName);
             AppPrompt(store, Directory.CreateDirectory(Path.Combine(root, "apps")).FullName);
@@ -75,6 +76,31 @@ static class DesktopCleanupChecks
         }
         finally { Directory.Delete(root, recursive: true); }
         Console.WriteLine("PASS: desktop cleanup, partial failures and persistent undo");
+    }
+
+    static void StructuredCommands(Store store, string desktop)
+    {
+        var service = new DesktopCleanup(store, desktop);
+        File.WriteAllText(Path.Combine(desktop, "invoice-2025.txt"), "");
+        File.WriteAllText(Path.Combine(desktop, "Screenshot.png"), "");
+        File.WriteAllText(Path.Combine(desktop, "backup.zip"), "");
+        Require(service.GetStatus() is {HasFolder: false, CanUndo: false}, "desktop history before moving");
+        var preview = service.PreviewCommand("sort",
+            [new("Счета", "year"), new("Скриншоты", "keep"), new("Архивы", "move", "備份 2026")]);
+        Require(preview.Files.Single(file => file.Name == "invoice-2025.txt") is {Selected: true, Category: "Счета/2025"}, "structured year rule");
+        Require(preview.Files.Single(file => file.Name == "Screenshot.png") is {Selectable: false}, "structured keep rule");
+        Require(preview.Files.Single(file => file.Name == "backup.zip") is {Selected: true, Category: "備份 2026"}, "literal structured destination");
+        Require(!Directory.Exists(service.Folder), "structured preview changes no files");
+        Reject(() => service.PreviewCommand("sort", [new("Архивы", "move", "../outside")]));
+        Reject(() => service.PreviewCommand("sort", [new("Архивы", "topic")]));
+        Reject(() => service.PreviewCommand("sort", [new("Архивы", "delete")]));
+        Reject(() => service.PreviewCommand("sort", []));
+        Reject(() => service.PreviewCommand("icons", [new("Архивы", "keep")]));
+        Require(service.PreviewCommand("icons", null).SuggestFolderIcon, "structured icon command uses existing icon plan");
+        var moved = service.Move(preview.Id, preview.Files.Where(file => file.Selected).Select(file => file.Id).ToArray());
+        Require(moved.Count == 2 && File.Exists(Path.Combine(desktop, "Screenshot.png")), "structured plan uses normal move safeguards");
+        Require(service.GetStatus() is {HasFolder: true, CanUndo: true}, "desktop history after moving");
+        Require(service.Undo().Count == 2, "structured plan is undoable");
     }
 
     static void ChangeFolderIcon(Store store, string desktop)

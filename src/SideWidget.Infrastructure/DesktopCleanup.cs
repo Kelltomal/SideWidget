@@ -18,6 +18,9 @@ public sealed class DesktopCleanup(Store store, string desktop, Func<string, str
     string DocumentsFolder => Path.Combine(Folder, "Документы");
 
     public const int PromptLimit = DesktopClassifier.PromptLimit;
+    public const int CommandRuleLimit = 12;
+    public sealed record CommandRule(string Subject, string Mode, string? Folder = null);
+    public sealed record CleanupStatus(bool HasFolder, bool CanUndo, bool CanUndoIcons);
     public sealed record PromptStep(string Subject, string Mode, string? Folder);
     public sealed record PromptSummary(PromptStep[] Steps, int Selected, int Unclear);
     public sealed record FileRow(int Id, string Name, string Category, bool Selected, bool Selectable = true, string? Reason = null, bool Shared = false);
@@ -45,12 +48,54 @@ public sealed class DesktopCleanup(Store store, string desktop, Func<string, str
     bool HasCommonDesktop => !string.IsNullOrWhiteSpace(commonDesktop) &&
         !string.Equals(Path.GetFullPath(desktop), Path.GetFullPath(commonDesktop), StringComparison.OrdinalIgnoreCase);
 
-    public PreviewResult Preview(string prompt = "")
+    public PreviewResult Preview(string prompt = "") => Preview(prompt, null, null);
+
+    public CleanupStatus GetStatus()
+    {
+        lock (gate)
+            return new(Directory.Exists(Folder), LastMove().Length > 0, LastIconChanges().Length > 0);
+    }
+
+    public PreviewResult PreviewCommand(string action, CommandRule[]? rules) => action switch
+    {
+        "sort" when rules is { Length: > 0 and <= CommandRuleLimit } =>
+            Preview("", new DesktopPrompt(rules.Select(Instruction)), null),
+        "icons" when rules is null => Preview("", null, new DesktopFolderIcons.Request(null)),
+        _ => throw InvalidCommand()
+    };
+
+    static DesktopPrompt.Instruction Instruction(CommandRule rule)
+    {
+        if (rule is null || rule.Subject is not ("Файлы" or "Документы" or "Счета" or "Скриншоты" or "Изображения" or
+            "Архивы" or "Логи" or "Видео" or "Медиа" or "Игры" or "Программы" or "Скрипты" or "Запуски серверов"))
+            throw InvalidCommand();
+        var subject = rule.Subject;
+        if (rule.Mode == "move")
+        {
+            var folder = rule.Folder?.Trim();
+            if (folder is null || !DesktopClassifier.ValidFolder(folder))
+                throw new CommandFault("desktop", "Введите допустимое имя папки.");
+            return new(subject, false, false, folder);
+        }
+        if (rule.Folder is not null) throw InvalidCommand();
+        return rule.Mode switch
+        {
+            "keep" => new(subject, true, false, null),
+            "type" => new(subject, false, false, null, ByType: true),
+            "year" => new(subject, false, true, null),
+            "topic" when subject == "Документы" => new(subject, false, false, null, ByTopic: true),
+            _ => throw InvalidCommand()
+        };
+    }
+
+    static CommandFault InvalidCommand() => new("schema", "Некорректное сообщение");
+
+    PreviewResult Preview(string prompt, DesktopPrompt? structured, DesktopFolderIcons.Request? iconRequest)
     {
         if (prompt.Length > PromptLimit) throw new CommandFault("desktop", "Сократите запрос до 2000 символов.");
         lock (gate)
         {
-            if (DesktopFolderIcons.ReadRequest(prompt) is { } icon)
+            if ((iconRequest ?? DesktopFolderIcons.ReadRequest(prompt)) is { } icon)
             {
                 var iconId = Guid.NewGuid();
                 RememberPreview(iconId, new([], icon));
@@ -60,7 +105,7 @@ public sealed class DesktopCleanup(Store store, string desktop, Func<string, str
             }
             if (string.IsNullOrEmpty(desktop) || !Directory.Exists(desktop))
                 throw new CommandFault("desktop", "Папка рабочего стола недоступна.");
-            var natural = string.IsNullOrWhiteSpace(prompt) || prompt.Contains(':') ? null : new DesktopPrompt(prompt);
+            var natural = structured ?? (string.IsNullOrWhiteSpace(prompt) || prompt.Contains(':') ? null : new DesktopPrompt(prompt));
             var classifier = natural is null ? new DesktopClassifier(prompt) : null;
             var personal = new DirectoryInfo(desktop).EnumerateFiles().Select(file => (File: file, Shared: false));
             var shared = natural?.IncludesLaunchFiles == true && HasCommonDesktop && Directory.Exists(commonDesktop)

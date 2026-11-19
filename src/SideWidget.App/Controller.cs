@@ -114,9 +114,11 @@ sealed partial class Controller
                 case "clipboard.image":await CopyImage(Text("dataUrl",1500000));return new{copied=true};
                 case "qr.save":return await SaveQr(Text("format",4),Text("data",1500000));
                 case "qr.print":return await PrintQr(Text("html",1500000));
-                case "desktop.preview":
-                    var cleanupPrompt=p.TryGetProperty("prompt",out _)?Text("prompt",DesktopCleanup.PromptLimit):"";
-                    return await Task.Run(()=>desktopState.Cleanup.Preview(cleanupPrompt));
+                case "desktop.status":return await Task.Run(desktopState.Cleanup.GetStatus);
+                case "desktop.command":
+                    var cleanupAction=Text("action",8);
+                    var cleanupRules=p.TryGetProperty("rules",out var ruleValues)?ReadDesktopRules(ruleValues):null;
+                    return await Task.Run(()=>desktopState.Cleanup.PreviewCommand(cleanupAction,cleanupRules));
                 case "desktop.undo":return await Task.Run(desktopState.Cleanup.Undo);
                 case "desktop.icons.undo":return await Task.Run(desktopState.Cleanup.UndoFolderIcons);
                 case "desktop.documents":return await Task.Run(desktopState.Cleanup.PreviewDocuments);
@@ -187,6 +189,19 @@ sealed partial class Controller
             }
         }finally{running--;}
     }
+    static DesktopCleanup.CommandRule[] ReadDesktopRules(JsonElement values)
+    {
+        if(values.ValueKind!=JsonValueKind.Array || values.GetArrayLength() is <1 or >DesktopCleanup.CommandRuleLimit)
+            throw new CommandFault("schema","Некорректное сообщение");
+        return values.EnumerateArray().Select(rule=>
+        {
+            if(rule.ValueKind!=JsonValueKind.Object || rule.EnumerateObject().Any(field=>field.Name is not ("subject" or "mode" or "folder")))
+                throw new CommandFault("schema","Некорректное сообщение");
+            var folder=rule.TryGetProperty("folder",out _)?Protocol.Text(rule,"folder",64):null;
+            return new DesktopCleanup.CommandRule(Protocol.Text(rule,"subject",32),Protocol.Text(rule,"mode",8),folder);
+        }).ToArray();
+    }
+
     static int[] ReadDesktopSelection(JsonElement parameters,string error)
     {
         if(!parameters.TryGetProperty("ids",out var selection)||selection.ValueKind!=JsonValueKind.Array||

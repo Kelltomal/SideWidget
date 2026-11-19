@@ -1,0 +1,59 @@
+{
+  "label": "reset-collapsed",
+  "utc": "2026-11-04T22:46:10.7969958Z",
+  "sampleSeconds": 10,
+  "cpuOneCorePercent": 0.31,
+  "workingSetMiB": 540.5,
+  "privateMiB": 291.1,
+  "processes": [
+    {
+      "id": 33856,
+      "name": "SideWidget.App",
+      "cpu": 16.90625,
+      "workingSet": 179449856,
+      "private": 110727168
+    },
+    {
+      "id": 44496,
+      "name": "msedgewebview2",
+      "cpu": 10.21875,
+      "workingSet": 132874240,
+      "private": 37855232
+    },
+    {
+      "id": 45308,
+      "name": "msedgewebview2",
+      "cpu": 0.0625,
+      "workingSet": 13819904,
+      "private": 3117056
+    },
+    {
+      "id": 47856,
+      "name": "msedgewebview2",
+      "cpu": 1.3125,
+      "workingSet": 91840512,
+      "private": 94351360
+    },
+    {
+      "id": 50788,
+      "name": "msedgewebview2",
+      "cpu": 0.125,
+      "workingSet": 39141376,
+      "private": 11460608
+    },
+    {
+      "id": 42504,
+      "name": "msedgewebview2",
+      "cpu": 0.046875,
+      "workingSet": 20844544,
+      "private": 7884800
+    },
+    {
+      "id": 51076,
+      "name": "msedgewebview2",
+      "cpu": 0.5,
+      "workingSet": 88801280,
+      "private": 39849984
+    }
+  ]
+}

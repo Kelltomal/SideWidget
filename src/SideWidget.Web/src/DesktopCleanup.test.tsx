@@ -3,58 +3,68 @@ import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, expect, it, vi} from 'vitest';
 import {DesktopCleanup} from './DesktopCleanup';
 import {invoke} from './ui';
-import {setLocale} from './i18n';
 
 vi.mock('./ui', async importOriginal => ({...await importOriginal<typeof import('./ui')>(), nativeAvailable: true, invoke: vi.fn()}));
-afterEach(() => { cleanup(); vi.resetAllMocks(); setLocale('ru'); });
+afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
-it('sends the original prompt and shows the plan in the interface language', async () => {
- setLocale('en');
- const base = {id: 'base', files: [], canUndo: false, hasMore: false, hasFolder: false, modelAvailable: true, answer: ''};
- vi.mocked(invoke).mockResolvedValueOnce(base).mockResolvedValueOnce({...base, id: 'plan', answer: 'Архивы перенесу.',
-  summary: {steps: [{subject: 'Архивы', mode: 'move', folder: '備份 2026'}], selected: 1, unclear: 0}});
+const status = {hasFolder: false, canUndo: false, canUndoIcons: false};
+const base = {id: 'base', files: [], ...status, hasMore: false, modelAvailable: true, answer: ''};
+
+it('opens the rule editor directly and moves files only after review', async () => {
+ vi.mocked(invoke).mockResolvedValueOnce(status).mockResolvedValueOnce({...base, id: 'plan', files: [
+  {id: 0, name: 'invoice-2025.txt', category: 'Счета/2025', selected: true, selectable: true},
+  {id: 1, name: 'Screenshot.png', category: 'На рабочем столе', selected: false, selectable: false},
+ ]}).mockResolvedValueOnce({count: 1, issues: []}).mockResolvedValueOnce(base);
  render(<DesktopCleanup/>);
- const field = await screen.findByPlaceholderText('Sort invoices by year and leave screenshots on the desktop');
- const prompt = '把压缩包移到文件夹「備份 2026」';
- fireEvent.change(field, {target: {value: prompt}});
- const applyButton = screen.getByRole('button', {name: /apply/i});
- fireEvent.click(applyButton);
- expect(await screen.findByText('Move Archives to “備份 2026”. Selected to move: 1.')).toBeTruthy();
- expect(invoke).toHaveBeenCalledWith('desktop.preview', {prompt});
+ expect(screen.queryByRole('textbox')).toBeNull();
+ expect(screen.queryByRole('button', {name: 'Текстовый запрос'})).toBeNull();
+ fireEvent.click(await screen.findByRole('button', {name: 'Счета по годам'}));
+ fireEvent.click(screen.getByRole('button', {name: 'Добавить правило'}));
+ fireEvent.change(screen.getAllByLabelText('Файлы для правила')[1], {target: {value: 'Скриншоты'}});
+ fireEvent.change(screen.getAllByLabelText('Действие с файлами')[1], {target: {value: 'keep'}});
+ fireEvent.click(screen.getByRole('button', {name: 'Предпросмотр'}));
+ expect(await screen.findByRole('group', {name: 'Счета / 2025'})).toBeTruthy();
+ expect(screen.queryByLabelText('Файлы для правила')).toBeNull();
+ expect((screen.getByRole('checkbox', {name: /Screenshot.png/}) as HTMLInputElement).disabled).toBe(true);
+ expect(invoke).toHaveBeenCalledWith('desktop.command', {action: 'sort', rules: [
+  {subject: 'Счета', mode: 'year'}, {subject: 'Скриншоты', mode: 'keep'},
+ ]});
  expect(invoke).not.toHaveBeenCalledWith('desktop.move', expect.anything());
+ fireEvent.click(screen.getByRole('button', {name: 'Переместить (1)'}));
+ expect(await screen.findByText('Перемещено файлов: 1.')).toBeTruthy();
+ expect(invoke).toHaveBeenCalledWith('desktop.move', {previewId: 'plan', ids: [0]});
 });
 
-it('opens the native folder picker for a fresh icon plan and reports the changed folder', async () => {
- const base = {id: 'base', files: [], canUndo: false, hasMore: false, hasFolder: false, modelAvailable: true, answer: ''};
- vi.mocked(invoke).mockResolvedValueOnce(base)
-  .mockResolvedValueOnce({...base, id: 'icon-plan', folderIcon: 'Фото'})
-  .mockResolvedValueOnce({path: null})
-  .mockResolvedValueOnce({path: 'C:\\Материалы'});
+it('returns from review to the same draft and discards its actionable preview', async () => {
+ vi.mocked(invoke).mockResolvedValueOnce(status).mockResolvedValueOnce(base);
  render(<DesktopCleanup/>);
- await screen.findByText('На рабочем столе нет файлов для переноса.');
- const prompt = screen.getByRole('textbox');
- fireEvent.change(prompt, {target: {value: 'Поменяй значок папки на фото'}});
- fireEvent.click(screen.getByRole('button', {name: 'Применить промпт'}));
- const picker = await screen.findByRole('button', {name: 'Выбрать папку'});
- expect(screen.queryByText('На рабочем столе нет файлов для переноса.')).toBeNull();
- fireEvent.click(picker);
- await screen.findByRole('button', {name: 'Выбрать папку'});
- fireEvent.click(picker);
+ fireEvent.click(await screen.findByRole('button', {name: 'Счета по годам'}));
+ fireEvent.click(screen.getByRole('button', {name: 'Предпросмотр'}));
+ const back = await screen.findByRole('button', {name: 'Изменить правила'});
+ fireEvent.click(back);
+ const action = screen.getByLabelText('Действие с файлами') as HTMLSelectElement;
+ expect(action.value).toBe('year');
+ fireEvent.change(action, {target: {value: 'move'}});
+ expect((screen.getByRole('button', {name: 'Предпросмотр'}) as HTMLButtonElement).disabled).toBe(true);
+ expect(screen.queryByRole('button', {name: /Переместить/})).toBeNull();
+});
+
+it('opens the native folder picker directly and reports the changed folder', async () => {
+ vi.mocked(invoke).mockResolvedValueOnce(status)
+  .mockResolvedValueOnce({...base, id: 'icon-plan'})
+  .mockResolvedValueOnce({path: 'C:\\Материалы', canUndoIcons: true});
+ render(<DesktopCleanup/>);
+ fireEvent.click(await screen.findByRole('button', {name: 'Значки папок'}));
+ fireEvent.click(screen.getByRole('button', {name: 'Выбрать папку'}));
  expect(await screen.findByText(/Значок изменён/)).toBeTruthy();
+ expect(invoke).toHaveBeenCalledWith('desktop.command', {action: 'icons'});
  expect(invoke).toHaveBeenCalledWith('desktop.icon', {previewId: 'icon-plan'});
- expect(screen.queryByRole('button', {name: 'Выбрать папку'})).toBeNull();
 });
 
-it('offers a folder picker when the prompt asks SideWidget to choose an icon', async () => {
- const base = {id: 'base', files: [], canUndo: false, hasMore: false, hasFolder: false, modelAvailable: true, answer: ''};
- vi.mocked(invoke).mockResolvedValueOnce(base).mockResolvedValueOnce({...base, id: 'suggest-icon', suggestFolderIcon: true});
+it('opens the desktop folder list directly and keeps it open after applying changes', async () => {
+ vi.mocked(invoke).mockResolvedValueOnce(status).mockResolvedValueOnce({...base, id: 'suggest-icon'});
  render(<DesktopCleanup/>);
- await screen.findByText('На рабочем столе нет файлов для переноса.');
- fireEvent.change(screen.getByRole('textbox'), {target: {value: 'Поменяй значки на рабочем столе'}});
- fireEvent.click(screen.getByRole('button', {name: 'Применить промпт'}));
- expect(await screen.findByRole('button', {name: 'Выбрать папку'})).toBeTruthy();
- expect(screen.getByText('Подберём значок после выбора папки.')).toBeTruthy();
- expect(screen.queryByText('На рабочем столе нет файлов для переноса.')).toBeNull();
+ fireEvent.click(await screen.findByRole('button', {name: 'Значки папок'}));
  vi.mocked(invoke).mockResolvedValueOnce({id: 'batch', folders: [
   {id: 0, name: 'игры', icon: 'Игры'}, {id: 1, name: 'Финансы', icon: 'Документы'},
  ], hasMore: false, styles: ['Классическая', 'Цветная', 'Контурная', 'Современная', 'Ретро', 'Закрытая контурная',
@@ -87,38 +97,13 @@ it('offers a folder picker when the prompt asks SideWidget to choose an icon', a
  expect(invoke).toHaveBeenCalledWith('desktop.icons.undo');
 });
 
-it('keeps uncertain files unchecked and requires applying a changed prompt before moving', async () => {
- const base = {id: 'base', canUndo: false, hasMore: false, hasFolder: false, modelAvailable: true, answer: ''};
- vi.mocked(invoke).mockResolvedValueOnce({...base, files: [
-  {id: 0, name: 'invoice.txt', category: 'Финансы', selected: true, selectable: true},
-  {id: 1, name: 'sample.txt', category: 'Документы', selected: false, selectable: true},
- ]}).mockResolvedValueOnce({...base, id: 'prompt', answer: 'Скриншоты останутся на рабочем столе.', files: [
-  {id: 1, name: 'invoice.txt', category: 'Счета/2025', selected: true, selectable: true},
-  {id: 2, name: 'Screenshot.png', category: 'На рабочем столе', selected: false, selectable: false, reason: 'Оставить по запросу'},
- ]}).mockResolvedValueOnce({count: 1, issues: []}).mockResolvedValueOnce({...base, files: []});
- render(<DesktopCleanup/>);
- const uncertain = await screen.findByRole('checkbox', {name: /sample.txt/}) as HTMLInputElement;
- expect(uncertain.checked).toBe(false);
- const prompt = 'Разложи счета по годам, а скриншоты оставь на столе';
- fireEvent.change(screen.getByLabelText('Что сделать с файлами и папками?'), {target: {value: prompt}});
- expect((screen.getByRole('button', {name: 'Переместить (1)'}) as HTMLButtonElement).disabled).toBe(true);
- fireEvent.click(screen.getByRole('button', {name: 'Применить промпт'}));
- expect(await screen.findByRole('group', {name: 'Счета / 2025'})).toBeTruthy();
- expect(screen.getByText('Скриншоты останутся на рабочем столе.')).toBeTruthy();
- expect((screen.getByRole('checkbox', {name: /Screenshot.png/}) as HTMLInputElement).disabled).toBe(true);
- expect(invoke).toHaveBeenCalledWith('desktop.preview', {prompt});
- fireEvent.click(screen.getByRole('button', {name: 'Переместить (1)'}));
- expect(await screen.findByText('Перемещено файлов: 1.')).toBeTruthy();
- expect(invoke).toHaveBeenCalledWith('desktop.move', {previewId: 'prompt', ids: [1]});
-});
-
 it('changes the document plan on drop and sends the topic only on confirmation', async () => {
  const base = {id: 'base', files: [], canUndo: false, hasMore: false, hasFolder: true, modelAvailable: true, answer: ''};
- vi.mocked(invoke).mockResolvedValueOnce(base).mockResolvedValueOnce({...base, id: 'documents', topics: ['Финансы', 'Проекты'], files: [
+ vi.mocked(invoke).mockResolvedValueOnce(status).mockResolvedValueOnce({...base, id: 'documents', topics: ['Финансы', 'Проекты'], files: [
   {id: 0, name: 'портфолио.md', category: '', selected: false, selectable: true},
  ]}).mockResolvedValueOnce({count: 1, issues: []}).mockResolvedValueOnce(base);
  render(<DesktopCleanup/>);
- await screen.findByText('На рабочем столе нет файлов для переноса.');
+ await screen.findByRole('button', {name: 'Предпросмотр'});
  fireEvent.change(screen.getByLabelText('Где разобрать файлы?'), {target: {value: 'documents'}});
  const handle = await screen.findByText('портфолио.md');
  const target = screen.getByText('Проекты', {selector: '.desktop-topic-target'});

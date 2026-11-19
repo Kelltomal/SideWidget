@@ -51,14 +51,37 @@ public sealed class LauncherService(PersonalState state)
         path=Path.GetFullPath(path);if(path.StartsWith("\\\\",StringComparison.Ordinal)||!File.Exists(path))throw new CommandFault("application","Выберите существующий локальный файл");
         var extension=Path.GetExtension(path).ToLowerInvariant();if(extension is not (".exe" or ".lnk"))throw new CommandFault("application","Нужна программа .exe или ярлык .lnk");
         var identity=extension==".lnk"?ValidateShortcut(path):ExecutableIdentity(path);
-        if(state.Apps.Any(a=>a.Path.Equals(path,StringComparison.OrdinalIgnoreCase)))return;
-        if(state.Apps.Count>=40)throw new CommandFault("limit","Можно закрепить до 40 приложений");
-        string? icon=customIcon;
-        if(icon==null)try{var file=await StorageFile.GetFileFromPathAsync(path);using var thumbnail=await file.GetThumbnailAsync(ThumbnailMode.SingleItem,64);if(thumbnail!=null&&thumbnail.Size>0&&thumbnail.Size<150000){using var reader=new DataReader(thumbnail.GetInputStreamAt(0));await reader.LoadAsync((uint)thumbnail.Size);var bytes=new byte[(int)thumbnail.Size];reader.ReadBytes(bytes);var candidate="data:"+thumbnail.ContentType+";base64,"+Convert.ToBase64String(bytes);if(System.Text.Json.JsonSerializer.Serialize(candidate,Protocol.Json).Length<=220*1024)icon=candidate;}}catch(Exception){/* Icon failure never chooses a different executable. */}
-        // Thumbnail extraction yields: another add/remove may have completed in the meantime.
+        var existing=state.Apps.FirstOrDefault(a=>a.Path.Equals(path,StringComparison.OrdinalIgnoreCase));
+        if(existing!=null&&(existing.Icon!=null||customIcon!=null))return;
+        if(existing==null&&state.Apps.Count>=40)throw new CommandFault("limit","Можно закрепить до 40 приложений");
+        // StorageFile cannot open .lnk files. Read the executable's icon and keep the shortcut as the launch path.
+        var icon=customIcon??(identity==null?null:await ReadExecutableIcon(identity));
+        // Thumbnail extraction yields: apply the result to the current list.
+        if(existing!=null)
+        {
+            if(icon!=null&&state.Apps.Any(a=>a.Id==existing.Id&&a.Icon==null))
+                Commit(state.Apps.Select(a=>a.Id==existing.Id?a with{Icon=icon}:a),recordUndo);
+            return;
+        }
         if(state.Apps.Any(a=>a.Path.Equals(path,StringComparison.OrdinalIgnoreCase)))return;
         if(state.Apps.Count>=40)throw new CommandFault("limit","Можно закрепить до 40 приложений");
         Commit(state.Apps.Append(new(Guid.NewGuid().ToString("N"),Path.GetFileNameWithoutExtension(path),path,icon,Identity:identity)),recordUndo);
+    }
+    static async Task<string?> ReadExecutableIcon(string path)
+    {
+        try
+        {
+            var file=await StorageFile.GetFileFromPathAsync(path);
+            using var thumbnail=await file.GetThumbnailAsync(ThumbnailMode.SingleItem,64);
+            if(thumbnail==null||thumbnail.Size==0||thumbnail.Size>=150000)return null;
+            using var reader=new DataReader(thumbnail.GetInputStreamAt(0));
+            var bytes=new byte[(int)thumbnail.Size];
+            if(await reader.LoadAsync((uint)bytes.Length)!=bytes.Length)return null;
+            reader.ReadBytes(bytes);
+            var icon="data:"+thumbnail.ContentType+";base64,"+Convert.ToBase64String(bytes);
+            return System.Text.Json.JsonSerializer.Serialize(icon,Protocol.Json).Length<=220*1024?icon:null;
+        }
+        catch(Exception){return null;} // A missing icon does not prevent pinning.
     }
     static string? ExecutableIdentity(string path)=>Path.IsPathFullyQualified(path)&&!path.StartsWith("\\\\",StringComparison.Ordinal)&&Path.GetExtension(path).Equals(".exe",StringComparison.OrdinalIgnoreCase)?Path.GetFullPath(path):null;
     static string? AppIdentity(PinnedApp app)

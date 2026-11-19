@@ -14,6 +14,48 @@
  font-weight: 600;
 }
 
+.desktop-command-modes {
+ display: grid;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ gap: 4px;
+ padding: 4px;
+ border: 1px solid var(--line);
+ border-radius: 12px;
+}
+
+.desktop-command-modes button {
+ justify-content: flex-start;
+ min-width: 0;
+ min-height: 42px;
+ text-align: start;
+ overflow-wrap: anywhere;
+}
+
+.desktop-command-modes button:not([aria-pressed=true]) { background: transparent; }
+.desktop-command-modes button svg { flex: none; }
+.desktop-command-presets { display: grid; gap: 6px; }
+.desktop-command-presets button { min-height: 34px; padding-inline: 8px; font-size: 13px; }
+
+.desktop-command-rule {
+ display: grid;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ gap: 8px;
+ min-width: 0;
+ margin: 0;
+ padding: 8px 0 0;
+ border: 0;
+ border-top: 1px solid var(--line);
+}
+
+.desktop-command-rule legend { padding: 0 6px 0 0; color: var(--muted); font-size: 13px; }
+.desktop-command-rule label { min-width: 0; overflow-wrap: anywhere; }
+.desktop-command-rule label:has(input) { grid-column: 1 / -1; }
+.desktop-rule-remove { grid-column: 1 / -1; justify-self: start; }
+
+@media (max-width: 480px) {
+ .desktop-command-rule { grid-template-columns: minmax(0, 1fr); }
+}
+
 .desktop-cleanup-row {
  display: grid;
  gap: 4px;
@@ -43,6 +85,9 @@
  padding-block: 10px;
  border-block: 1px solid var(--line);
 }
+
+.desktop-cleanup-answer ul { display: grid; gap: 3px; margin: 0; padding-inline-start: 20px; overflow-wrap: anywhere; }
+.desktop-review-actions { position: sticky; top: 0; z-index: 1; padding: 6px 0; background: var(--background); }
 
 .desktop-cleanup-issues {
  display: grid;
