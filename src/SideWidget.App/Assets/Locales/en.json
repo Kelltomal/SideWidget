@@ -111,5 +111,16 @@
   "Выберите SVG, PNG или JPEG": "Choose SVG, PNG, or JPEG.",
   "Часы на весь экран": "Full-screen clock",
   "Выйти из полноэкранного режима": "Exit full screen",
-  "Проверьте размер часов и высоту полоски": "Check the clock size and strip height"
+  "Проверьте размер часов и высоту полоски": "Check the clock size and strip height",
+  "Введите допустимое имя папки.": "Enter a valid folder name.",
+  "Выключить через…": "Shut down after…",
+  "Перезагрузить через…": "Restart after…",
+  "До перезагрузки ПК": "Until PC restart",
+  "До выключения ПК": "Until PC shutdown",
+  "Сохраните документы. SideWidget должен оставаться запущен. Новый запуск заменит предыдущий.": "Save your documents. Keep SideWidget running. This schedule replaces the previous one.",
+  "Не удалось выполнить действие питания": "Could not perform the power action",
+  "Укажите целое число часов и минут": "Enter whole hours and minutes",
+  "Выберите выключение или перезагрузку": "Choose shutdown or restart",
+  "Укажите хотя бы 1 минуту": "Enter at least 1 minute",
+  "Задержка: до 24 часов, минуты — от 0 до 59": "Delay: up to 24 hours; minutes must be between 0 and 59"
 }

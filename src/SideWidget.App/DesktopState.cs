@@ -9,6 +9,7 @@ sealed class DesktopState : IDisposable
     public LauncherService Launcher {get;}
     public DesktopCleanup Cleanup {get;}
     public FocusTimerService Timer {get;}
+    public SideWidget.Core.PowerSchedule PowerSchedule {get;}=new();
     public OnlineServices Online {get;}
     public AudioSpectrumService Spectrum {get;}=new();
     public AudioService Audio {get;}=new();

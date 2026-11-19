@@ -1,0 +1,19 @@
+stages: [test, package]
+windows-test:
+  stage: test
+  tags: [windows, x64]
+  script:
+    - ./scripts/bootstrap.ps1
+    - cd src/SideWidget.Web
+    - npm ci --no-fund
+    - cd ../..
+    - ./scripts/test.ps1
+windows-package:
+  stage: package
+  tags: [windows, x64]
+  script:
+    - ./scripts/bootstrap.ps1
+    - ./scripts/build.ps1
+  artifacts:
+    paths: [artifacts/release/]
+    expire_in: 14 days

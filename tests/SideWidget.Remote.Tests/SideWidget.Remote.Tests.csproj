@@ -6,5 +6,6 @@
     <Compile Include="../../src/SideWidget.App/NetworkProfileInterop.cs" Link="Native/NetworkProfileInterop.cs" />
     <Compile Include="../../src/SideWidget.App/PhoneRemoteService.cs" Link="Native/PhoneRemoteService.cs" />
     <Compile Include="../../src/SideWidget.App/StartupService.cs" Link="Native/StartupService.cs" />
+    <Compile Include="../../src/SideWidget.App/LiteInstallation.cs" Link="Native/LiteInstallation.cs" />
   </ItemGroup>
 </Project>

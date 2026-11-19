@@ -1,11 +1,13 @@
 import {t} from './i18n';
 import {useEffect, useRef, useState, type PointerEvent} from 'react';
 import {Icon, invoke, nativeAvailable, Notice, useAction} from './ui';
+import {DesktopCommandBuilder, initialRules} from './DesktopCommandBuilder';
 import './desktop-cleanup.css';
 
 type DesktopFile = {id: number; name: string; category: string; selected: boolean; selectable: boolean; reason?: string};
-type PromptSummary = {steps: {subject: string; mode: keyof typeof planMessages; folder?: string}[]; selected: number; unclear: number};
-type Preview = {id: string; files: DesktopFile[]; canUndo: boolean; hasMore: boolean; hasFolder: boolean; modelAvailable: boolean; answer: string; topics?: string[]; folderIcon?: string | null; suggestFolderIcon?: boolean; canUndoIcons?: boolean; summary?: PromptSummary};
+type PlanSummary = {steps: {subject: string; mode: keyof typeof planMessages; folder?: string}[]; selected: number; unclear: number};
+type CleanupStatus = {canUndo: boolean; hasFolder: boolean; canUndoIcons: boolean};
+type Preview = CleanupStatus & {id: string; files: DesktopFile[]; hasMore: boolean; modelAvailable: boolean; topics?: string[]; summary?: PlanSummary};
 type Result = {count: number; issues: {name: string; message: string}[]};
 type IconResult = Result & {canUndoIcons: boolean};
 type FolderIconBatch = {id: string; folders: {id: number; name: string; icon: string}[]; hasMore: boolean;
@@ -18,28 +20,18 @@ const planMessages = {
  topic: 'Документы разложу по темам. Файлы с неясной темой останутся на столе.',
  move: '{subject} перенесу в «{folder}».',
 };
-
-function promptAnswer(preview: Preview) {
- if (!preview.summary) return t(preview.answer);
- const {steps, selected, unclear} = preview.summary;
- const answer = steps.map(step => t(planMessages[step.mode], {subject: t(step.subject), folder: step.folder}));
- answer.push(selected > 0 ? t('Отмечено для переноса — {count}.', {count: selected}) : t('Для переноса пока ничего не отмечено.'));
- if (unclear > 0) answer.push(t('Требуют проверки — {count}.', {count: unclear}));
- return answer.join(' ');
-}
-
 export function DesktopCleanup() {
  const [preview, setPreview] = useState<Preview>();
  const [selected, setSelected] = useState<number[]>([]);
- const [prompt, setPrompt] = useState('');
- const [appliedPrompt, setAppliedPrompt] = useState('');
+ const [commandAction, setCommandAction] = useState<'sort' | 'icons'>('sort');
+ const [rules, setRules] = useState(initialRules);
+ const [status, setStatus] = useState<CleanupStatus>({canUndo: false, hasFolder: false, canUndoIcons: false});
  const [source, setSource] = useState<'desktop' | 'documents'>('desktop');
  const [topics, setTopics] = useState<Record<number, string>>({});
  const dragged = useRef<{id: number; x: number; y: number; active: boolean} | null>(null);
  const [dragging, setDragging] = useState<{name: string; x: number; y: number}>();
  const [dropTarget, setDropTarget] = useState<string>();
  const [result, setResult] = useState<{action: 'move' | 'undo' | 'icons' | 'undo-icons'; data: Result}>();
- const [canUndoIcons, setCanUndoIcons] = useState(false);
  const [changedFolder, setChangedFolder] = useState<string>();
  const [folderIcons, setFolderIcons] = useState<FolderIconBatch>();
  const [folderStyles, setFolderStyles] = useState<Record<number, number>>({});
@@ -47,15 +39,20 @@ export function DesktopCleanup() {
  const [sharedStyle, setSharedStyle] = useState(0);
  const [sharedIcon, setSharedIcon] = useState('');
  const [individualIcons, setIndividualIcons] = useState(false);
- const {busy, error, run} = useAction();
+ const {busy, error, run, setError} = useAction();
  const actions = useRef<HTMLDivElement>(null);
  const iconList = useRef<HTMLFieldSetElement>(null);
+ const reviewHeading = useRef<HTMLHeadingElement>(null);
+ const editor = useRef<HTMLDivElement>(null);
+ const reviewing = commandAction === 'sort' && source === 'desktop' && !!preview;
+ const reviewReady = reviewing && !busy;
 
- useEffect(() => { if (folderIcons) iconList.current?.focus({preventScroll: true}); }, [folderIcons]);
+ useEffect(() => { if (folderIcons) iconList.current?.focus(); }, [folderIcons]);
+ useEffect(() => { if (reviewReady) reviewHeading.current?.focus(); }, [reviewReady]);
 
  function showPreview(next: Preview, selectSuggested = true) {
   setPreview(next);
-  setCanUndoIcons(!!next.canUndoIcons);
+  setStatus(next);
   setFolderIcons(undefined);
   setTopics({});
   setSelected(selectSuggested ? next.files.filter(file => file.selected).map(file => file.id) : []);
@@ -65,53 +62,85 @@ export function DesktopCleanup() {
   if (!nativeAvailable) return;
   let active = true;
   void run(async () => {
-   const next = await invoke<Preview>('desktop.preview');
-   if (active) showPreview(next);
+   const next = await invoke<CleanupStatus>('desktop.status');
+   if (active) setStatus(next);
   });
   return () => { active = false; };
  }, []);
 
- function requestPreview(from: typeof source, wording: string) {
-  return from === 'documents' ? invoke<Preview>('desktop.documents') : invoke<Preview>('desktop.preview', {prompt: wording});
+ const incompleteCommand = rules.some(rule => rule.mode === 'move' && !rule.folder?.trim());
+
+ function requestPreview(from: typeof source) {
+  return from === 'documents'
+   ? invoke<Preview>('desktop.documents')
+   : invoke<Preview>('desktop.command', {action: 'sort', rules});
+ }
+
+ function clearPreview() {
+  endDrag();
+  setPreview(undefined);
+  setFolderIcons(undefined);
+  setSelected([]);
+  setTopics({});
+  setResult(undefined);
+  setChangedFolder(undefined);
+  setError('');
  }
 
  async function refresh(from = source) {
-  setResult(undefined);
-  setChangedFolder(undefined);
-  setFolderIcons(undefined);
-  setPreview(undefined);
-  const next = await requestPreview(from, prompt);
-  if (from === 'desktop') setAppliedPrompt(prompt);
-  showPreview(next);
+  clearPreview();
+  showPreview(await requestPreview(from));
+ }
+
+ function chooseCommand(action: typeof commandAction) {
+  if (action === commandAction) return;
+  setCommandAction(action);
+  if (action === 'sort' && source === 'documents') void run(() => refresh('documents'));
+  else clearPreview();
+ }
+
+ function editRules() {
+  clearPreview();
+  requestAnimationFrame(() => editor.current?.focus());
  }
 
  async function change(action: 'move' | 'undo') {
-  if (!preview) return;
+  if (action === 'move' && (!preview || !selected.length)) return;
   actions.current?.focus();
   setResult(undefined);
-  setChangedFolder(undefined);
-  setPreview(undefined);
   const overrides = Object.fromEntries(selected.filter(id => topics[id]).map(id => [id, topics[id]]));
-  const data = action === 'move'
+  const data = action === 'move' && preview
    ? await invoke<Result>('desktop.move', {previewId: preview.id, ids: selected, ...(source === 'documents' ? {topics: overrides} : {})})
    : await invoke<Result>('desktop.undo');
   setResult({action, data});
-  showPreview(await requestPreview(source, appliedPrompt), false);
+  if (!preview) {
+   setStatus(await invoke<CleanupStatus>('desktop.status'));
+   return;
+  }
+  setSelected([]);
+  try {
+   showPreview(await requestPreview(source), false);
+  } catch (error) {
+   setPreview(undefined);
+   throw error;
+  }
  }
 
  async function changeFolderIcon() {
-  if (!preview || !iconRequest || promptChanged) return;
-  const {path, canUndoIcons} = await invoke<{path: string | null; canUndoIcons: boolean}>('desktop.icon', {previewId: preview.id});
-  setCanUndoIcons(!!canUndoIcons);
+  const {id} = await invoke<Preview>('desktop.command', {action: 'icons'});
+  const {path, canUndoIcons} = await invoke<{path: string | null; canUndoIcons: boolean}>('desktop.icon', {previewId: id});
+  setStatus(current => ({...current, canUndoIcons}));
   if (path) {
-   actions.current?.focus();
+   setResult(undefined);
    setChangedFolder(path);
   }
  }
 
  async function previewDesktopIcons() {
-  if (!preview || !choosingIcon) return;
-  const list = await invoke<FolderIconBatch>('desktop.icons.preview', {previewId: preview.id});
+  const {id} = await invoke<Preview>('desktop.command', {action: 'icons'});
+  const list = await invoke<FolderIconBatch>('desktop.icons.preview', {previewId: id});
+  setChangedFolder(undefined);
+  setResult(undefined);
   setSelected([]);
   setFolderStyles({});
   setFolderIconChoices({});
@@ -126,7 +155,7 @@ export function DesktopCleanup() {
   const styles = Object.fromEntries(selected.map(id => [id, styleForFolder(id)]));
   const icons = Object.fromEntries(selected.map(id => [id, iconOverride(id)]).filter(([, icon]) => icon));
   const data = await invoke<IconResult>('desktop.icons.apply', {previewId: activeFolderIcons.id, ids: selected, styles, icons});
-  setCanUndoIcons(data.canUndoIcons);
+  setStatus(current => ({...current, canUndoIcons: data.canUndoIcons}));
   setResult({action: 'icons', data});
  }
 
@@ -136,7 +165,7 @@ export function DesktopCleanup() {
  async function undoFolderIcons() {
   const data = await invoke<IconResult>('desktop.icons.undo');
   actions.current?.focus();
-  setCanUndoIcons(data.canUndoIcons);
+  setStatus(current => ({...current, canUndoIcons: data.canUndoIcons}));
   setChangedFolder(undefined);
   setResult({action: 'undo-icons', data});
  }
@@ -179,33 +208,39 @@ export function DesktopCleanup() {
  }
  const selectable = preview?.files.filter(file => file.selectable && (!documents || topicFor(file))) ?? [];
  const allSelected = selectable.length === selected.length;
- const promptChanged = !documents && prompt !== appliedPrompt;
- const iconRequest = !!(preview?.folderIcon || preview?.suggestFolderIcon);
- const choosingIcon = iconRequest && !promptChanged && !changedFolder && (result?.action !== 'icons' || !!folderIcons);
- const activeFolderIcons = choosingIcon ? folderIcons : undefined;
+ const activeFolderIcons = folderIcons;
  const iconPool = activeFolderIcons ? Object.keys(activeFolderIcons.iconImages) : [];
- const promptHelp = choosingIcon
-  ? preview?.folderIcon ? t('Новый значок — «{icon}».',{icon:t(preview.folderIcon)}) : t('Подберём значок после выбора папки.')
-  : t('Для значков попробуйте «Поменяй значки на рабочем столе».');
+ const plan = preview?.summary;
+
  return <section className="stack" aria-label={t('Файлы и папки')} aria-busy={busy}>
-  {!activeFolderIcons && <>
-  <label>{t('Где разобрать файлы?')}
-   <select value={source} disabled={busy} onChange={event => {
-    const next = event.target.value === 'documents' ? 'documents' : 'desktop';
-    endDrag(); setSource(next); void run(() => refresh(next));
-   }}><option value="desktop">{t('Рабочий стол')}</option><option value="documents">{t('Разобранное / Документы')}</option></select>
-  </label>
-  {documents ? <p>{t('Перетащите файл на тему или выберите её в списке рядом с файлом. После подтверждения файлы попадут в папки тем внутри «Разобранное».')}</p> : <>
-  {!iconRequest && <p>{t('Выберите файлы для переноса в папку «Разобранное» на рабочем столе.')}</p>}
-  <label>{t('Что сделать с файлами и папками?')}
-   <textarea rows={2} maxLength={2000} value={prompt} disabled={busy} aria-describedby="desktop-prompt-help"
-    onChange={event => setPrompt(event.target.value)} placeholder={t('Разложи счета по годам, а скриншоты оставь на столе')}/>
-  </label>
-  <small id="desktop-prompt-help" role={choosingIcon ? 'status' : undefined}>
-   {promptHelp}
-  </small>
-  </>}
-  </>}
+  <div className="desktop-command-modes">
+   <button type="button" aria-pressed={commandAction === 'sort'} disabled={busy} onClick={() => chooseCommand('sort')}>
+    <Icon name="apps" size={16}/>{t('Разобрать файлы')}
+   </button>
+   <button type="button" aria-pressed={commandAction === 'icons'} disabled={busy} onClick={() => chooseCommand('icons')}>
+    <Icon name="folder" size={16}/>{t('Значки папок')}
+   </button>
+  </div>
+  {commandAction === 'sort' && !reviewing && <div className="stack" ref={editor} tabIndex={-1}>
+   <label>{t('Где разобрать файлы?')}
+    <select value={source} disabled={busy} onChange={event => {
+     const next = event.target.value === 'documents' ? 'documents' : 'desktop';
+     setSource(next);
+     if (next === 'documents') void run(() => refresh(next));
+     else clearPreview();
+    }}><option value="desktop">{t('Рабочий стол')}</option><option value="documents">{t('Разобранное / Документы')}</option></select>
+   </label>
+   {documents
+    ? <p>{t('Перетащите файл на тему или выберите её в списке рядом с файлом. После подтверждения файлы попадут в папки тем внутри «Разобранное».')}</p>
+    : <DesktopCommandBuilder rules={rules} busy={busy} onRules={setRules}/>}
+  </div>}
+  {commandAction === 'icons' && !activeFolderIcons && <div className="stack">
+   <p>{t('Подберём значок после выбора папки.')}</p>
+   <div className="actions">
+    <button className="primary" disabled={busy} onClick={() => void run(previewDesktopIcons)}>{t('Папки на рабочем столе')}</button>
+    <button disabled={busy} onClick={() => void run(changeFolderIcon)}>{t('Выбрать папку')}</button>
+   </div>
+  </div>}
   {error && <Notice error>{t(error)}</Notice>}
   {result && <Notice>{t({icons: 'Изменено значков: {count}.', 'undo-icons': 'Восстановлено значков: {count}.',
    move: 'Перемещено файлов: {count}.', undo: 'Возвращено файлов: {count}.'}[result.action],{count:result.data.count})}</Notice>}
@@ -260,13 +295,16 @@ export function DesktopCleanup() {
    </table></> : <Notice>{t('На рабочем столе нет доступных папок.')}</Notice>}
    {activeFolderIcons.hasMore && <Notice>{t('Показаны первые {count} папок.',{count:activeFolderIcons.folders.length})}</Notice>}
   </fieldset>}
-  <div className="actions" ref={actions} tabIndex={-1}>
-   {choosingIcon && !activeFolderIcons && <button disabled={busy} onClick={() => void run(changeFolderIcon)}>
-    {t('Выбрать папку')}
-   </button>}
-   {choosingIcon && !activeFolderIcons && <button className="primary" disabled={busy} onClick={() => void run(previewDesktopIcons)}>
-    {t('Папки на рабочем столе')}
-   </button>}
+  {reviewing && <div className="desktop-cleanup-answer">
+   <h2 ref={reviewHeading} tabIndex={-1}>{t('Предпросмотр')}</h2>
+   {plan && <ul>{plan.steps.map((step, index) => <li key={index}>
+    {t(planMessages[step.mode], {subject: t(step.subject), folder: step.folder})}
+   </li>)}</ul>}
+   <small role="status">{selected.length > 0
+    ? t('Отмечено для переноса — {count}.', {count: selected.length}) : t('Для переноса пока ничего не отмечено.')}
+    {!!plan?.unclear && ' ' + t('Требуют проверки — {count}.', {count: plan.unclear})}</small>
+  </div>}
+  <div className={reviewing ? 'actions desktop-review-actions' : 'actions'} ref={actions} tabIndex={-1}>
    {activeFolderIcons && !!activeFolderIcons.folders.length && <>
     <button className="primary" disabled={busy || !selected.length} onClick={() => void run(applyDesktopIcons)}>
      {t('Изменить значки ({count})',{count:selected.length})}
@@ -275,28 +313,27 @@ export function DesktopCleanup() {
      {selected.length === activeFolderIcons.folders.length ? t('Снять выбор со всех') : t('Выбрать все')}
     </button>
    </>}
-   {activeFolderIcons && <button className="quiet" disabled={busy} onClick={() => {actions.current?.focus(); setFolderIcons(undefined); setSelected([]);}}>{t('Отмена')}</button>}
-   {!!selectable.length && <button className="primary" disabled={busy || promptChanged || !selected.length} onClick={() => void run(() => change('move'))}>
-    {t('Переместить ({count})',{count:selected.length})}
-   </button>}
-   {!choosingIcon && <button disabled={busy} onClick={() => void run(refresh)}>
-    {promptChanged ? t('Применить промпт') : changedFolder || result?.action === 'icons' ? t('Повторить запрос') : t('Обновить список')}
-   </button>}
-   {preview?.hasFolder && !choosingIcon && <button className="quiet" disabled={busy} onClick={() => void run(() => invoke('desktop.open'))}>
-    <Icon name="folder" size={16}/>{t('Открыть «Разобранное»')}
-   </button>}
-   {preview?.canUndo && !choosingIcon && <button className="quiet" disabled={busy} onClick={() => void run(() => change('undo'))}>{t('Отменить перенос')}</button>}
-   {canUndoIcons && <button disabled={busy} onClick={() => void run(undoFolderIcons)}>{t('Вернуть как было')}</button>}
+   {activeFolderIcons && <button className="quiet" disabled={busy} onClick={clearPreview}>{t('Назад')}</button>}
+   {commandAction === 'sort' && <>
+    {!!selectable.length && <button className="primary" disabled={busy || !selected.length} onClick={() => void run(() => change('move'))}>
+     {t('Переместить ({count})',{count:selected.length})}
+    </button>}
+    {reviewing ? <button disabled={busy} onClick={editRules}>{t('Изменить правила')}</button>
+     : <button className={documents ? undefined : 'primary'} disabled={busy || (!documents && incompleteCommand)}
+       onClick={() => void run(refresh)}>{documents ? t('Обновить список') : t('Предпросмотр')}</button>}
+    {status.hasFolder && <button className="quiet" disabled={busy} onClick={() => void run(() => invoke('desktop.open'))}>
+     <Icon name="folder" size={16}/>{t('Открыть «Разобранное»')}
+    </button>}
+    {status.canUndo && <button className="quiet" disabled={busy} onClick={() => void run(() => change('undo'))}>{t('Отменить перенос')}</button>}
+   </>}
+   {commandAction === 'icons' && status.canUndoIcons && <button disabled={busy} onClick={() => void run(undoFolderIcons)}>{t('Вернуть как было')}</button>}
   </div>
-  {!preview && busy && <Notice>{t('Разбираем файлы…')}</Notice>}
-  {preview?.answer && !promptChanged && <div className="desktop-cleanup-answer" role="status">
-   <h2>{t('Ответ SideWidget')}</h2><p>{promptAnswer(preview)}</p>
-  </div>}
-  {preview && !preview.modelAvailable && <Notice>{documents ? t('Модель недоступна. Выберите темы вручную.') : t('Модель недоступна. Папки предложены по расширениям и правилам.')}</Notice>}
-  {preview?.files.length === 0 && !iconRequest && <Notice>{documents ? t('В папке «Разобранное / Документы» нет файлов для разбора.') : t('На рабочем столе нет файлов для переноса.')}</Notice>}
+  {commandAction === 'sort' && !preview && busy && <Notice>{t('Разбираем файлы…')}</Notice>}
+  {documents && preview && !preview.modelAvailable && <Notice>{t('Модель недоступна. Выберите темы вручную.')}</Notice>}
+  {preview?.files.length === 0 && <Notice>{documents ? t('В папке «Разобранное / Документы» нет файлов для разбора.') : t('На рабочем столе нет файлов для переноса.')}</Notice>}
   {preview?.hasMore && <Notice>{t('Показаны первые {count} файлов.',{count:preview.files.length})}</Notice>}
   {!!preview?.files.length && <>
-   {!!selectable.length && <button className="quiet desktop-cleanup-select" disabled={busy || promptChanged} onClick={() => setSelected(allSelected ? [] : selectable.map(file => file.id))}>
+   {!!selectable.length && <button className="quiet desktop-cleanup-select" disabled={busy} onClick={() => setSelected(allSelected ? [] : selectable.map(file => file.id))}>
     {allSelected ? t('Снять выбор со всех') : t('Выбрать все')}
    </button>}
    {documents && <div className="desktop-topic-targets" role="group" aria-label={t('Перетащите файл на тему')}>
@@ -309,7 +346,7 @@ export function DesktopCleanup() {
     <legend><Icon name="folder" size={16}/>{category.split('/').map(part => t(part)).join(' / ') || t('Оставить на месте')}</legend>
     {files.map(file => <div className="desktop-cleanup-row" key={file.id}>
     <label className="checkbox">
-     <input type="checkbox" checked={selected.includes(file.id)} disabled={busy || promptChanged || !file.selectable || (documents && !category)} onChange={event => {
+     <input type="checkbox" checked={selected.includes(file.id)} disabled={busy || !file.selectable || (documents && !category)} onChange={event => {
       setSelected(event.target.checked ? [...selected, file.id] : selected.filter(id => id !== file.id));
      }}/>
      <span className={documents ? 'desktop-drag-handle' : undefined} onPointerDown={event => {

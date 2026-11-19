@@ -83,12 +83,14 @@ public static class DistributionArchive
         }
         foreach(var file in manifest.Files){using var stream=File.OpenRead(SafePath(root,file.Path));CheckContent(file,stream.Length,SHA256.HashData(stream));}
     }
-    public static string Create(string applicationDirectory,string outputDirectory)
+    public static string Create(string applicationDirectory,string outputDirectory,string? liteLauncherDirectory = null)
     {
         var root=Root(applicationDirectory);var manifest=ReadManifest(root);var lite=ValidateInventory(root,manifest);
         var manifestBytes=JsonSerializer.SerializeToUtf8Bytes(manifest,Json);
         Directory.CreateDirectory(outputDirectory);
         var suffix = lite ? "lite-win-x64" : "win-x64";
+        string[] launchFiles = lite && liteLauncherDirectory is not null ? ["SideWidget.exe", "Install-Dependencies.bat"] : [];
+        var prefix = launchFiles.Length == 0 ? "" : "App/";
         var archive=Path.Combine(outputDirectory,$"SideWidget-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..8]}-{suffix}.zip");
         var temporary=archive+".partial";
         try
@@ -96,19 +98,22 @@ public static class DistributionArchive
             using(var stream=new FileStream(temporary,FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None))
             using(var zip=new ZipArchive(stream,ZipArchiveMode.Create))
             {
+                foreach (var name in launchFiles)
+                    zip.CreateEntryFromFile(SafePath(Root(liteLauncherDirectory!), name), name, CompressionLevel.Fastest);
+                var buffer=new byte[128*1024];
                 foreach(var file in manifest.Files)
                 {
                     // Check the same stream that is copied, not a previous snapshot.
                     using var source=new FileStream(SafePath(root,file.Path),FileMode.Open,FileAccess.Read,FileShare.Read);
                     using var hash=IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-                    using var destination=zip.CreateEntry(file.Path,CompressionLevel.Fastest).Open();
-                    var buffer=new byte[128*1024];long length=0;int count;
+                    using var destination=zip.CreateEntry(prefix + file.Path,CompressionLevel.Fastest).Open();
+                    long length=0;int count;
                     while((count=source.Read(buffer))>0){destination.Write(buffer,0,count);hash.AppendData(buffer,0,count);length+=count;}
                     CheckContent(file,length,hash.GetHashAndReset());
                 }
-                using var manifestEntry=zip.CreateEntry(ManifestName,CompressionLevel.Fastest).Open();manifestEntry.Write(manifestBytes);
+                using var manifestEntry=zip.CreateEntry(prefix + ManifestName,CompressionLevel.Fastest).Open();manifestEntry.Write(manifestBytes);
             }
-            VerifyArchive(temporary,manifest);
+            VerifyArchive(temporary,manifest,prefix,launchFiles.Length);
             File.Move(temporary,archive);
             return archive;
         }
@@ -208,13 +213,13 @@ public static class DistributionArchive
     }
     static void CheckContent(DistributionFile file,long length,byte[] hash)
     {if(length!=file.Size||!Convert.ToHexString(hash).Equals(file.Sha256,StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("Файл сборки изменён или повреждён: "+file.Path+". Используйте полную новую сборку.");}
-    static void VerifyArchive(string archive,DistributionManifest manifest)
+    static void VerifyArchive(string archive,DistributionManifest manifest,string prefix,int launcherFiles)
     {
         using var zip=ZipFile.OpenRead(archive);
-        if(zip.Entries.Count!=manifest.Files.Length+1)throw new InvalidDataException("ZIP содержит неполный состав сборки");
+        if(zip.Entries.Count!=manifest.Files.Length+1+launcherFiles)throw new InvalidDataException("ZIP содержит неполный состав сборки");
         foreach(var file in manifest.Files)
         {
-            var entry=zip.GetEntry(file.Path)??throw new InvalidDataException("ZIP не содержит: "+file.Path);
+            var entry=zip.GetEntry(prefix + file.Path)??throw new InvalidDataException("ZIP не содержит: "+file.Path);
             using var stream=entry.Open();CheckContent(file,entry.Length,SHA256.HashData(stream));
         }
     }

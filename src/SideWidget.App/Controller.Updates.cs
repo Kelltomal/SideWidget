@@ -14,7 +14,7 @@ sealed partial class Controller
 
     internal async Task<GitHubUpdateResult> CheckUpdate()
     {
-        var lite = DistributionArchive.IsLite(AppContext.BaseDirectory);
+        var lite = LiteInstallation.IsLite;
         var preferLite = !lite && await Task.Run(LiteDependencies.AreAvailable);
         offeredUpdate = await githubUpdates.CheckAsync(currentAppVersion, lite, preferLite: preferLite);
         return offeredUpdate;
@@ -48,7 +48,7 @@ sealed partial class Controller
             throw new CommandFault("update_busy", "Обновление уже загружается.");
         try
         {
-            if (asset.IsLite && !DistributionArchive.IsLite(AppContext.BaseDirectory) &&
+            if (asset.IsLite && !LiteInstallation.IsLite &&
                 !await Task.Run(LiteDependencies.AreAvailable))
                 throw new InvalidDataException("Shared Lite dependencies are unavailable.");
 
@@ -57,9 +57,17 @@ sealed partial class Controller
             var executable = await portableUpdate.PrepareAsync(asset, Version.Parse(versionText),
                 Path.Combine(Store.DirectoryPath, "Versions"), percent => Emit("updates.progress", new { percent }),
                 asset.IsLite, deadline.Token);
+            if (asset.IsLite)
+            {
+                var prepare = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)! };
+                prepare.ArgumentList.Add("--install-dependencies");
+                using var launcher = Process.Start(prepare) ?? throw new IOException("Could not start the Lite launcher.");
+                await launcher.WaitForExitAsync(deadline.Token);
+                if (launcher.ExitCode != 0) throw new IOException("Could not prepare Lite dependencies.");
+            }
             RestartForUpdate(new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)! });
         }
-        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or HttpRequestException or OperationCanceledException or BadImageFormatException or System.Text.Json.JsonException)
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or HttpRequestException or OperationCanceledException or BadImageFormatException or System.ComponentModel.Win32Exception or System.Text.Json.JsonException)
         {
             throw new CommandFault("update_failed", "Не удалось установить обновление. Повторите попытку или скачайте архив с GitHub.");
         }

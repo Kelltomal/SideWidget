@@ -14,27 +14,14 @@ SideWidget выбирает язык Windows. Если его нет в спис
   <img src="docs/github/images/sidewidget-home.png" width="760" alt="Главная панель SideWidget с поиском, плеером и быстрыми инструментами">
 </p>
 
-<p align="center">
-  <img src="docs/github/images/sidewidget-commands-ru.png" width="590" alt="Сортировка файлов в SideWidget по-русски">
-</p>
-
 Плеер снят на Windows во время воспроизведения музыки. Снимки инструментов используют демонстрационные данные.
 
 ## Примеры команд
 
-Откройте **Файлы и папки**, вставьте команду и проверьте план перед применением.
+Откройте **Файлы и папки** и выберите действие.
 
-| Язык и снимок | Сортировка | Значки папок |
-| --- | --- | --- |
-| [Русский](docs/github/images/sidewidget-commands-ru.png) | `Разложи счета по годам, а скриншоты оставь на столе` | `Поменяй значки на рабочем столе`<br>`Поменяй значок папки на фото` |
-| [English](docs/github/images/sidewidget-commands-en.png) | `Sort invoices by year and leave screenshots on the desktop` | `Change desktop folder icons`<br>`Change the folder icon to photos` |
-| [简体中文](docs/github/images/sidewidget-commands-zh-CN.png) | `把发票按年份整理，截图留在桌面` | `更改桌面文件夹图标`<br>`将文件夹图标改为照片` |
-| [日本語](docs/github/images/sidewidget-commands-ja.png) | `請求書を年別に整理して、スクリーンショットはデスクトップに残して` | `デスクトップのフォルダーアイコンを変更して`<br>`フォルダーアイコンを写真に変更して` |
-| [Deutsch](docs/github/images/sidewidget-commands-de.png) | `Sortiere Rechnungen nach Jahren und lass Screenshots auf dem Desktop` | `Ändere die Ordnersymbole auf dem Desktop`<br>`Ändere das Ordnersymbol zu Fotos` |
-| [Українська](docs/github/images/sidewidget-commands-uk.png) | `Розклади рахунки за роками, а знімки екрана залиш на робочому столі` | `Зміни значки папок на робочому столі`<br>`Зміни значок папки на фото` |
-| [Беларуская](docs/github/images/sidewidget-commands-be.png) | `Раскладзі рахункі па гадах, а здымкі экрана пакінь на працоўным стале` | `Змяні значкі папак на працоўным стале`<br>`Змяні значок папкі на фота` |
-| [Español](docs/github/images/sidewidget-commands-es.png) | `Ordena las facturas por año y deja las capturas de pantalla en el escritorio` | `Cambia los iconos de las carpetas del escritorio`<br>`Cambia el icono de la carpeta a fotos` |
-| [Português (Brasil)](docs/github/images/sidewidget-commands-pt-BR.png) | `Organize as faturas por ano e deixe as capturas de tela na área de trabalho` | `Altere os ícones das pastas da área de trabalho`<br>`Troque o ícone da pasta por fotos` |
+- **Разобрать файлы.** Выберите **Счета по годам** и добавьте правило **Скриншоты / Оставить на месте**. Откройте **Предпросмотр**, проверьте список и подтвердите перенос.
+- **Значки папок.** Откройте **Папки на рабочем столе** для групповой настройки или нажмите **Выбрать папку**.
 
 ## Другие инструменты
 
@@ -87,20 +74,20 @@ SideWidget выбирает язык Windows. Если его нет в спис
 
 Для Windows 10 или 11 x64. Откройте [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) и выберите ZIP.
 
-- **Lite** (`-lite-win-x64.zip`) — рекомендуемая версия. Архив 0.3.2 занимает около 20 МБ, обновления Lite скачивают небольшие ZIP. Перед первым запуском на ПК нужно установить общие библиотеки.
+- **Lite** (`-lite-win-x64.zip`) — рекомендуемая версия. Архив приложения занимает около 20 МБ. Среды выполнения скачиваются отдельно по необходимости.
 - **Полная** (`-portable-win-x64.zip`) включает библиотеки для автономного запуска.
 
 Для полной версии достаточно распаковать ZIP и открыть `SideWidget.exe`.
 
 ### Первый запуск Lite
 
-1. Скачайте ZIP с окончанием `-lite-win-x64.zip` и распакуйте его целиком. В одной папке должны оказаться `SideWidget.exe`, `Install-Dependencies.bat` и папка `App`. [Скачать Lite](https://github.com/Kelltomal/SideWidget/releases/latest)
-2. Запустите `Install-Dependencies.bat` из распакованной папки. Для установки нужен интернет. Скрипт использует WinGet и пропускает уже установленные пакеты. Если Windows запросит разрешение на установку, подтвердите его. Дождитесь сообщения `SideWidget Lite prerequisites are ready`. [Посмотреть скрипт](scripts/Install-Dependencies.bat)
-3. Если SideWidget уже запущен, нажмите **Выйти** в меню его значка в трее. Затем откройте `SideWidget.exe` из папки Lite. Настройки доступны в том же профиле Windows. Чтобы открыть панель, нажмите `Ctrl+Alt+Space`.
+1. Скачайте ZIP с окончанием `-lite-win-x64.zip` и распакуйте его целиком. [Скачать Lite](https://github.com/Kelltomal/SideWidget/releases/latest)
+2. Если SideWidget уже запущен, нажмите **Выйти** в меню значка в трее. Откройте `SideWidget.exe` рядом с папкой `App`.
+3. При нехватке зависимостей лаунчер скачает нужные ZIP из релиза этой версии на GitHub и распакует их в соседнюю папку `Dependencies`. Для скачивания нужен интернет. Чтобы открыть панель после запуска, нажмите `Ctrl+Alt+Space`.
 
 Если переходите с полной версии и пользуетесь автозапуском, включите **Запускать при входе в Windows** в настройках Lite. При следующем входе Windows запустит эту копию.
 
-Если скрипт сообщает, что WinGet недоступен, или останавливается на установке пакета, воспользуйтесь ссылками ниже. Затем снова запустите `SideWidget.exe`.
+Если скачивание прервалось, снова запустите `SideWidget.exe`. Готовые пакеты в этой папке будут использованы повторно. Для Lite 0.3.2 действует прежний порядок с `Install-Dependencies.bat`.
 
 ### Ручная установка зависимостей Lite
 
@@ -114,7 +101,7 @@ SideWidget выбирает язык Windows. Если его нет в спис
 
 ### Обновление Lite
 
-SideWidget проверяет стабильные релизы при запуске. Для ручной проверки откройте раздел **Обновления** в настройках и нажмите **Проверить обновления**. Кнопка **Обновить сейчас** скачает Lite ZIP, установит новую версию и перезапустит виджет. Повторно запускать `Install-Dependencies.bat` при обычном обновлении не нужно.
+SideWidget проверяет стабильные релизы при запуске. Для ручной проверки откройте раздел **Обновления** в настройках и нажмите **Проверить обновления**. Кнопка **Обновить сейчас** скачает Lite ZIP, установит новую версию и перезапустит виджет через лаунчер.
 
 Для перехода с 0.3.1 выполните установку вручную. Выберите Lite и пройдите шаги первого запуска или распакуйте полную версию и откройте `SideWidget.exe`. Начиная с 0.3.2 полная версия автоматически выбирает Lite при обновлении, если нужные библиотеки уже установлены.
 

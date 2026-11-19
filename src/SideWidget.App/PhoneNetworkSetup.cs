@@ -52,7 +52,7 @@ static class PhoneNetworkSetup
         File.WriteAllText(audit, JsonSerializer.Serialize(new { time = DateTimeOffset.UtcNow, plan, before, status = "requested" }));
         try
         {
-            var start = new ProcessStartInfo(plan.Application) { UseShellExecute = true, Verb = "runas", WorkingDirectory = AppContext.BaseDirectory, WindowStyle = ProcessWindowStyle.Hidden };
+            var start = new ProcessStartInfo(LiteInstallation.Launcher) { UseShellExecute = true, Verb = "runas", WorkingDirectory = AppContext.BaseDirectory, WindowStyle = ProcessWindowStyle.Hidden };
             // Every argument is derived from validated GUID, integer or IPv4 values.
             start.Arguments = string.Join(' ', Mode, plan.AdapterId, plan.Ports.Replace(',', ' '), plan.LocalAddress);
             using var process = Process.Start(start) ?? throw new CommandFault("remote_network", "Windows не запустила настройку сети.");

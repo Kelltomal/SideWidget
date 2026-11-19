@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 namespace SideWidget.Core;
 public sealed record Command(int ProtocolVersion,string RequestId,string ActionId,JsonElement Params);
-public sealed class CommandFault(string code,string message):Exception(message){public string Code {get;}=code;}
+public sealed class CommandFault(string code,string message):Exception(message){public string Code {get;}=code;public string? RequestId {get;internal set;}}
 public static class Protocol
 {
     public const string Origin="https://sidewidget.local";
@@ -15,17 +15,22 @@ public static class Protocol
             using var doc=JsonDocument.Parse(json,new(){MaxDepth=16});CheckKeys(doc.RootElement);var e=doc.RootElement;
             if(e.ValueKind!=JsonValueKind.Object||e.EnumerateObject().Count()!=4||e.GetProperty("protocolVersion").GetInt32()!=1||!Guid.TryParse(e.GetProperty("requestId").GetString(),out _)||e.GetProperty("params").ValueKind!=JsonValueKind.Object)throw new JsonException();
             var action=e.GetProperty("actionId").GetString()!;if(!Regex.IsMatch(action,"^[a-z][a-zA-Z0-9.]{1,63}$"))throw new JsonException();
-            var command=new Command(1,e.GetProperty("requestId").GetString()!,action,e.GetProperty("params").Clone());ValidateParams(command);return command;
+            var command=new Command(1,e.GetProperty("requestId").GetString()!,action,e.GetProperty("params").Clone());
+            try{ValidateParams(command);}catch(CommandFault error){error.RequestId=command.RequestId;throw;}
+            return command;
         }catch(Exception e) when(e is JsonException or InvalidOperationException or KeyNotFoundException or FormatException){throw new CommandFault("schema","Некорректное сообщение");}
     }
     static void CheckKeys(JsonElement e){if(e.ValueKind==JsonValueKind.Object){var keys=new HashSet<string>();foreach(var p in e.EnumerateObject()){if(!keys.Add(p.Name))throw new JsonException();CheckKeys(p.Value);}}else if(e.ValueKind==JsonValueKind.Array)foreach(var v in e.EnumerateArray())CheckKeys(v);}
     public static void ValidateParams(Command c)
     {
         string[] keys=c.ActionId switch {
-            "timer.get" or "timer.pause" or "timer.resume" or "timer.reset" or "timer.dismiss"=>[],
+            "power.get" or "power.cancel"=>[],
+            "power.schedule"=>["action","hours","minutes"],
+            "timer.get"=>[],
+            "timer.pause" or "timer.resume" or "timer.reset" or "timer.dismiss"=>["id"],
             "timer.start"=>["mode","seconds","alarmTime","workMinutes","breakMinutes","longBreakMinutes"],
-            "desktop.undo" or "desktop.open" or "desktop.icons.undo"=>[],
-            "desktop.preview"=>["prompt"],
+            "desktop.undo" or "desktop.open" or "desktop.icons.undo" or "desktop.status"=>[],
+            "desktop.command"=>["action","rules"],
             "desktop.documents"=>[],
             "desktop.move"=>["previewId","ids","topics"],
             "desktop.icon" or "desktop.icons.preview"=>["previewId"],

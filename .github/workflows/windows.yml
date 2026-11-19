@@ -104,10 +104,12 @@ jobs:
           }
           $portableArchive = "artifacts/github-release/SideWidget-$version-portable-win-x64.zip"
           $liteArchive = "artifacts/github-release/SideWidget-$version-lite-win-x64.zip"
+          $catalog = ./scripts/package-lite-dependencies.ps1 -LiteDirectory artifacts/release-lite -FullDirectory artifacts/release -OutputDirectory artifacts/github-release -Version $version
           ./scripts/package-clean.ps1 -ReleaseDirectory artifacts/release -OutputArchive $portableArchive
-          ./scripts/package-clean.ps1 -Lite -ReleaseDirectory artifacts/release-lite -OutputArchive $liteArchive
+          ./scripts/package-clean.ps1 -Lite -ReleaseDirectory artifacts/release-lite -OutputArchive $liteArchive -DependencyCatalog $catalog
           ./scripts/test-portable.ps1 -Archive $portableArchive
           ./scripts/test-portable.ps1 -Archive $liteArchive -Lite -DotnetRoot .tools/dotnet
+          ./scripts/test-portable.ps1 -Archive $liteArchive -Lite -DependencyCatalog $catalog
 
       - name: Upload release files
         id: release-files
@@ -118,6 +120,7 @@ jobs:
           path: |
             artifacts/github-release/*-portable-win-x64.zip*
             artifacts/github-release/*-lite-win-x64.zip*
+            artifacts/github-release/*-deps-*-win-x64.zip*
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
@@ -147,7 +150,8 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           sha256sum --check --strict "SideWidget-$version-portable-win-x64.zip.sha256" \
-            "SideWidget-$version-lite-win-x64.zip.sha256"
+            "SideWidget-$version-lite-win-x64.zip.sha256" \
+            "SideWidget-$version-deps-"{dotnet,desktop,webview2}"-win-x64.zip.sha256"
 
       - name: Publish ZIPs and checksums
         working-directory: release
@@ -157,7 +161,7 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           files=()
-          for edition in '-portable' '-lite'; do
+          for edition in '-portable' '-lite' '-deps-dotnet' '-deps-desktop' '-deps-webview2'; do
             archive="SideWidget-$version$edition-win-x64.zip"
             files+=("$archive" "$archive.sha256")
           done

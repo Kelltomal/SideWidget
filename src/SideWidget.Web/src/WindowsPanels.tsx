@@ -8,6 +8,7 @@ import {bytes,CopyButton,Icon,invoke,nativeAvailable,Notice,Panel,speed,timeLabe
 import './music.css';
 import {SpectrumGraphic,useAudioSpectrum,VisualizerSettingsPanel} from './AudioVisualization';
 import {ActionMenu,type MenuAction} from './ActionMenu';
+import {PowerScheduleForm} from './PowerSchedule';
 
 function usePoll<T>(command:string,expanded:boolean,period:number) {
  const [value,setRawValue]=useState<T>();const [error,setError]=useState('');const revision=useRef(0);
@@ -239,6 +240,7 @@ export function Metrics({expanded,compact=false,open}:{expanded:boolean;compact?
  </Panel>;
 }
 export function QuickActions({compact=false,open}:{compact?:boolean;open?:()=>void}) {
+ const [scheduledAction,setScheduledAction]=useState<'shutdown'|'restart'|null>(null);
  const {error,busy,run}=useAction();
  const settings:MenuAction[]=[
   {id:'notifications',label:t("Не беспокоить"),icon:'notifications',description:t("Открыть настройки уведомлений Windows. Режим не переключается автоматически.")},
@@ -259,6 +261,8 @@ export function QuickActions({compact=false,open}:{compact?:boolean;open?:()=>vo
   {id:'sleep',label:t("Спящий режим…"),icon:'sleep',description:t("Перевести компьютер в спящий режим после подтверждения.")},
   {id:'restart',label:t("Перезагрузить ПК…"),icon:'restart',description:t("Перезапустить Windows после подтверждения. Сначала сохраните работу.")},
   {id:'shutdown',label:t("Выключить ПК…"),icon:'power',description:t("Выключить компьютер после подтверждения. Сначала сохраните работу.")},
+  {id:'shutdownLater',label:t('Выключить через…'),icon:'timer',description:t('Разовое выключение с обратным отсчётом и отменой.')},
+  {id:'restartLater',label:t('Перезагрузить через…'),icon:'timer',description:t('Разовая перезагрузка с обратным отсчётом и отменой.')},
  ];
  const openAction=(target:string)=>void run(()=>invoke('quick.open',{target}));
  const menuProps={compact,busy};
@@ -267,6 +271,6 @@ export function QuickActions({compact=false,open}:{compact?:boolean;open?:()=>vo
    <ActionMenu {...menuProps} label={t("Подключения")} icon="connections" description={t("Настройки Wi-Fi и Bluetooth Windows.")} items={network} onAction={openAction}/>
    {settings.map(item=><button key={item.id} disabled={busy} aria-label={item.label} data-help={item.description} onClick={()=>openAction(item.id)}><Icon name={item.icon} size={20}/>{!compact&&<span>{item.label}</span>}</button>)}
    <ActionMenu {...menuProps} label={t("Консоли")} icon="powershell" description={t("Запуск PowerShell или командной строки Windows.")} items={consoles} onAction={openAction}/>
-   <ActionMenu {...menuProps} label={t("Питание")} icon="power" description={t("Блокировка, спящий режим, перезагрузка и выключение компьютера.")} items={power} onAction={action=>void run(()=>invoke('quick.power',{action}))}/>
-  </div>{error&&<Notice error>{error}</Notice>}</div>;
+   <ActionMenu {...menuProps} label={t("Питание")} icon="power" description={t("Блокировка, спящий режим, перезагрузка и выключение компьютера.")} items={power} onAction={action=>{if(action==='shutdownLater'||action==='restartLater')setScheduledAction(action==='shutdownLater'?'shutdown':'restart');else void run(()=>invoke('quick.power',{action}));}}/>
+  </div>{scheduledAction&&<PowerScheduleForm key={scheduledAction} action={scheduledAction} onClose={()=>setScheduledAction(null)}/>}{error&&<Notice error>{error}</Notice>}</div>;
 }

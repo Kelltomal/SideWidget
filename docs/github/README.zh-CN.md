@@ -14,20 +14,14 @@ SideWidget 的开发以常识为基础，并借助 GPT-6.1 Sol。
   <img src="images/sidewidget-home.png" width="760" alt="带搜索、播放器和快捷工具的 SideWidget 主面板">
 </p>
 
-<p align="center">
-  <img src="images/sidewidget-commands-zh-CN.png" width="590" alt="SideWidget 简体中文文件整理界面">
-</p>
-
 播放器截图拍摄于 Windows 正在播放音乐时。各工具的截图使用演示数据。
 
 ## 指令示例
 
-打开**文件和文件夹**，粘贴指令并检查预览，再应用更改。
+打开**文件和文件夹**，选择要执行的操作。
 
-- **整理文件.** `把发票按年份整理，截图留在桌面`
-- **文件夹图标.** `更改桌面文件夹图标`<br>`将文件夹图标改为照片`
-
-[全部九种语言](../../README.md#примеры-команд)
+- **整理文件。** 选择**按年份整理发票**，添加一条让屏幕截图留在原处的规则。在预览中核对文件，再确认移动。
+- **文件夹图标。** 打开桌面文件夹列表以批量修改，或选择一个文件夹。
 
 ## 更多工具
 
@@ -80,10 +74,10 @@ SideWidget 的开发以常识为基础，并借助 GPT-6.1 Sol。
 
 适用于 Windows 10 或 11 x64。打开 [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) 并选择 ZIP。
 
-- **推荐 Lite 轻量版**（`-lite-win-x64.zip`）。更新包更小，共享运行库在每台电脑上只需安装一次。
+- **推荐 Lite 轻量版**（`-lite-win-x64.zip`）。缺少的运行库单独下载。
 - **完整版**（`-portable-win-x64.zip`）内置运行库，支持离线运行。
 
-将 ZIP 解压到单独的文件夹。使用 Lite 时，运行解压目录中的 [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat)。该脚本使用 WinGet。然后运行与 `App` 文件夹并列的 `SideWidget.exe`。
+将 ZIP 解压到单独的文件夹，然后运行与 `App` 文件夹并列的 `SideWidget.exe`。新版 Lite 会从 GitHub 下载缺少的依赖包，并解压到 `Dependencies` 文件夹。
 
 ### 手动安装 Lite 的依赖
 

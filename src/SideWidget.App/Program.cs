@@ -36,7 +36,7 @@ internal static class Program
                 {
                     if(Updating)
                     {
-                        try { new StartupService(Environment.ProcessPath!).TransferTo(NextBuild.FileName); }
+                        try { LiteInstallation.Startup().TransferTo(NextBuild.FileName); }
                         catch(SideWidget.Core.CommandFault) { }
                     }
                     return;
@@ -47,7 +47,7 @@ internal static class Program
             RestartRequested=true;
         }
         if(!RestartRequested)return;
-        var start=new ProcessStartInfo(Environment.ProcessPath!){UseShellExecute=false,WorkingDirectory=Environment.CurrentDirectory};
+        var start=new ProcessStartInfo(LiteInstallation.Launcher){UseShellExecute=false,WorkingDirectory=Environment.CurrentDirectory};
         foreach(var argument in args)start.ArgumentList.Add(argument);
         using var restarted=Process.Start(start);
     }

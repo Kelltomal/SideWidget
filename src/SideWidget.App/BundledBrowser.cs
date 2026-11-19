@@ -7,12 +7,15 @@ static class BundledBrowser
     static bool permissionsReady;
     public static string? Folder()
     {
-        if (DistributionArchive.IsLite(AppContext.BaseDirectory))
+        var folder = LiteInstallation.IsLite
+            ? LiteInstallation.Dependencies is { } dependencies ? Path.Combine(dependencies, "webview2") : null
+            : Path.Combine(AppContext.BaseDirectory, "WebView2Runtime");
+        if (folder is null || (LiteInstallation.IsLite && !File.Exists(Path.Combine(folder, ".complete"))))
             return null;
-        var folder=Path.Combine(AppContext.BaseDirectory,"WebView2Runtime");
         if(!File.Exists(Path.Combine(folder,"msedgewebview2.exe")))
         {
-            if(File.Exists(Path.Combine(AppContext.BaseDirectory,DistributionArchive.ManifestName)))throw new FileNotFoundException("Папка WebView2Runtime отсутствует. Распакуйте полную portable-сборку SideWidget.");
+            if(LiteInstallation.IsLite || File.Exists(Path.Combine(AppContext.BaseDirectory,DistributionArchive.ManifestName)))
+                throw new FileNotFoundException("Папка WebView2Runtime отсутствует. Повторно распакуйте SideWidget и запустите SideWidget.exe.");
             return null; // Unpublished development output may use Evergreen.
         }
         // Fixed runtime v120+ requires AppContainer read/execute permissions on Windows 10.

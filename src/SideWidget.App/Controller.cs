@@ -53,7 +53,7 @@ sealed partial class Controller
         try {
             switch(c.ActionId){
                 case "bridge.ready":Ready=true;return Snapshot();case "state.get":return Snapshot();
-                case "startup.get":return new StartupService(Environment.ProcessPath!).Get();
+                case "startup.get":return LiteInstallation.Startup().Get();
                 case "app.share":return await ShareApplication();
                 case "updates.check":return await CheckUpdate();
                 case "updates.defer":return new{};
@@ -61,7 +61,7 @@ sealed partial class Controller
                 case "updates.install":await InstallUpdate(Text("version",32));return new{};
                 case "startup.set":
                     if(!p.TryGetProperty("enabled",out var startupEnabled)||startupEnabled.ValueKind is not (JsonValueKind.True or JsonValueKind.False))throw new CommandFault("schema","Укажите состояние автозапуска");
-                    return new StartupService(Environment.ProcessPath!).Set(startupEnabled.GetBoolean());
+                    return LiteInstallation.Startup().Set(startupEnabled.GetBoolean());
                 case "shell.pin":Shell("pin");return new{};case "shell.collapse":Shell("collapse");return new{};case "shell.interactive":Shell("interactive");return new{};
                 case "shell.editing":Shell(p.GetProperty("value").GetBoolean()?"editing":"idle");return new{};
                 case "shell.tooltip":Tooltip(p.GetProperty("visible").GetBoolean()?TooltipContent.Read(p):null);return new{};
@@ -107,9 +107,11 @@ sealed partial class Controller
                 case "clipboard.image":await CopyImage(Text("dataUrl",1500000));return new{copied=true};
                 case "qr.save":return await SaveQr(Text("format",4),Text("data",1500000));
                 case "qr.print":return await PrintQr(Text("html",1500000));
-                case "desktop.preview":
-                    var cleanupPrompt=p.TryGetProperty("prompt",out _)?Text("prompt",DesktopCleanup.PromptLimit):"";
-                    return await Task.Run(()=>desktopState.Cleanup.Preview(cleanupPrompt));
+                case "desktop.status":return await Task.Run(desktopState.Cleanup.GetStatus);
+                case "desktop.command":
+                    var cleanupAction=Text("action",8);
+                    var cleanupRules=p.TryGetProperty("rules",out var ruleValues)?ReadDesktopRules(ruleValues):null;
+                    return await Task.Run(()=>desktopState.Cleanup.PreviewCommand(cleanupAction,cleanupRules));
                 case "desktop.undo":return await Task.Run(desktopState.Cleanup.Undo);
                 case "desktop.icons.undo":return await Task.Run(desktopState.Cleanup.UndoFolderIcons);
                 case "desktop.documents":return await Task.Run(desktopState.Cleanup.PreviewDocuments);
@@ -165,6 +167,7 @@ sealed partial class Controller
                 case "search.query":var found=await search.Query(Text("text",500));var data=JsonSerializer.SerializeToElement(found,Protocol.Json);if(data.TryGetProperty("results",out var rows)){if(allowedSearch.Count>950)allowedSearch.Clear();foreach(var row in rows.EnumerateArray())allowedSearch.Add(row.GetProperty("path").GetString()!);}return found;
                 case "search.open":var path=Text("path",32768);if(!allowedSearch.Contains(path))throw new CommandFault("search","Обновите поиск перед открытием");LauncherService.OpenSearch(path,p.TryGetProperty("reveal",out var reveal)&&reveal.GetBoolean());return new{opened=true};
                 case "quick.open":QuickActions.Open(Text("target",30));return new{opened=true};
+                case "power.get" or "power.schedule" or "power.cancel":return (await HandlePowerSchedule(c))!;
                 case "quick.power":var action=Text("action",20);if(await Confirm("Выполнить системное действие?",QuickActions.Description(action))){QuickActions.Power(action);return new{executed=true};}return new{executed=false};
                 case "currency.get":return await Online.Currency();case "weather.get":return await Online.Weather(Text("city",120));
                 case "translation.get":return Online.TranslationInfo();case "translation.configure":return await ConfigureTranslation();
@@ -179,6 +182,19 @@ sealed partial class Controller
             }
         }finally{running--;}
     }
+    static DesktopCleanup.CommandRule[] ReadDesktopRules(JsonElement values)
+    {
+        if(values.ValueKind!=JsonValueKind.Array || values.GetArrayLength() is <1 or >DesktopCleanup.CommandRuleLimit)
+            throw new CommandFault("schema","Некорректное сообщение");
+        return values.EnumerateArray().Select(rule=>
+        {
+            if(rule.ValueKind!=JsonValueKind.Object || rule.EnumerateObject().Any(field=>field.Name is not ("subject" or "mode" or "folder")))
+                throw new CommandFault("schema","Некорректное сообщение");
+            var folder=rule.TryGetProperty("folder",out _)?Protocol.Text(rule,"folder",64):null;
+            return new DesktopCleanup.CommandRule(Protocol.Text(rule,"subject",32),Protocol.Text(rule,"mode",8),folder);
+        }).ToArray();
+    }
+
     static int[] ReadDesktopSelection(JsonElement parameters,string error)
     {
         if(!parameters.TryGetProperty("ids",out var selection)||selection.ValueKind!=JsonValueKind.Array||
@@ -221,7 +237,8 @@ sealed partial class Controller
         if(Interlocked.Exchange(ref sharing,1)!=0)throw new CommandFault("busy","Упаковка уже выполняется. Дождитесь готового архива.");
         try
         {
-            var path=await Task.Run(()=>DistributionArchive.CreateNextToApplication(AppContext.BaseDirectory));
+            var path=await Task.Run(()=>DistributionArchive.Create(LiteInstallation.ApplicationDirectory,
+                LiteInstallation.Root ?? AppContext.BaseDirectory, LiteInstallation.Root));
             var revealed=await ExplorerReveal.TryRevealAsync(path);
             return new{path,revealed};
         }

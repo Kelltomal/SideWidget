@@ -22,12 +22,10 @@ Der Player wurde unter Windows während der Musikwiedergabe aufgenommen. Die Wer
 
 ## Beispielbefehle
 
-Öffne **Dateien und Ordner**, füge einen Befehl ein und prüfe den Vorschauplan vor dem Anwenden.
+Öffne **Dateien und Ordner** und wähle eine Aktion.
 
-- **Sortieren.** `Sortiere Rechnungen nach Jahren und lass Screenshots auf dem Desktop`
-- **Ordnersymbole.** `Ändere die Ordnersymbole auf dem Desktop`<br>`Ändere das Ordnersymbol zu Fotos`
-
-[Alle neun Sprachen](../../README.md#примеры-команд)
+- **Dateien sortieren.** Wähle **Rechnungen nach Jahr** und ergänze die Regel **Screenshots / Am aktuellen Ort belassen**. Prüfe die Dateien in der **Vorschau** und bestätige das Verschieben.
+- **Ordnersymbole.** Öffne die Desktop-Ordner für die gemeinsame Bearbeitung oder wähle einen einzelnen Ordner aus.
 
 ## Weitere Werkzeuge
 
@@ -80,10 +78,10 @@ Wähle eine Bildschirmfarbe, kopiere HEX, RGB oder HSL und speichere die Farbe i
 
 Für Windows 10 oder 11 x64. Öffne [Releases](https://github.com/Kelltomal/SideWidget/releases/latest) und wähle eine ZIP-Datei.
 
-- **Lite** (`-lite-win-x64.zip`) ist die empfohlene Version. Die Update-Downloads sind kleiner. Die Laufzeitbibliotheken müssen nur einmal installiert werden.
+- **Lite** (`-lite-win-x64.zip`) ist die empfohlene Version. Fehlende Laufzeitbibliotheken werden separat geladen.
 - **Vollversion** (`-portable-win-x64.zip`) enthält die Laufzeitbibliotheken und lässt sich offline starten.
 
-Entpacke die ZIP-Datei in einen eigenen Ordner. Führe bei Lite dort [Install-Dependencies.bat](../../scripts/Install-Dependencies.bat) aus. Das Skript nutzt WinGet. Starte anschließend `SideWidget.exe` neben dem Ordner `App`.
+Entpacke die ZIP-Datei in einen eigenen Ordner und starte `SideWidget.exe` neben dem Ordner `App`. Neuere Lite-Versionen laden fehlende Pakete von GitHub in den Ordner `Dependencies`.
 
 ### Lite-Abhängigkeiten manuell installieren
 

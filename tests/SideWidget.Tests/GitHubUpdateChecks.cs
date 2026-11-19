@@ -104,8 +104,9 @@ public static class GitHubUpdateChecks
                 var asset = new GitHubPortableAsset($"v{version}", $"SideWidget-{version}{suffix}-win-x64.zip", bytes.Length,
                     Convert.ToHexString(SHA256.HashData(bytes)));
                 var executable = await updater.PrepareAsync(asset, version, versions, _ => { }, lite: isLite);
-                var application = Path.GetDirectoryName(executable)!;
-                Check(File.Exists(executable) && Path.GetFileName(executable) == "SideWidget.App.exe" &&
+                var launchDirectory = Path.GetDirectoryName(executable)!;
+                var application = isLite ? Path.Combine(launchDirectory, "App") : launchDirectory;
+                Check(File.Exists(executable) && Path.GetFileName(executable) == (isLite ? "SideWidget.exe" : "SideWidget.App.exe") &&
                     (Path.GetFileName(application) == "App") == !legacy && DistributionArchive.IsLite(application) == isLite,
                     "matching portable archive stages an executable of the same edition");
                 await Reject(() => updater.PrepareAsync(asset, version, versions, _ => { }, lite: !isLite),

@@ -18,20 +18,21 @@ static class PortableVerification
         {
             if(args[0]=="--share-portable")
             {
-                DistributionArchive.Create(AppContext.BaseDirectory,args[1]);return true;
+                DistributionArchive.Create(LiteInstallation.ApplicationDirectory,args[1],LiteInstallation.Root);return true;
             }
-            DistributionArchive.Validate(AppContext.BaseDirectory);
-            var lite = DistributionArchive.IsLite(AppContext.BaseDirectory);
+            DistributionArchive.Validate(LiteInstallation.ApplicationDirectory);
+            var lite = LiteInstallation.IsLite;
+            var localDesktop = LiteInstallation.LocalDesktop;
             var root=Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory)+Path.DirectorySeparatorChar;
             var runtime=RuntimeEnvironment.GetRuntimeDirectory();
             bool IsLocal(string path) => Path.GetFullPath(path).StartsWith(root, StringComparison.OrdinalIgnoreCase);
             if (IsLocal(runtime) == lite)
                 throw new InvalidOperationException("Unexpected .NET runtime location: " + runtime);
-            var libraries = lite
+            var libraries = lite && !localDesktop
                 ? new[] { "Microsoft.WindowsAppRuntime.Bootstrap.dll", "WebView2Loader.dll", "Everything64.dll" }
                 : new[] { "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "concrt140.dll", "Microsoft.WindowsAppRuntime.dll", "Microsoft.ui.xaml.dll", "WebView2Loader.dll", "Everything64.dll" };
             foreach(var name in libraries)NativeLibrary.Load(Path.Combine(root,name));
-            if (lite)
+            if (lite && !localDesktop)
             {
                 NativeLibrary.Load("Microsoft.WindowsAppRuntime.dll");
                 NativeLibrary.Load("Microsoft.ui.xaml.dll");
@@ -39,7 +40,7 @@ static class PortableVerification
             }
             using var connection=new SqliteConnection("Data Source=:memory:");connection.Open();
             var browser=BundledBrowser.Folder();
-            if ((browser is null) != lite) throw new InvalidOperationException("Unexpected WebView2 configuration");
+            if (!lite && browser is null) throw new InvalidOperationException("Unexpected WebView2 configuration");
             var browserVersion=CoreWebView2Environment.GetAvailableBrowserVersionString(browser);
             var aspNet = Assembly.Load("Microsoft.AspNetCore.Server.Kestrel.Core").Location;
             if (IsLocal(aspNet) == lite)
@@ -47,7 +48,7 @@ static class PortableVerification
             var modules=Process.GetCurrentProcess().Modules.Cast<ProcessModule>()
                 .Select(module=>module.FileName).ToArray();
             var winUi = modules.FirstOrDefault(path => Path.GetFileName(path).Equals("Microsoft.ui.xaml.dll", StringComparison.OrdinalIgnoreCase));
-            if (winUi is null || IsLocal(winUi) == lite)
+            if (winUi is null || IsLocal(winUi) != (!lite || localDesktop))
                 throw new InvalidOperationException("Unexpected WinUI runtime location: " + winUi);
             File.WriteAllText(args[1],JsonSerializer.Serialize(new{passed=true,lite,application=root,runtime,aspNet,winUi,browser,browserVersion,sqlite=connection.ServerVersion,modules},new JsonSerializerOptions{WriteIndented=true}));
         }

@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "medeo mono",
+        "createdAt": "2026-11-04T21:52:52.979Z",
+        "reason": "DESIGN.md explicitly prescribes local Medeo Mono for calculations and color codes; existing bundled font retained."
+      }
+    ]
+  }
+}

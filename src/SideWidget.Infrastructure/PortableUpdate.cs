@@ -50,7 +50,8 @@ public sealed class PortableUpdate(HttpClient? transport = null)
                 cancellationToken.ThrowIfCancellationRequested();
                 Directory.Move(content, target);
             }, cancellationToken).ConfigureAwait(false);
-            return Path.Combine(target, applicationDirectory, "SideWidget.App.exe");
+            return lite ? Path.Combine(target, "SideWidget.exe") :
+                Path.Combine(target, applicationDirectory, "SideWidget.App.exe");
         }
         finally
         {

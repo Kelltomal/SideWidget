@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory)][string]$ReleaseDirectory,
     [Parameter(Mandatory)][string]$OutputArchive,
     [switch]$Lite,
-    [string]$PayloadArchive
+    [string]$PayloadArchive,
+    [string]$DependencyCatalog
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,6 +15,9 @@ if (!$archive.EndsWith($template, [StringComparison]::OrdinalIgnoreCase)) {
 }
 if ($Lite -and $PayloadArchive) {
     throw 'Lite packaging uses the Lite publish directory.'
+}
+if ($Lite -and !$DependencyCatalog) {
+    throw 'Generate the Lite dependency assets with package-lite-dependencies.ps1 and pass -DependencyCatalog.'
 }
 
 function Get-EntryHash($Entry) {
@@ -89,7 +93,19 @@ try {
     $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
     $icon = Join-Path (Split-Path $PSScriptRoot -Parent) 'src/SideWidget.App/Assets/Icons/sidemenu.ico'
     $launcher = Join-Path $scratch.FullName 'SideWidget.exe'
-    & $compiler /nologo /target:winexe /platform:x64 /optimize+ /reference:System.Windows.Forms.dll "/out:$launcher" "/win32icon:$icon" (Join-Path $PSScriptRoot 'SideWidgetLauncher.cs')
+    [string[]]$resources = if ($Lite) {
+        $catalogPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($DependencyCatalog)
+        $catalogVersion = [IO.File]::ReadLines($catalogPath) | Select-Object -First 1
+        if ("SideWidget-$catalogVersion-lite-win-x64.zip" -cne [IO.Path]::GetFileName($archive)) {
+            throw 'Lite archive version differs from the dependency catalog.'
+        }
+        "/resource:$catalogPath,SideWidgetDependencies"
+    }
+    & $compiler /nologo /target:winexe /platform:x64 /optimize+ /reference:System.Windows.Forms.dll `
+        /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll `
+        "/out:$launcher" "/win32icon:$icon" @resources `
+        (Join-Path $PSScriptRoot 'SideWidgetLauncher.cs') (Join-Path $PSScriptRoot 'SideWidgetPrerequisites.cs') `
+        (Join-Path $PSScriptRoot 'DependencyProgress.cs')
     if ($LASTEXITCODE) {
         throw 'Could not compile the SideWidget launcher.'
     }
