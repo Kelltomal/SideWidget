@@ -1103,5 +1103,12 @@
   "Не удалось подключиться к GitHub. Попробуйте ещё раз.": "Could not connect to GitHub. Try again.",
   "Код GitHub истёк. Начните вход заново.": "The GitHub code expired. Start sign-in again.",
   "Вход в GitHub отменён.": "GitHub sign-in was cancelled.",
-  "Вход в GitHub уже открыт.": "A GitHub sign-in is already in progress."
+  "Вход в GitHub уже открыт.": "A GitHub sign-in is already in progress.",
+  "Прослушать исходный текст": "Listen to source text",
+  "Прослушать распознанную речь": "Listen to transcribed speech",
+  "Прослушать результат": "Listen to result",
+  "Введите текст для озвучивания.": "Enter text to play.",
+  "Выберите язык озвучивания.": "Choose a language for playback.",
+  "Добавьте голос для выбранного языка в настройках речи Windows.": "Add a voice for the selected language in Windows speech settings.",
+  "Не удалось воспроизвести текст.": "Could not play the text."
 }

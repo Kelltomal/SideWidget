@@ -6,6 +6,7 @@ import {toDictationWav} from './localDictation';
 const mimeType='audio/webm;codecs=opus';
 const recordingLimit=512*1024;
 type Phase='idle'|'preparing'|'opening'|'recording'|'ready'|'translating'|'loadingAudio'|'playing';
+type SpeechField='source'|'target';
 type Session={release?:()=>void;recording?:Promise<Blob>;stop?:()=>void;request?:boolean;local?:boolean;preparing?:boolean};
 
 function encode(blob:Blob){
@@ -21,6 +22,7 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
  const current=useRef<Session|null>(null);
  const [phase,setPhase]=useState<Phase>('idle');
  const [error,setError]=useState('');
+ const [speakingField,setSpeakingField]=useState<SpeechField|null>(null);
  const [progress,setProgress]=useState<number|null>(null);
  const [value,setValue]=useState<{transcript:string;text:string}>();
 
@@ -29,6 +31,7 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   current.current=null;
   session.release?.();
   setPhase('idle');
+  setSpeakingField(null);
   setError(nextError);
  }
  function cancel(reset=true){
@@ -37,10 +40,10 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   current.current=null;
   session.release?.();
   if(session.request)void invoke('translation.cancelSpeech').catch(()=>{});
-  if(reset)setPhase('idle');
+  if(reset){setPhase('idle');setSpeakingField(null);}
  }
  useEffect(()=>{
-  if(!active)setPhase('idle');
+  if(!active){setPhase('idle');setSpeakingField(null);}
   return()=>cancel(false);
  },[active]);
 
@@ -138,14 +141,20 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   }
  }
 
- async function speak(){
-  if(!active||!value||current.current)return;
+ async function speak(text:string,language:string,field:SpeechField,useSoniox=false){
+  if(!active||!text.trim()||current.current)return;
   const session:Session={request:true};
   current.current=session;
-  setPhase('loadingAudio');
+  setSpeakingField(field);
+  setPhase(useSoniox?'loadingAudio':'playing');
   setError('');
   try{
-   const response=await invoke<{audio:string}>('translation.speak',{text:value.text,target});
+   if(!useSoniox){
+    await invoke('translation.speakLocal',{text,language});
+    finish(session);
+    return;
+   }
+   const response=await invoke<{audio:string}>('translation.speak',{text,target:language});
    if(current.current!==session)return;
    session.request=false;
    const bytes=Uint8Array.from(atob(response.audio),c=>c.charCodeAt(0));
@@ -166,5 +175,5 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   }
  }
 
- return {phase,error,value,progress,start,submit,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
+ return {phase,error,value,progress,speakingField,start,submit,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
 }

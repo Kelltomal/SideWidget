@@ -208,6 +208,8 @@ sealed partial class Controller
                 case "translation.voice" or "translation.dictate":
                     var target = c.ActionId == "translation.voice" ? Text("target",10) : null;
                     return await RunSpeech(token=>Online.TranslateVoice(Text("audio", (OnlineServices.SonioxRecordingLimit+2)/3*4),Text("source",10),target,token));
+                case "translation.speakLocal":
+                    return await RunSpeech(token=>TranslationSpeech.PlayAsync(Text("text",10000),Text("language",10),token));
                 case "translation.speak":
                     return await RunSpeech(token=>Online.SpeakTranslation(Text("text",10000),Text("target",10),token));
                 case "translation.cancelSoniox" or "translation.cancelSpeech":CancelSpeech();return new{cancelled=true};

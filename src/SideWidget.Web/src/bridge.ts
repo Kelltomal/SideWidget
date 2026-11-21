@@ -21,7 +21,7 @@ export class Bridge {
       if(objects&&!this.host.postMessageWithAdditionalObjects){reject(new Error('Перенос файлов недоступен. Обновите WebView2 или добавьте приложение кнопкой.'));return;}
       // The native website adapter allows ten minutes for a manual CAPTCHA.
       const websiteTranslation=actionId==='translation.run'&&'provider' in params&&(params.provider==='google'||params.provider==='yandex');
-      const timeout=actionId==='updates.install'?31*60000:actionId==='updates.github.connect'?16*60000:websiteTranslation?12*60000:actionId==='app.share'?15*60000:180000;
+      const timeout=actionId==='updates.install'?31*60000:actionId==='updates.github.connect'?16*60000:actionId==='translation.speakLocal'?30*60000:websiteTranslation?12*60000:actionId==='app.share'?15*60000:180000;
       const timer=setTimeout(()=>{this.pending.delete(id);reject(new Error('Не получен ответ приложения. Проверьте результат перед повтором.'));},timeout);
       this.pending.set(id,{resolve,reject,timer});
       try{const message={protocolVersion:1,requestId:id,actionId,params};if(objects)this.host.postMessageWithAdditionalObjects!(message,objects);else this.host.postMessage(message);}

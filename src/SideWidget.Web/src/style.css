@@ -65,6 +65,8 @@ main {flex:1;min-height:0;overflow:auto;padding:3px 16px 20px;overscroll-behavio
 .translation-languages select {min-width:0;text-overflow:ellipsis}
 .translation-swap {width:40px;min-height:40px;padding:0}
 .translation-model-progress {width:100%;accent-color:var(--accent)}
+.translation-text-field {display:flex;flex-direction:column;gap:7px;min-width:0}
+.translation-field-heading {display:flex;align-items:center;justify-content:space-between;gap:6px}
 .translation-texts textarea {resize:vertical;min-width:0}
 .notice {font-size:13px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
 .error {color:var(--error-text);padding:10px 12px;border:1px solid var(--error-line);border-radius:8px;background:var(--error-surface)}

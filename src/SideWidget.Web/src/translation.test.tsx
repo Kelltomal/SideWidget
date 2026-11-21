@@ -232,3 +232,31 @@ it('switches from Soniox to typing with the previous text provider and draft',as
  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Перевести'})));
  expect(invoke).toHaveBeenCalledWith('translation.run',{text:'Hello',source:'en',target:'ru',provider:'google'});
 });
+it('plays the two translation fields in their selected languages and stops to switch fields',async()=>{
+ const finish: Array<()=>void>=[];
+ vi.mocked(invoke).mockImplementation(action=>{
+  if(action==='translation.speakLocal')return new Promise(resolve=>finish.push(()=>resolve({}))) as never;
+  return Promise.resolve(action==='translation.run'?{text:'你好'}:{configured:false}) as never;
+ });
+ const view=render(<Translation/>);
+ await act(async()=>{});
+ const source=screen.getByRole<HTMLButtonElement>('button',{name:'Прослушать исходный текст'});
+ const result=screen.getByRole<HTMLButtonElement>('button',{name:'Прослушать результат'});
+ expect(source.querySelector('svg')).toBeTruthy();
+ expect(result.querySelector('svg')).toBeTruthy();
+ expect(source.disabled&&result.disabled).toBe(true);
+ fireEvent.change(screen.getByLabelText('Исходный язык'),{target:{value:'ru'}});
+ fireEvent.change(screen.getByLabelText('Язык перевода'),{target:{value:'zh'}});
+ fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Привет'}});
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Перевести'})));
+ fireEvent.click(source);
+ expect(invoke).toHaveBeenCalledWith('translation.speakLocal',{text:'Привет',language:'ru'});
+ fireEvent.click(result);
+ expect(invoke).toHaveBeenCalledWith('translation.cancelSpeech');
+ expect(invoke).toHaveBeenCalledWith('translation.speakLocal',{text:'你好',language:'zh'});
+ await act(async()=>finish[0]());
+ expect(screen.getByRole('button',{name:'Остановить озвучивание'})).toBe(result);
+ view.rerender(<Translation active={false}/>);
+ expect(vi.mocked(invoke).mock.calls.filter(([action])=>action==='translation.cancelSpeech')).toHaveLength(2);
+ await act(async()=>finish[1]());
+});

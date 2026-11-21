@@ -1,5 +1,5 @@
 import {locale, t} from './i18n';
-import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {useEffect,useId,useRef,useState,type ReactNode} from 'react';
 import type {Snapshot} from './types';
 import type {LocalProps,SessionText} from './LocalTools';
 import {QrTool} from './LocalTools';
@@ -147,6 +147,8 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
   voice.phase==='loadingAudio'?'Готовим озвучивание…':voice.phase==='playing'?'Идёт озвучивание':'';
  const locked=busy||voiceBusy||configure.busy;
  const visibleResult=isSoniox?voice.value?.text??'':result;
+ const visibleSource=isSoniox?voice.value?.transcript??'':text;
+ const sourceId=useId(),resultId=useId();
  const [recentLanguages,setRecentLanguages]=useState(readRecentLanguages);
  const recentOptions=recentLanguages.map(code=>translationLanguages.find(([id])=>id===code)!);
  const otherOptions=translationLanguages.filter(([code])=>!recentLanguages.includes(code));
@@ -197,6 +199,18 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
   ? (voice.phase==='ready'?'Перевести запись':voice.phase==='recording'?'Стоп и перевести':'Начать запись')
   : (voice.phase==='ready'?'Распознать запись':voice.phase==='recording'?'Стоп и вставить':'Диктовать текст');
 
+ function listenButton(field:'source'|'target',value:string){
+  const playing=voice.speakingField===field;
+  const label=t(playing?'Остановить озвучивание':field==='target'?'Прослушать результат':
+    isSoniox?'Прослушать распознанную речь':'Прослушать исходный текст');
+  return <button type="button" className="icon-button translation-listen" data-help={label} aria-label={label}
+    disabled={!active||busy||configure.busy||!value.trim()||(voiceBusy&&!voice.speakingField)}
+    onClick={()=>{
+     if(voice.speakingField)voice.cancel();
+     if(!playing)void voice.speak(value,field==='source'?source:target,field,isSoniox&&field==='target'&&!!config?.sonioxConfigured);
+    }}><Icon name={playing?'stop':'sound'} size={17}/></button>;
+ }
+
  return <div className="stack">
   <div className="actions" role="group" aria-label={t('Способ ввода')}>
    <button type="button" aria-pressed={!isSoniox} disabled={locked} onClick={()=>{if(isSoniox)selectProvider(textProvider);}}>{t('Текст')}</button>
@@ -235,19 +249,33 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
        else void configureKey(true);
       }
      }}>{t(recordLabel)}</button>}
-   {voiceBusy&&<button onClick={()=>voice.cancel()}>{voice.phase==='playing'?t('Остановить озвучивание'):t('Отмена')}</button>}
+   {voiceBusy&&!voice.speakingField&&<button onClick={()=>voice.cancel()}>{t('Отмена')}</button>}
   </div>
   <small role="status" className={voiceStatus||voice.phase==='preparing'?undefined:'sr-only'}>{voice.phase==='preparing'?
    t('Загружаем модель распознавания…'):t(voiceStatus)}</small>
   {voice.phase==='preparing'&&voice.progress!==null&&<progress className="translation-model-progress" aria-label={t('Загрузка модели распознавания')} max={100} value={voice.progress}/>}
   {voice.error&&<Notice error>{t(voice.error)}</Notice>}
   <div className="form-row translation-texts">
-   {isSoniox?<label>{t('Распознанная речь')}<textarea key="voice" readOnly rows={5} value={voice.value?.transcript??''}/></label>:<label>{t('Исходный текст')}<textarea key="text" autoFocus disabled={busy||voiceBusy} rows={5} value={text} maxLength={textLimit} onChange={e=>{invalidate();setText(e.target.value);}} onKeyDown={e=>{
-    if(e.key!=='Enter'||!e.ctrlKey||e.altKey||e.shiftKey||e.metaKey||e.nativeEvent.isComposing)return;
-    e.preventDefault();
-    if(!e.repeat)void translate();
-   }}/></label>}
-   <label>{t('Результат')}<textarea readOnly rows={5} value={visibleResult}/></label>
+   <div className="translation-text-field">
+    <div className="translation-field-heading">
+     <label htmlFor={sourceId}>{t(isSoniox?'Распознанная речь':'Исходный текст')}</label>
+     {listenButton('source',visibleSource)}
+    </div>
+    {isSoniox?<textarea id={sourceId} key="voice" readOnly rows={5} value={visibleSource}/>:
+     <textarea id={sourceId} key="text" autoFocus disabled={busy||voiceBusy} rows={5} value={text} maxLength={textLimit}
+      onChange={e=>{invalidate();setText(e.target.value);}} onKeyDown={e=>{
+       if(e.key!=='Enter'||!e.ctrlKey||e.altKey||e.shiftKey||e.metaKey||e.nativeEvent.isComposing)return;
+       e.preventDefault();
+       if(!e.repeat)void translate();
+      }}/>}
+   </div>
+   <div className="translation-text-field">
+    <div className="translation-field-heading">
+     <label htmlFor={resultId}>{t('Результат')}</label>
+     {listenButton('target',visibleResult)}
+    </div>
+    <textarea id={resultId} readOnly rows={5} value={visibleResult}/>
+   </div>
   </div>
   {!isSoniox&&<>
   <small>{provider==='mymemory'?t('{count} / 500 байт · кириллица обычно занимает 2 байта',{count:byteCount}):t('{count} / {limit} символов',{count:text.length,limit:textLimit.toLocaleString(locale())})}</small>
@@ -256,7 +284,7 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
   {text.length>textLimit&&<Notice>{t('Сократите текст до {limit} символов для выбранного переводчика.',{limit:textLimit.toLocaleString(locale())})}</Notice>}
   <div className="actions"><button className="primary" aria-keyshortcuts="Control+Enter" disabled={!canTranslate} onClick={()=>void translate()}>{busy?t('Переводим…'):t('Перевести')}</button>{busy&&<button onClick={()=>void cancel()}>{t('Отменить запрос')}</button>}</div>
   {error&&<Notice error>{t(error)}</Notice>}</>}
-  {visibleResult&&<><div className="actions"><CopyButton text={visibleResult}/>{isSoniox&&<button disabled={locked||!config?.sonioxConfigured} onClick={()=>void voice.speak()}>{t('Озвучить перевод')}</button>}<button onClick={()=>setQr(v=>!v)}>{qr?t('Скрыть QR'):t('Показать QR')}</button></div>{qr&&<QrTool initialText={visibleResult}/>}</>}
+  {visibleResult&&<><div className="actions"><CopyButton text={visibleResult}/><button onClick={()=>setQr(v=>!v)}>{qr?t('Скрыть QR'):t('Показать QR')}</button></div>{qr&&<QrTool initialText={visibleResult}/>}</>}
  </div>;
 }
 

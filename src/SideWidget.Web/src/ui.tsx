@@ -12,7 +12,7 @@ export function Icon({name,size=18}:{name:string;size?:number}) {
   backspace:'M8 5h13v14H8l-6-7Zm4 4 6 6m0-6-6 6',
   keypad:'M3 6h18v12H3ZM6.5 9.5h1m4 0h1m4 0h1m-11 3h1m4 0h1m4 0h1M8 15.5h8',
   settings:'M4 7h16M4 17h16M8 4v6M16 14v6',search:'M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 6 6',
-  play:'m9 5 11 7-11 7Z',pause:'M8 5v14M16 5v14',previous:'M5 5v14m14-14L8 12l11 7Z',next:'M19 5v14M5 5l11 7-11 7Z',
+  play:'m9 5 11 7-11 7Z',pause:'M8 5v14M16 5v14',stop:'M6 6h12v12H6z',previous:'M5 5v14m14-14L8 12l11 7Z',next:'M19 5v14M5 5l11 7-11 7Z',
   music:'M9 18V5l11-2v13M9 5v4l11-2M9 18c0 3-6 3-6 0s6-3 6 0Zm11-2c0 3-6 3-6 0s6-3 6 0Z',
   timer:'M9 2h6m-3 0v4m6-1 2 2M12 6a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 4v4l3 2',
   plus:'M12 5v14M5 12h14',calculator:'M5 3h14v18H5ZM8 7h8M8 12h1m6 0h1m-8 5h1m6 0h1',
