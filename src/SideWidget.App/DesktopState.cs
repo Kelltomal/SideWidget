@@ -18,6 +18,7 @@ sealed class DesktopState : IDisposable
     public OnlineServices Online {get;}
     public GitHubConnection GitHub {get;}
     public LocalDictation LocalDictation {get;}
+    public TranslationSpeech TranslationSpeech {get;}
     public AudioSpectrumService Spectrum {get;}=new();
     public AudioService Audio {get;}=new();
     public MediaService Media {get;}=new();
@@ -35,6 +36,7 @@ sealed class DesktopState : IDisposable
             catch (Exception error) when (error is System.Runtime.InteropServices.COMException or SideWidget.Core.CommandFault or UnauthorizedAccessException) {return null;}
         },Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory));
         LocalDictation=new(directory);
+        TranslationSpeech=new(directory);
         var vault = new SecretVault(Path.Combine(directory,"secrets"));
         Online=new(Personal.Store,vault);
         GitHub=new(vault);

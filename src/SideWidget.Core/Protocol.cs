@@ -50,7 +50,7 @@ public static class Protocol
             "translation.configureSoniox" or "translation.microphone" or "translation.cancelSoniox" or "translation.localMicrophone" or "translation.cancelSpeech"=>[],
             "translation.voice"=>["audio","source","target"],
             "translation.dictate" or "translation.localDictate"=>["audio","source"],
-            "translation.speakLocal"=>["text","language"],
+            "translation.speakLocal"=>["text","language","operation"],
             "translation.speak"=>["text","target"],
             "search.query"=>["text"],"search.open"=>["path","reveal"],"quick.open"=>["target"],"quick.power"=>["action"],"diary.draft"=>["text"],"weather.get"=>["city"],"translation.run"=>["text","source","target","provider"],
             "visualizer.settings"=>["enabled","showInHeader","brightness","sensitivity","style"],

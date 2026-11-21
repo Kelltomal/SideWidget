@@ -141,6 +141,8 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
  const voice=useSonioxVoice(active,source,target);
  const voiceBusy=voice.phase!=='idle';
  const canSubmitVoice=voice.phase==='recording'||voice.phase==='ready';
+ const download=voice.voiceDownload;
+ const downloadPercent=download?Math.floor(download.received*100/download.total):0;
  const voiceStatus=voice.phase==='opening'?'Подключаем микрофон…':voice.phase==='recording'?'Идёт запись':
   voice.phase==='ready'?(isSoniox?'Запись готова к переводу':'Запись готова к распознаванию'):
   voice.phase==='translating'?(isSoniox?'Переводим…':'Распознаём речь…'):
@@ -207,7 +209,7 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
     disabled={!active||busy||configure.busy||!value.trim()||(voiceBusy&&!voice.speakingField)}
     onClick={()=>{
      if(voice.speakingField)voice.cancel();
-     if(!playing)void voice.speak(value,field==='source'?source:target,field,isSoniox&&field==='target'&&!!config?.sonioxConfigured);
+     if(!playing)void voice.speak(value,field==='source'?source:target,field);
     }}><Icon name={playing?'stop':'sound'} size={17}/></button>;
  }
 
@@ -251,8 +253,11 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
      }}>{t(recordLabel)}</button>}
    {voiceBusy&&!voice.speakingField&&<button onClick={()=>voice.cancel()}>{t('Отмена')}</button>}
   </div>
-  <small role="status" className={voiceStatus||voice.phase==='preparing'?undefined:'sr-only'}>{voice.phase==='preparing'?
-   t('Загружаем модель распознавания…'):t(voiceStatus)}</small>
+  <small role="status" className={voiceStatus||voice.phase==='preparing'||download?undefined:'sr-only'}>
+   {download?t('Скачиваем голос Piper… {percent}% · {size} МБ',{percent:downloadPercent,size:Math.ceil(download.total/1000000)}):
+    voice.phase==='preparing'?t('Загружаем модель распознавания…'):t(voiceStatus)}
+  </small>
+  {download&&<progress className="translation-model-progress" aria-label={t('Загрузка голоса Piper')} max={100} value={downloadPercent}/>}
   {voice.phase==='preparing'&&voice.progress!==null&&<progress className="translation-model-progress" aria-label={t('Загрузка модели распознавания')} max={100} value={voice.progress}/>}
   {voice.error&&<Notice error>{t(voice.error)}</Notice>}
   <div className="form-row translation-texts">

@@ -163,5 +163,7 @@
   "Введите текст для озвучивания.": "Enter text to play.",
   "Выберите язык озвучивания.": "Choose a language for playback.",
   "Добавьте голос для выбранного языка в настройках речи Windows.": "Add a voice for the selected language in Windows speech settings.",
-  "Не удалось воспроизвести текст.": "Could not play the text."
+  "Не удалось воспроизвести текст.": "Could not play the text.",
+  "Не удалось скачать голос Piper. Проверьте интернет и свободное место.": "Could not download the Piper voice. Check your connection and available disk space.",
+  "Выберите исходный язык для озвучивания.": "Choose the source language for playback."
 }

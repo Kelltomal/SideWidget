@@ -5,9 +5,9 @@ import {toDictationWav} from './localDictation';
 
 const mimeType='audio/webm;codecs=opus';
 const recordingLimit=512*1024;
-type Phase='idle'|'preparing'|'opening'|'recording'|'ready'|'translating'|'loadingAudio'|'playing';
+type Phase='idle'|'preparing'|'opening'|'recording'|'ready'|'translating'|'downloadingVoice'|'loadingAudio'|'playing';
 type SpeechField='source'|'target';
-type Session={release?:()=>void;recording?:Promise<Blob>;stop?:()=>void;request?:boolean;local?:boolean;preparing?:boolean};
+type Session={release?:()=>void;recording?:Promise<Blob>;stop?:()=>void;request?:boolean;local?:boolean;preparing?:boolean;operation?:string};
 
 function encode(blob:Blob){
  return new Promise<string>((resolve,reject)=>{
@@ -24,6 +24,7 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
  const [error,setError]=useState('');
  const [speakingField,setSpeakingField]=useState<SpeechField|null>(null);
  const [progress,setProgress]=useState<number|null>(null);
+ const [voiceDownload,setVoiceDownload]=useState<{received:number;total:number}|null>(null);
  const [value,setValue]=useState<{transcript:string;text:string}>();
 
  function finish(session:Session,nextError=''){
@@ -32,6 +33,7 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   session.release?.();
   setPhase('idle');
   setSpeakingField(null);
+  setVoiceDownload(null);
   setError(nextError);
  }
  function cancel(reset=true){
@@ -40,16 +42,27 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   current.current=null;
   session.release?.();
   if(session.request)void invoke('translation.cancelSpeech').catch(()=>{});
-  if(reset){setPhase('idle');setSpeakingField(null);}
+  if(reset){setPhase('idle');setSpeakingField(null);setVoiceDownload(null);}
  }
  useEffect(()=>{
-  if(!active){setPhase('idle');setSpeakingField(null);}
+  if(!active){setPhase('idle');setSpeakingField(null);setVoiceDownload(null);}
   return()=>cancel(false);
  },[active]);
 
  useEffect(()=>bridge.subscribe(event=>{
-  if(event.type==='translation.local.progress'&&current.current?.preparing)
+  const session=current.current;
+  if(event.type==='translation.local.progress'&&session?.preparing)
    setProgress(event.data.percent);
+  if(event.type!=='translation.speech.progress'||!session?.operation||event.data?.operation!==session.operation)return;
+  const {phase,received,total}=event.data;
+  if(phase==='download'&&typeof received==='number'&&typeof total==='number'&&total>0){
+   setVoiceDownload({received,total});
+   setPhase('downloadingVoice');
+  }
+  if(phase==='preparing'||phase==='playing'){
+   setVoiceDownload(null);
+   setPhase(phase==='playing'?'playing':'loadingAudio');
+  }
  }),[]);
 
  async function start(local=false){
@@ -141,39 +154,21 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   }
  }
 
- async function speak(text:string,language:string,field:SpeechField,useSoniox=false){
+ async function speak(text:string,language:string,field:SpeechField){
   if(!active||!text.trim()||current.current)return;
-  const session:Session={request:true};
+  const operation=crypto.randomUUID();
+  const session:Session={request:true,operation};
   current.current=session;
   setSpeakingField(field);
-  setPhase(useSoniox?'loadingAudio':'playing');
+  setPhase('loadingAudio');
   setError('');
   try{
-   if(!useSoniox){
-    await invoke('translation.speakLocal',{text,language});
-    finish(session);
-    return;
-   }
-   const response=await invoke<{audio:string}>('translation.speak',{text,target:language});
-   if(current.current!==session)return;
-   session.request=false;
-   const bytes=Uint8Array.from(atob(response.audio),c=>c.charCodeAt(0));
-   const url=URL.createObjectURL(new Blob([bytes],{type:'audio/mpeg'}));
-   const audio=new Audio();
-   session.release=()=>{
-    audio.pause();
-    audio.removeAttribute('src');
-    URL.revokeObjectURL(url);
-   };
-   audio.onended=()=>finish(session);
-   audio.onerror=()=>finish(session,'Не удалось воспроизвести перевод.');
-   audio.src=url;
-   await audio.play();
-   if(current.current===session)setPhase('playing');
+   await invoke('translation.speakLocal',{text,language,operation});
+   finish(session);
   }catch(error){
-   finish(session,session.request&&error instanceof Error?error.message:'Не удалось воспроизвести перевод.');
+   finish(session,error instanceof Error?error.message:'Не удалось воспроизвести текст.');
   }
  }
 
- return {phase,error,value,progress,speakingField,start,submit,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
+ return {phase,error,value,progress,voiceDownload,speakingField,start,submit,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
 }

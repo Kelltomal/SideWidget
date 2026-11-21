@@ -2,6 +2,7 @@
 import {act,cleanup,fireEvent,render,screen,within} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import {Translation} from './PersonalPanels';
+import {bridge} from './bridge';
 import {invoke} from './ui';
 vi.mock('./ui',async original=>({...await original<typeof import('./ui')>(),invoke:vi.fn()}));
 afterEach(()=>{cleanup();localStorage.clear();vi.resetAllMocks();});
@@ -190,6 +191,9 @@ it.each(['soniox','mymemory','google','yandex','deepl','local'])('uses the micro
   if(voice){
    expect(screen.getByLabelText<HTMLTextAreaElement>('Распознанная речь').value).toBe('Hello');
    expect(invoke).toHaveBeenCalledWith(command,{audio:'GkXfow==',source:'en',target:'ru'});
+   await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Прослушать результат'})));
+   expect(invoke).toHaveBeenCalledWith('translation.speakLocal',{text:'Привет',language:'ru',operation:expect.any(String)});
+   expect(invoke).not.toHaveBeenCalledWith('translation.speak',expect.anything());
   }else{
    expect(invoke).toHaveBeenCalledWith(command,{audio:local?expect.stringMatching(/^UklGR/):'GkXfow==',source:'en'});
    expect(invoke).not.toHaveBeenCalledWith('translation.run',expect.anything());
@@ -250,13 +254,38 @@ it('plays the two translation fields in their selected languages and stops to sw
  fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Привет'}});
  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Перевести'})));
  fireEvent.click(source);
- expect(invoke).toHaveBeenCalledWith('translation.speakLocal',{text:'Привет',language:'ru'});
+ expect(invoke).toHaveBeenCalledWith('translation.speakLocal',{text:'Привет',language:'ru',operation:expect.any(String)});
  fireEvent.click(result);
  expect(invoke).toHaveBeenCalledWith('translation.cancelSpeech');
- expect(invoke).toHaveBeenCalledWith('translation.speakLocal',{text:'你好',language:'zh'});
+ expect(invoke).toHaveBeenCalledWith('translation.speakLocal',{text:'你好',language:'zh',operation:expect.any(String)});
  await act(async()=>finish[0]());
  expect(screen.getByRole('button',{name:'Остановить озвучивание'})).toBe(result);
  view.rerender(<Translation active={false}/>);
  expect(vi.mocked(invoke).mock.calls.filter(([action])=>action==='translation.cancelSpeech')).toHaveLength(2);
  await act(async()=>finish[1]());
+});
+
+it('shows first-use Piper download progress, then playback, and ignores stale progress',async()=>{
+ let emit:(event:unknown)=>void=()=>{};
+ const subscription=vi.spyOn(bridge,'subscribe').mockImplementation(listener=>{
+  emit=listener;
+  return ()=>{};
+ });
+ vi.mocked(invoke).mockImplementation(action=>action==='translation.speakLocal'
+  ? new Promise(()=>{}) as never
+  : Promise.resolve({configured:false,sonioxConfigured:true}) as never);
+ try {
+  await act(async()=>render(<Translation sessionResult={['Привет!',vi.fn()]}/>));
+  fireEvent.click(screen.getByRole('button',{name:'Прослушать результат'}));
+  const request=vi.mocked(invoke).mock.calls.find(([action])=>action==='translation.speakLocal');
+  const {operation}=request?.[1] as {operation:string};
+  await act(()=>emit({type:'translation.speech.progress',data:{operation:'other',phase:'download',received:1,total:2}}));
+  expect(screen.queryByRole('progressbar',{name:'Загрузка голоса Piper'})).toBeNull();
+  await act(()=>emit({type:'translation.speech.progress',data:{operation,phase:'download',received:20000000,total:80000000}}));
+  expect(screen.getByText('Скачиваем голос Piper… 25% · 80 МБ')).toBeTruthy();
+  await act(()=>emit({type:'translation.speech.progress',data:{operation,phase:'playing'}}));
+  expect(screen.getByText('Идёт озвучивание')).toBeTruthy();
+  expect(screen.queryByRole('progressbar',{name:'Загрузка голоса Piper'})).toBeNull();
+  expect(invoke).not.toHaveBeenCalledWith('translation.speak',expect.anything());
+ }finally { subscription.mockRestore(); }
 });

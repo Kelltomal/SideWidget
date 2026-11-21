@@ -209,7 +209,17 @@ sealed partial class Controller
                     var target = c.ActionId == "translation.voice" ? Text("target",10) : null;
                     return await RunSpeech(token=>Online.TranslateVoice(Text("audio", (OnlineServices.SonioxRecordingLimit+2)/3*4),Text("source",10),target,token));
                 case "translation.speakLocal":
-                    return await RunSpeech(token=>TranslationSpeech.PlayAsync(Text("text",10000),Text("language",10),token));
+                    return await RunSpeech(token =>
+                    {
+                        var operation = p.TryGetProperty("operation", out _) ? Text("operation", 36) : null;
+                        IProgress<object> progress = new Progress<object>(state =>
+                        {
+                            if (!token.IsCancellationRequested) Emit("translation.speech.progress", state);
+                        });
+                        return desktopState.TranslationSpeech.PlayAsync(Text("text", 20000), Text("language", 10),
+                            load => progress.Report(new { operation, phase = "download", load.Received, load.Total }),
+                            phase => progress.Report(new { operation, phase }), token);
+                    });
                 case "translation.speak":
                     return await RunSpeech(token=>Online.SpeakTranslation(Text("text",10000),Text("target",10),token));
                 case "translation.cancelSoniox" or "translation.cancelSpeech":CancelSpeech();return new{cancelled=true};
