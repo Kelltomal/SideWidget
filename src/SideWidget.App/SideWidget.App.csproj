@@ -18,6 +18,11 @@
   <PropertyGroup Condition="'$(SideWidgetLiteDesktop)' == 'true'">
     <SelfContained>false</SelfContained><WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime.NoAvx" Version="1.9.1" ExcludeAssets="build" GeneratePathProperty="true" />
+    <Content Include="$(PkgWhisper_net_Runtime_NoAvx)/build/win-x64/*.dll" Link="runtimes/noavx/win-x64/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup><PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../SideWidget.Core/SideWidget.Core.csproj" /><ProjectReference Include="../SideWidget.Infrastructure/SideWidget.Infrastructure.csproj" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../SideWidget.Remote/SideWidget.Remote.csproj" /><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>

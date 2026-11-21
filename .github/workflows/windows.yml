@@ -163,9 +163,9 @@ jobs:
           portable="SideWidget-$version-portable-win-x64.zip"
           lite="SideWidget-$version-lite-win-x64.zip"
           # GitHub sorts Assets by name. Keep exact-name assets for older updaters.
-          ln "$portable" "00-$portable"
-          ln "$lite" "01-$lite"
-          files=("00-$portable" "01-$lite")
+          ln "$lite" "00-$lite"
+          ln "$portable" "01-$portable"
+          files=("00-$lite" "01-$portable")
           for edition in '-portable' '-lite' '-deps-dotnet' '-deps-desktop' '-deps-webview2'; do
             archive="SideWidget-$version$edition-win-x64.zip"
             files+=("$archive" "$archive.sha256")
@@ -174,8 +174,8 @@ jobs:
           notes="$(cat <<EOF
           ## Скачать SideWidget для Windows
 
-          - [Portable · Windows x64]($downloads/SideWidget-$version-portable-win-x64.zip)
-          - [Lite · Windows x64]($downloads/SideWidget-$version-lite-win-x64.zip)
+          - [Lite · Windows x64]($downloads/00-$lite)
+          - [Portable · Windows x64]($downloads/01-$portable)
 
           ### Библиотеки для Lite
 

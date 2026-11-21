@@ -1079,5 +1079,10 @@
   "Стоп и вставить": "Stop and insert",
   "Диктовать текст": "Dictate text",
   "Не удалось распознать речь.": "Could not transcribe the speech.",
-  "Soniox расшифрует запись и добавит её в исходный текст. Для диктовки нужен ключ Soniox API.": "Soniox transcribes the recording and adds it to the source text. Dictation requires a Soniox API key."
+  "Soniox расшифрует запись и добавит её в исходный текст. Для диктовки нужен ключ Soniox API.": "Soniox transcribes the recording and adds it to the source text. Dictation requires a Soniox API key.",
+  "Распознавание речи": "Speech recognition",
+  "На компьютере": "On this computer",
+  "При первой диктовке скачивается модель (около 60 МБ). Затем распознавание работает без интернета.": "The first use downloads a model (about 60 MB). Speech recognition then works offline.",
+  "Загружаем модель распознавания…": "Downloading the speech model…",
+  "Загрузка модели распознавания": "Speech model download"
 }

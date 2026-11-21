@@ -117,6 +117,13 @@ function readRecentLanguages():string[] {
  return [];
 }
 
+const dictationEngineKey='sidewidget.translation.dictationEngine';
+
+function readDictationEngine(){
+ try{if(localStorage.getItem(dictationEngineKey)==='soniox')return 'soniox';}catch{}
+ return 'local';
+}
+
 type TranslationConfig={configured:boolean;sonioxConfigured?:boolean};
 
 export function Translation({sessionText,sessionResult,active=true}:{sessionText?:SessionText;sessionResult?:SessionText;active?:boolean}={}) {
@@ -129,6 +136,8 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
  const [result,setResult]=sessionResult??localResult;
  const [busy,setBusy]=useState(false);const [error,setError]=useState('');const revision=useRef(0);const pending=useRef(false);const configure=useAction();
  const isSoniox=provider==='soniox';
+ const [dictationEngine,setDictationEngine]=useState(readDictationEngine);
+ const localDictation=!isSoniox&&dictationEngine==='local';
  const voice=useSonioxVoice(active,source,target);
  const voiceBusy=voice.phase!=='idle';
  const canSubmitVoice=voice.phase==='recording'||voice.phase==='ready';
@@ -206,22 +215,31 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
    <button type="button" className="translation-swap" aria-label={t('Поменять языки местами')} disabled={locked||source==='auto'} onClick={()=>{select({provider,source:target,target:source});rememberLanguages(source,target);if(!isSoniox&&result)setText(result);}}><Icon name="swap" size={20}/></button>
    <label>{t('Язык перевода')}<select disabled={locked} value={target} onChange={e=>{select({...selection,target:e.target.value});rememberLanguages(e.target.value);}}>{recentOptions.map(languageOption)}{otherOptions.map(languageOption)}</select></label>
   </div>
+  {!isSoniox&&<label>{t('Распознавание речи')}<select value={dictationEngine} disabled={locked} onChange={e=>{
+   const engine=e.target.value==='soniox'?'soniox':'local';
+   setDictationEngine(engine);
+   voice.clear();
+   try{localStorage.setItem(dictationEngineKey,engine);}catch{}
+  }}><option value="local">{t('На компьютере')}</option><option value="soniox">Soniox</option></select></label>}
   {isSoniox&&!config?.sonioxConfigured&&<small>{t('Добавьте ключ Soniox API, чтобы начать запись.')}</small>}
   <div className="actions">
    {isSoniox&&!config?.sonioxConfigured?
     <button className="primary" disabled={locked} onClick={()=>void configureKey(true)}>{configure.busy?t('Окно настройки открыто…'):t('Настроить ключ Soniox')}</button>:
     <button className={isSoniox?'primary':undefined} disabled={!active||busy||configure.busy}
-     data-help={!isSoniox?t('Soniox расшифрует запись и добавит её в исходный текст. Для диктовки нужен ключ Soniox API.'):undefined}
+     data-help={localDictation?t('При первой диктовке скачивается модель (около 60 МБ). Затем распознавание работает без интернета.'):
+      !isSoniox?t('Soniox расшифрует запись и добавит её в исходный текст. Для диктовки нужен ключ Soniox API.'):undefined}
      aria-disabled={voiceBusy&&!canSubmitVoice||undefined} onClick={()=>{
       if(canSubmitVoice){setQr(false);void voice.submit(isSoniox?undefined:appendTranscript);}
       else if(!voiceBusy){
-       if(config?.sonioxConfigured)void voice.start();
+       if(localDictation||config?.sonioxConfigured)void voice.start(localDictation);
        else void configureKey(true);
       }
      }}>{t(recordLabel)}</button>}
    {voiceBusy&&<button onClick={()=>voice.cancel()}>{voice.phase==='playing'?t('Остановить озвучивание'):t('Отмена')}</button>}
   </div>
-  <small role="status" className={voiceStatus?undefined:'sr-only'}>{t(voiceStatus)}</small>
+  <small role="status" className={voiceStatus||voice.phase==='preparing'?undefined:'sr-only'}>{voice.phase==='preparing'?
+   t('Загружаем модель распознавания…'):t(voiceStatus)}</small>
+  {voice.phase==='preparing'&&voice.progress!==null&&<progress className="translation-model-progress" aria-label={t('Загрузка модели распознавания')} max={100} value={voice.progress}/>}
   {voice.error&&<Notice error>{t(voice.error)}</Notice>}
   <div className="form-row translation-texts">
    {isSoniox?<label>{t('Распознанная речь')}<textarea key="voice" readOnly rows={5} value={voice.value?.transcript??''}/></label>:<label>{t('Исходный текст')}<textarea key="text" autoFocus disabled={busy||voiceBusy} rows={5} value={text} maxLength={textLimit} onChange={e=>{invalidate();setText(e.target.value);}} onKeyDown={e=>{

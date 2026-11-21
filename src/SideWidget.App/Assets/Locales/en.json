@@ -150,5 +150,10 @@
   "Создайте ключ в Soniox Console с доступом к распознаванию речи и озвучиванию. Windows DPAPI защищает сохранённый ключ.": "Create a key in Soniox Console with speech recognition and text-to-speech permissions. Windows DPAPI protects the stored key.",
   "Перевод Soniox": "Soniox translation",
   "Загружаем обновление… {0}%": "Downloading update… {0}%",
-  "Устанавливаем обновление…": "Installing update…"
+  "Устанавливаем обновление…": "Installing update…",
+  "Не удалось скачать модель распознавания. Проверьте интернет и свободное место.": "Could not download the speech model. Check your Internet connection and available disk space.",
+  "Выберите язык записи.": "Choose the recording language.",
+  "Модель распознавания недоступна. Начните запись заново.": "The speech model is unavailable. Start a new recording.",
+  "Не удалось распознать речь на компьютере. Повторите запись.": "Could not transcribe the recording on this computer. Try recording again.",
+  "Запрос отменён.": "Request canceled."
 }

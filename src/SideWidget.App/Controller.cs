@@ -22,7 +22,7 @@ sealed partial class Controller
     public Preferences Settings {get=>state.Settings;set=>state.Settings=value;}
     public LauncherService Launcher {get;}
     public OnlineServices Online {get;}
-    CancellationTokenSource? sonioxRequest;
+    CancellationTokenSource? speechRequest;
     int sharing;
     public bool Ready {get;set;}
     public Func<string,string,Task<bool>> Confirm {get;set;}=(_,_)=>Task.FromResult(false);
@@ -182,16 +182,31 @@ sealed partial class Controller
                 case "translation.get":return Online.TranslationInfo();
                 case "translation.configure":return await ConfigureTranslation(false);
                 case "translation.configureSoniox":return await ConfigureTranslation(true);
+                case "translation.localMicrophone":
+                    return await RunSpeech(async token =>
+                    {
+                        var progress = new Progress<int>(percent =>
+                        {
+                            if (!token.IsCancellationRequested) Emit("translation.local.progress",new{percent});
+                        });
+                        await desktopState.LocalDictation.PrepareAsync(progress,token);
+                        token.ThrowIfCancellationRequested();
+                        AllowTranslationMicrophone();
+                        return new{};
+                    });
+                case "translation.localDictate":
+                    return await RunSpeech(token=>desktopState.LocalDictation.TranscribeAsync(
+                        Text("audio",(LocalDictation.MaxWavSize+2)/3*4),Text("source",10),token));
                 case "translation.microphone":
                     Online.RequireSonioxKey();
                     AllowTranslationMicrophone();
                     return new{};
                 case "translation.voice" or "translation.dictate":
                     var target = c.ActionId == "translation.voice" ? Text("target",10) : null;
-                    return await RunSoniox(token=>Online.TranslateVoice(Text("audio", (OnlineServices.SonioxRecordingLimit+2)/3*4),Text("source",10),target,token));
+                    return await RunSpeech(token=>Online.TranslateVoice(Text("audio", (OnlineServices.SonioxRecordingLimit+2)/3*4),Text("source",10),target,token));
                 case "translation.speak":
-                    return await RunSoniox(token=>Online.SpeakTranslation(Text("text",10000),Text("target",10),token));
-                case "translation.cancelSoniox":CancelSoniox();return new{cancelled=true};
+                    return await RunSpeech(token=>Online.SpeakTranslation(Text("text",10000),Text("target",10),token));
+                case "translation.cancelSoniox" or "translation.cancelSpeech":CancelSpeech();return new{cancelled=true};
                 case "translation.run":
                     var provider=p.TryGetProperty("provider",out _)?Text("provider",20):"mymemory";
                     Online.CancelTranslation();CancelWebsiteTranslation();
@@ -203,14 +218,15 @@ sealed partial class Controller
             }
         }finally{running--;}
     }
-    internal void CancelSoniox()=>sonioxRequest?.Cancel();
-    async Task<object> RunSoniox(Func<CancellationToken,Task<object>> run)
+    void CancelSpeech()=>speechRequest?.Cancel();
+    async Task<object> RunSpeech(Func<CancellationToken,Task<object>> run)
     {
-        CancelSoniox();
+        CancelSpeech();
         using var cancellation=new CancellationTokenSource();
-        sonioxRequest=cancellation;
+        speechRequest=cancellation;
         try{return await run(cancellation.Token);}
-        finally{if(sonioxRequest==cancellation)sonioxRequest=null;}
+        catch(OperationCanceledException) when (cancellation.IsCancellationRequested){throw new CommandFault("cancelled","Запрос отменён.");}
+        finally{if(speechRequest==cancellation)speechRequest=null;}
     }
     static DesktopCleanup.CommandRule[] ReadDesktopRules(JsonElement values)
     {
@@ -261,7 +277,7 @@ sealed partial class Controller
         }
         return icons;
     }
-    public void Stop(){Ready=false;CancelWebsiteTranslation();CancelSoniox();if(ownsDesktopState)desktopState.Dispose();}
+    public void Stop(){Ready=false;CancelWebsiteTranslation();CancelSpeech();if(ownsDesktopState)desktopState.Dispose();}
     async Task<object> ShareApplication()
     {
         if(Interlocked.Exchange(ref sharing,1)!=0)throw new CommandFault("busy","Упаковка уже выполняется. Дождитесь готового архива.");

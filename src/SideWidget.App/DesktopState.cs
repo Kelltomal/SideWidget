@@ -16,6 +16,7 @@ sealed class DesktopState : IDisposable
     public WebsiteMonitorService Websites {get;}
     public SemaphoreSlim PowerExecution {get;}=new(1,1);
     public OnlineServices Online {get;}
+    public LocalDictation LocalDictation {get;}
     public AudioSpectrumService Spectrum {get;}=new();
     public AudioService Audio {get;}=new();
     public MediaService Media {get;}=new();
@@ -32,6 +33,7 @@ sealed class DesktopState : IDisposable
             try {return LauncherService.ReadShortcutTarget(path);}
             catch (Exception error) when (error is System.Runtime.InteropServices.COMException or SideWidget.Core.CommandFault or UnauthorizedAccessException) {return null;}
         },Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory));
+        LocalDictation=new(directory);
         Online=new(Personal.Store,new SecretVault(Path.Combine(directory,"secrets")));
         Spectrum.SetEnabled((Personal.Settings.Visualizer??new()).Enabled);
     }

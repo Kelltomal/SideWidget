@@ -1,10 +1,12 @@
 import {useEffect,useRef,useState} from 'react';
 import {invoke} from './ui';
+import {bridge} from './bridge';
+import {toDictationWav} from './localDictation';
 
 const mimeType='audio/webm;codecs=opus';
 const recordingLimit=512*1024;
-type Phase='idle'|'opening'|'recording'|'ready'|'translating'|'loadingAudio'|'playing';
-type Session={release?:()=>void;recording?:Promise<Blob>;stop?:()=>void;request?:boolean};
+type Phase='idle'|'preparing'|'opening'|'recording'|'ready'|'translating'|'loadingAudio'|'playing';
+type Session={release?:()=>void;recording?:Promise<Blob>;stop?:()=>void;request?:boolean;local?:boolean;preparing?:boolean};
 
 function encode(blob:Blob){
  return new Promise<string>((resolve,reject)=>{
@@ -19,6 +21,7 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
  const current=useRef<Session|null>(null);
  const [phase,setPhase]=useState<Phase>('idle');
  const [error,setError]=useState('');
+ const [progress,setProgress]=useState<number|null>(null);
  const [value,setValue]=useState<{transcript:string;text:string}>();
 
  function finish(session:Session,nextError=''){
@@ -33,7 +36,7 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   if(!session)return;
   current.current=null;
   session.release?.();
-  if(session.request)void invoke('translation.cancelSoniox').catch(()=>{});
+  if(session.request)void invoke('translation.cancelSpeech').catch(()=>{});
   if(reset)setPhase('idle');
  }
  useEffect(()=>{
@@ -41,17 +44,29 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   return()=>cancel(false);
  },[active]);
 
- async function start(){
+ useEffect(()=>bridge.subscribe(event=>{
+  if(event.type==='translation.local.progress'&&current.current?.preparing)
+   setProgress(event.data.percent);
+ }),[]);
+
+ async function start(local=false){
   if(!active||current.current)return;
-  const session:Session={};
+  const session:Session={local};
   current.current=session;
   setPhase('opening');
   setError('');
   try{
    if(!navigator.mediaDevices?.getUserMedia||!globalThis.MediaRecorder?.isTypeSupported(mimeType))
     throw new Error('Запись микрофона недоступна. Откройте переводчик в приложении SideWidget.');
-   await invoke('translation.microphone');
+   if(local){
+    session.preparing=session.request=true;
+    setProgress(null);
+    setPhase('preparing');
+    await invoke('translation.localMicrophone');
+    session.preparing=session.request=false;
+   }else await invoke('translation.microphone');
    if(current.current!==session)return;
+   setPhase('opening');
    let stream:MediaStream;
    try{stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1},video:false});}
    catch{throw new Error('Микрофон недоступен. Проверьте разрешения Windows и устройство ввода.');}
@@ -99,11 +114,17 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
    const blob=await session.recording;
    if(current.current!==session)return;
    if(!blob.size||blob.size>recordingLimit)throw new Error('Не удалось прочитать запись. Запишите фразу заново.');
-   const audio=await encode(blob);
+   let recording=blob;
+   if(session.local){
+    try{recording=await toDictationWav(blob);}
+    catch{throw new Error('Не удалось прочитать запись. Запишите фразу заново.');}
+   }
+   if(current.current!==session)return;
+   const audio=await encode(recording);
    if(current.current!==session)return;
    session.request=true;
    if(onTranscript){
-    const result=await invoke<{transcript:string}>('translation.dictate',{audio,source});
+    const result=await invoke<{transcript:string}>(session.local?'translation.localDictate':'translation.dictate',{audio,source});
     if(current.current!==session)return;
     onTranscript(result.transcript);
    }else{
@@ -145,5 +166,5 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   }
  }
 
- return {phase,error,value,start,submit,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
+ return {phase,error,value,progress,start,submit,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
 }

@@ -135,7 +135,7 @@ it('offers Soniox voice translation and keeps the API key in native settings',as
  expect(invoke).not.toHaveBeenCalledWith('translation.voice',expect.anything());
 });
 
-it.each(['soniox','mymemory','google','yandex','deepl'])('uses the microphone with %s only on explicit submit and stops on collapse',async provider=>{
+it.each(['soniox','mymemory','google','yandex','deepl','local'])('uses the microphone with %s only on explicit submit and stops on collapse',async provider=>{
  const stop=vi.fn();
  const getUserMedia=vi.fn(async()=>({getTracks:()=>[{stop}]}));
  const mediaDevices=Object.getOwnPropertyDescriptor(navigator,'mediaDevices');
@@ -152,22 +152,37 @@ it.each(['soniox','mymemory','google','yandex','deepl'])('uses the microphone wi
    this.onstop?.();
   }
  }
+ const local=provider==='local';
+ let modelReady=()=>{};
  vi.stubGlobal('MediaRecorder',Recorder);
+ vi.stubGlobal('AudioContext',class{
+  async decodeAudioData(){return {sampleRate:16000,length:2,numberOfChannels:1,getChannelData:()=>new Float32Array([0,0.5])};}
+  async close(){}
+ });
  vi.mocked(invoke).mockImplementation(async action=>{
-  if(action==='translation.get')return {configured:false,sonioxConfigured:true} as never;
+  if(action==='translation.get')return {configured:false,sonioxConfigured:!local} as never;
   if(action==='translation.voice')return {transcript:'Hello',text:'Привет'} as never;
-  if(action==='translation.dictate')return {transcript:'Hello'} as never;
+  if(action==='translation.localMicrophone')await new Promise<void>(resolve=>{modelReady=resolve;});
+  if(action==='translation.dictate'||action==='translation.localDictate')return {transcript:'Hello'} as never;
   return {} as never;
  });
  try{
   const view=render(<Translation/>);
   const voice=provider==='soniox';
-  const command=voice?'translation.voice':'translation.dictate';
+  const command=voice?'translation.voice':local?'translation.localDictate':'translation.dictate';
   const recordLabel=voice?'Начать запись':'Диктовать текст';
-  fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:provider}});
+  fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:local?'google':provider}});
+  if(!voice&&!local)fireEvent.change(screen.getByLabelText('Распознавание речи'),{target:{value:'soniox'}});
   if(!voice)fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Draft'}});
   await act(async()=>{});
   await act(async()=>fireEvent.click(screen.getByRole('button',{name:recordLabel})));
+  if(local){
+   expect(screen.getByRole('status').textContent).toContain('Загружаем модель');
+   expect(getUserMedia).not.toHaveBeenCalled();
+   expect(invoke).toHaveBeenCalledWith('translation.localMicrophone');
+   expect(invoke).not.toHaveBeenCalledWith('translation.configureSoniox');
+   await act(async()=>modelReady());
+  }
   expect(getUserMedia).toHaveBeenCalledOnce();
   expect(invoke).not.toHaveBeenCalledWith(command,expect.anything());
   fireEvent.click(screen.getByRole('button',{name:voice?'Стоп и перевести':'Стоп и вставить'}));
@@ -176,16 +191,27 @@ it.each(['soniox','mymemory','google','yandex','deepl'])('uses the microphone wi
    expect(screen.getByLabelText<HTMLTextAreaElement>('Распознанная речь').value).toBe('Hello');
    expect(invoke).toHaveBeenCalledWith(command,{audio:'GkXfow==',source:'en',target:'ru'});
   }else{
-   expect(invoke).toHaveBeenCalledWith(command,{audio:'GkXfow==',source:'en'});
+   expect(invoke).toHaveBeenCalledWith(command,{audio:local?expect.stringMatching(/^UklGR/):'GkXfow==',source:'en'});
    expect(invoke).not.toHaveBeenCalledWith('translation.run',expect.anything());
   }
   expect(stop).toHaveBeenCalled();
 
   stop.mockClear();
   await act(async()=>fireEvent.click(screen.getByRole('button',{name:recordLabel})));
+  if(local)await act(async()=>modelReady());
   view.rerender(<Translation active={false}/>);
   expect(stop).toHaveBeenCalled();
   expect(vi.mocked(invoke).mock.calls.filter(([action])=>action===command)).toHaveLength(1);
+  if(local){
+   view.rerender(<Translation active/>);
+   getUserMedia.mockClear();
+   await act(async()=>fireEvent.click(screen.getByRole('button',{name:recordLabel})));
+   fireEvent.click(screen.getByRole('button',{name:'Отмена'}));
+   expect(invoke).toHaveBeenCalledWith('translation.cancelSpeech');
+   await act(async()=>modelReady());
+   expect(getUserMedia).not.toHaveBeenCalled();
+   expect(screen.getByRole('status').textContent).toBe('');
+  }
  }finally{
   vi.unstubAllGlobals();
   if(mediaDevices)Object.defineProperty(navigator,'mediaDevices',mediaDevices);

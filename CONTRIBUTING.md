@@ -21,7 +21,7 @@ Exit SideWidget from its notification-area menu before rebuilding a running copy
 
 ## Publish a release on GitHub
 
-Push the matching `vX.Y.Z` tag to run the Windows release workflow. In GitHub's **Assets** block, the first two entries must be `00-SideWidget-X.Y.Z-portable-win-x64.zip` and `01-SideWidget-X.Y.Z-lite-win-x64.zip`, in that order. The workflow makes byte-for-byte copies of the verified archives so GitHub's alphabetical sort places them above the libraries.
+Push the matching `vX.Y.Z` tag to run the Windows release workflow. In GitHub's **Assets** block, the first two entries must be `00-SideWidget-X.Y.Z-lite-win-x64.zip` and `01-SideWidget-X.Y.Z-portable-win-x64.zip`, in that order. The workflow makes byte-for-byte copies of the verified archives so GitHub's alphabetical sort places them above the libraries.
 
 Keep the regular Portable and Lite ZIPs, the `SideWidget-X.Y.Z-deps-*` bundles, and their checksum files under their exact names. Older SideWidget versions and the Lite launcher use those names to find updates and dependencies. Verify the published order and check that a previous version can download and validate the new release before announcing it.
 
