@@ -165,5 +165,20 @@ jobs:
             archive="SideWidget-$version$edition-win-x64.zip"
             files+=("$archive" "$archive.sha256")
           done
+          downloads="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME"
+          notes="$(cat <<EOF
+          ## Скачать SideWidget для Windows
+
+          - [Portable · Windows x64]($downloads/SideWidget-$version-portable-win-x64.zip)
+          - [Lite · Windows x64]($downloads/SideWidget-$version-lite-win-x64.zip)
+
+          ### Библиотеки для Lite
+
+          - [.NET]($downloads/SideWidget-$version-deps-dotnet-win-x64.zip)
+          - [Windows App Runtime и VC++]($downloads/SideWidget-$version-deps-desktop-win-x64.zip)
+          - [WebView2]($downloads/SideWidget-$version-deps-webview2-win-x64.zip)
+          EOF
+          )"
           gh release create "$GITHUB_REF_NAME" "${files[@]}" \
-            --repo "$GITHUB_REPOSITORY" --verify-tag --title "SideWidget $GITHUB_REF_NAME" --generate-notes
+            --repo "$GITHUB_REPOSITORY" --verify-tag --title "SideWidget $GITHUB_REF_NAME" \
+            --generate-notes --notes "$notes"
