@@ -8,6 +8,7 @@ public sealed partial class MainWindow
     UIElement? dragOwner;
     DesktopDisplay? dragDisplay;
     double? dragPosition;
+    int dragPointerY,dragWindowY;
     Native.Point EventScreenPoint(PointerRoutedEventArgs e)
     {
         // Use this event's position: GetCursorPos can already be at mouse-up
@@ -52,7 +53,7 @@ public sealed partial class MainWindow
         var buttons=e.GetCurrentPoint((UIElement)sender).Properties;
         if(!buttons.IsLeftButtonPressed)
         {
-            if(buttons.IsRightButtonPressed&&motion.State==PanelState.Collapsed)
+            if(!updateInProgress&&buttons.IsRightButtonPressed&&motion.State==PanelState.Collapsed)
             {
                 var point=EventScreenPoint(e);
                 if(compactPanel.Click(watch.ElapsedMilliseconds,point.X,point.Y,Native.GetSystemMetrics(36),Native.GetSystemMetrics(37),right:true))
@@ -62,8 +63,11 @@ public sealed partial class MainWindow
             return;
         }
         compactPanel.ResetClicks();
-        if(DismissTimerSignal()){e.Handled=true;return;}
-        EnterInteractive();var pointer=EventScreenPoint(e);dragPointerX=pointer.X;dragWindowX=x;headerGesture.Press(pointer.X,pointer.Y,watch.ElapsedMilliseconds);dragging=true;dragMoved=false;motion.Editing=true;dragOwner=(UIElement)sender;dragOwner.CapturePointer(e.Pointer);e.Handled=true;
+        if(!updateInProgress&&DismissTimerSignal()){e.Handled=true;return;}
+        EnterInteractive();
+        var pointer=EventScreenPoint(e);
+        dragPointerX=pointer.X;dragWindowX=x;dragPointerY=pointer.Y;dragWindowY=y;
+        headerGesture.Press(pointer.X,pointer.Y,watch.ElapsedMilliseconds);dragging=true;dragMoved=false;motion.Editing=true;dragOwner=(UIElement)sender;dragOwner.CapturePointer(e.Pointer);e.Handled=true;
     }
     void PanelPointerReleased(object sender,PointerRoutedEventArgs e)
     {
@@ -95,8 +99,9 @@ public sealed partial class MainWindow
         var work=Monitor().Work;
         var baseWidth=(int)Math.Round(controller.Settings.Width*scale);
         var proposed=dragWindowX+point.X-dragPointerX;
-        if(compactPanel.ClockOnly&&motion.State==PanelState.Collapsed)
+        if(!updateInProgress&&compactPanel.ClockOnly&&motion.State==PanelState.Collapsed)
             proposed-=(Math.Min(baseWidth,work.Right-work.Left)-Math.Min(baseWidth,(int)Math.Round(100*scale)))/2;
+        if(updateInProgress)updateTop=dragWindowY+point.Y-dragPointerY;
         dragPosition=PanelGeometry.PositionForLeft(work.Left,work.Right,baseWidth,proposed,motion.Expansion);
         Place();
     }
@@ -112,6 +117,7 @@ public sealed partial class MainWindow
     void FinishDrag(bool cancel)
     {
         if(!dragging)return;dragging=false;headerGesture.Cancel();
+        if(cancel&&updateInProgress)updateTop=dragWindowY;
         try
         {
             if(!cancel&&dragPosition is double position)
@@ -126,6 +132,7 @@ public sealed partial class MainWindow
         catch(Exception){SendEvent("notice",new{message=DesktopLanguage.Text("Не удалось сохранить положение панели")});}
         dragPosition=null;dragDisplay=null;Place();
         dragOwner?.ReleasePointerCaptures();dragOwner=null;motion.Editing=webEditing||dialogCount>0;
+        if(updateInProgress)RestoreFocus();
     }
     [DllImport("user32.dll")]static extern nint MonitorFromPoint(Native.Point point,uint flags);
 }

@@ -57,7 +57,6 @@ main {flex:1;min-height:0;overflow:auto;padding:3px 16px 20px;overscroll-behavio
 .update-dialog {width:min(410px,calc(100% - 32px));max-height:calc(100% - 32px);padding:20px;margin:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);overflow:auto}
 .update-dialog::backdrop {background:rgb(0 0 0 / 52%)}
 .update-dialog h2,.update-dialog p {margin:0;overflow-wrap:anywhere}
-.update-dialog progress {width:100%;accent-color:var(--accent)}
 .update-dialog-actions button {white-space:normal;min-width:0}
 .stack>h2 {margin-top:7px}
 .actions {display:flex;flex-wrap:wrap;align-items:center;gap:7px}

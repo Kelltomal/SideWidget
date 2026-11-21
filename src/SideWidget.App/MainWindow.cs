@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(grip, 1);
         header.Children.Add(grip);
         InitializeTimerHeader(header);
+        InitializeUpdateHeader(font);
         header.PointerPressed += HeaderPressed; header.PointerMoved += HeaderMoved; header.PointerReleased += HeaderReleased; header.PointerCaptureLost += (_,_)=>FinishDrag(false);
         root.Children.Add(header);
         root.AddHandler(UIElement.PointerReleasedEvent,new Microsoft.UI.Xaml.Input.PointerEventHandler(PanelPointerReleased),true);
@@ -98,7 +99,7 @@ public sealed partial class MainWindow : Window
         // Flush the cached non-client frame after changing window styles, before the first XAML render.
         Native.SetWindowPos(hwnd,0,0,0,0,0,0x0001|0x0002|0x0004|0x0010|0x0020);
         subclass=WindowProcedure;Native.SetWindowSubclass(hwnd,subclass,1,0);
-        controller.Confirm=Confirm;controller.AddApp=AddApplication;controller.ChangeAppIcon=ChangeApplicationIcon;controller.PickWindow=PickApplicationWindow;controller.PickColor=PickScreenColor;controller.ConfigureTranslation=ConfigureTranslation;controller.TranslateWebsite=TranslateWebsite;controller.CancelWebsiteTranslation=CancelWebsiteTranslation;controller.SaveQr=SaveQr;controller.PrintQr=PrintQr;controller.CopyText=CopyText;controller.CopyImage=CopyImage;controller.SettingsChanged=desktop.ValidateSettings;
+        controller.Confirm=Confirm;controller.AddApp=AddApplication;controller.ChangeAppIcon=ChangeApplicationIcon;controller.PickWindow=PickApplicationWindow;controller.PickColor=PickScreenColor;controller.ConfigureTranslation=ConfigureTranslation;controller.AllowTranslationMicrophone=AllowTranslationMicrophone;controller.TranslateWebsite=TranslateWebsite;controller.CancelWebsiteTranslation=CancelWebsiteTranslation;controller.SaveQr=SaveQr;controller.PrintQr=PrintQr;controller.CopyText=CopyText;controller.CopyImage=CopyImage;controller.SettingsChanged=desktop.ValidateSettings;
         controller.PickFolder=PickDesktopFolder;
         controller.ShowFullscreenClock=()=>desktop.ShowFullscreenClock(Monitor().Monitor,currentLightTheme==true);
         root.AllowDrop=true;root.DragOver+=AppDragOver;root.Drop+=AppDrop;
@@ -183,7 +184,7 @@ public sealed partial class MainWindow : Window
     {
         var monitor=Monitor();
         var viewport=PanelGeometry.Viewport(monitor.Work.Left,monitor.Work.Right,(int)Math.Round(Placement.Width*scale),PanelPosition,motion.Expansion);
-        var clockOnly=compactPanel.ClockOnly&&motion.State==PanelState.Collapsed;
+        var clockOnly=!updateInProgress&&compactPanel.ClockOnly&&motion.State==PanelState.Collapsed;
         if(clockOnly)
         {
             var clockWidthDip=100+Math.Max(0,controller.Settings.ClockFontSize-Preferences.DefaultClockFontSize)*3;
@@ -197,8 +198,9 @@ public sealed partial class MainWindow : Window
             header.Padding=clockOnly?new Thickness(12,0,12,0):new Thickness(16,0,12,0);
             UpdateClock();
         }
-        hostX=viewport.Host.Left;x=hostX+viewport.ClipLeft;width=viewport.ClipWidth;y=monitor.Work.Top;
         var h=(int)Math.Round(motion.Height*scale);
+        hostX=viewport.Host.Left;x=hostX+viewport.ClipLeft;width=viewport.ClipWidth;
+        y=updateTop is int top?Math.Clamp(top,monitor.Work.Top,Math.Max(monitor.Work.Top,monitor.Work.Bottom-h)):monitor.Work.Top;
         var hostHeight=(int)Math.Round(MaximumHeight()*scale);
         var hostBounds=(hostX,y,viewport.Host.Width,hostHeight);
         // Resizing HWND on every frame also resizes WebView2 and forces async reflow.

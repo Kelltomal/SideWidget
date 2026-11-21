@@ -25,14 +25,14 @@ function UpdatePrompt({offer,dismiss}:{offer:UpdateResult;dismiss:()=>void}) {
  const later=useRef<HTMLButtonElement>(null);
  const {run,busy,error}=useAction();
  const [installing,setInstalling]=useState(false);
- const [progress,setProgress]=useState<number|null>(0);
  useEffect(()=>{
-  dialog.current?.showModal();
-  later.current?.focus();
-  return bridge.subscribe(event=>{
-   if(event.type==='updates.progress')setProgress(event.data?.percent??null);
-  });
- },[]);
+  const prompt=dialog.current;
+  if(installing)prompt?.close();
+  else {
+   prompt?.showModal();
+   later.current?.focus();
+  }
+ },[installing]);
  async function choose(action:'later'|'skip'|'install') {
   await run(async()=>{
    const version=offer.latestVersion;
@@ -40,10 +40,10 @@ function UpdatePrompt({offer,dismiss}:{offer:UpdateResult;dismiss:()=>void}) {
    if(action==='later')await invoke('updates.defer');
    if(action==='install'){
     if(offer.portableAsset){
-     setProgress(0);
      setInstalling(true);
      try{await invoke('updates.install',{version});}
      catch(error){setInstalling(false);throw error;}
+     dismiss();
      return;
     }
     if(!offer.releaseUrl)return;
@@ -58,10 +58,6 @@ function UpdatePrompt({offer,dismiss}:{offer:UpdateResult;dismiss:()=>void}) {
   <div className="stack" aria-busy={installing||busy}>
    <h2 id="startup-update-title">{t('Доступна версия {version}',{version:offer.latestVersion})}</h2>
    <p>{t(offer.portableAsset?'SideWidget перезапустится после загрузки.':'Новый выпуск можно скачать с GitHub.')}</p>
-   {installing&&<div className="stack">
-    <progress value={progress??undefined} max={100} aria-label={t('Загрузка обновления')}/>
-    <small role="status">{progress===null?t('Проверяем и распаковываем обновление…'):t('Загружаем обновление… {percent}%',{percent:progress})}</small>
-   </div>}
    {error&&<Notice error>{t(error)}</Notice>}
    <div className="actions update-dialog-actions">
     <button type="button" className="primary" disabled={busy||installing} onClick={()=>void choose('install')}>{t('Обновить сейчас')}</button>
