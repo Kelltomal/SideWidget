@@ -186,8 +186,9 @@ sealed partial class Controller
                     Online.RequireSonioxKey();
                     AllowTranslationMicrophone();
                     return new{};
-                case "translation.voice":
-                    return await RunSoniox(token=>Online.TranslateVoice(Text("audio", (OnlineServices.SonioxRecordingLimit+2)/3*4),Text("source",10),Text("target",10),token));
+                case "translation.voice" or "translation.dictate":
+                    var target = c.ActionId == "translation.voice" ? Text("target",10) : null;
+                    return await RunSoniox(token=>Online.TranslateVoice(Text("audio", (OnlineServices.SonioxRecordingLimit+2)/3*4),Text("source",10),target,token));
                 case "translation.speak":
                     return await RunSoniox(token=>Online.SpeakTranslation(Text("text",10000),Text("target",10),token));
                 case "translation.cancelSoniox":CancelSoniox();return new{cancelled=true};

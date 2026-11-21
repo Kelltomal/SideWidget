@@ -84,6 +84,16 @@ export function Currency() {
 const translationLanguages=[['ru','Русский'],['en','Английский'],['de','Немецкий'],['fr','Французский'],['es','Испанский'],['zh','Китайский'],['ja','Японский']];
 const recentLanguagesKey='sidewidget.translation.recentLanguages';
 const translationSelectionKey='sidewidget.translation.selection';
+const textTranslationProviderKey='sidewidget.translation.textProvider';
+type TextTranslationProvider=Exclude<TranslationProvider,'soniox'>;
+
+function readTextTranslationProvider():TextTranslationProvider {
+ try{
+  const saved=localStorage.getItem(textTranslationProviderKey);
+  if(saved==='google'||saved==='yandex'||saved==='deepl')return saved;
+ }catch{}
+ return 'mymemory';
+}
 const defaultTranslationSelection={provider:'mymemory' as TranslationProvider,source:'en',target:'ru'};
 
 function readTranslationSelection():typeof defaultTranslationSelection {
@@ -113,16 +123,18 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
  const [config,setConfig]=useState<TranslationConfig>();
  const [selection,setSelection]=useState(readTranslationSelection);
  const {provider,source,target}=selection;
+ const [textProvider,setTextProvider]=useState(()=>provider==='soniox'?readTextTranslationProvider():provider);
  const localText=useState('');const localResult=useState('');const [qr,setQr]=useState(false);
  const [text,setText]=sessionText??localText;
  const [result,setResult]=sessionResult??localResult;
  const [busy,setBusy]=useState(false);const [error,setError]=useState('');const revision=useRef(0);const pending=useRef(false);const configure=useAction();
  const isSoniox=provider==='soniox';
- const voice=useSonioxVoice(active&&isSoniox,source,target);
+ const voice=useSonioxVoice(active,source,target);
  const voiceBusy=voice.phase!=='idle';
  const canSubmitVoice=voice.phase==='recording'||voice.phase==='ready';
  const voiceStatus=voice.phase==='opening'?'Подключаем микрофон…':voice.phase==='recording'?'Идёт запись':
-  voice.phase==='ready'?'Запись готова к переводу':voice.phase==='translating'?'Переводим…':
+  voice.phase==='ready'?(isSoniox?'Запись готова к переводу':'Запись готова к распознаванию'):
+  voice.phase==='translating'?(isSoniox?'Переводим…':'Распознаём речь…'):
   voice.phase==='loadingAudio'?'Готовим озвучивание…':voice.phase==='playing'?'Идёт озвучивание':'';
  const locked=busy||voiceBusy||configure.busy;
  const visibleResult=isSoniox?voice.value?.text??'':result;
@@ -142,6 +154,12 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
   setSelection(next);
   try{localStorage.setItem(translationSelectionKey,JSON.stringify(next));}catch{}
  }
+ function selectProvider(next:TranslationProvider){
+  select({provider:next,source:next==='mymemory'&&source==='auto'?'en':source,target});
+  if(next==='soniox')return;
+  setTextProvider(next);
+  try{localStorage.setItem(textTranslationProviderKey,next);}catch{}
+ }
  function rememberLanguages(...codes:string[]){
   const next=[...new Set([...codes,...recentLanguages])].filter(code=>code!=='auto');
   setRecentLanguages(next);
@@ -155,40 +173,58 @@ export function Translation({sessionText,sessionResult,active=true}:{sessionText
   finally{if(current===revision.current){pending.current=false;setBusy(false);}}
  }
  async function cancel(){revision.current++;try{await invoke('translation.cancel');}catch{setError('Не удалось отменить запрос. Дождитесь завершения.');}finally{pending.current=false;setBusy(false);}}
- function configureKey(){
+ function configureKey(useSoniox=isSoniox){
   return configure.run(async()=>{
-   await invoke(isSoniox?'translation.configureSoniox':'translation.configure');
+   await invoke(useSoniox?'translation.configureSoniox':'translation.configure');
    setConfig(await invoke<TranslationConfig>('translation.get'));
   });
  }
+ function appendTranscript(transcript:string){
+  invalidate();
+  const separator=text&&!/\s$/.test(text)?' ':'';
+  setText(text+separator+transcript);
+ }
+ const recordLabel=isSoniox
+  ? (voice.phase==='ready'?'Перевести запись':voice.phase==='recording'?'Стоп и перевести':'Начать запись')
+  : (voice.phase==='ready'?'Распознать запись':voice.phase==='recording'?'Стоп и вставить':'Диктовать текст');
+
  return <div className="stack">
-  <label>{t('Переводчик')}<select value={provider} disabled={locked} onChange={e=>{const next=e.target.value as TranslationProvider;select({provider:next,source:next==='mymemory'&&source==='auto'?'en':source,target});}}><option value="mymemory">{t('MyMemory · бесплатно, без ключа')}</option><option value="google">{t('Google · бесплатно, без ключа')}</option><option value="yandex">{t('Яндекс · бесплатно, без ключа')}</option><option value="deepl">{t('DeepL API · свой ключ')}</option><option value="soniox">{t('Soniox · голосовой перевод')}</option></select></label>
+  <div className="actions" role="group" aria-label={t('Способ ввода')}>
+   <button type="button" aria-pressed={!isSoniox} disabled={locked} onClick={()=>{if(isSoniox)selectProvider(textProvider);}}>{t('Текст')}</button>
+   <button type="button" aria-pressed={isSoniox} disabled={locked} onClick={()=>{if(!isSoniox)selectProvider('soniox');}}>{t('Голос')}</button>
+  </div>
+  <label>{t('Переводчик')}<select value={provider} disabled={locked} onChange={e=>selectProvider(e.target.value as TranslationProvider)}><option value="mymemory">{t('MyMemory · бесплатно, без ключа')}</option><option value="google">{t('Google · бесплатно, без ключа')}</option><option value="yandex">{t('Яндекс · бесплатно, без ключа')}</option><option value="deepl">{t('DeepL API · свой ключ')}</option><option value="soniox">{t('Soniox · голосовой перевод')}</option></select></label>
   <small>{isSoniox?t('Запись до 30 секунд отправится в Soniox по кнопке перевода.'):t('Текст отправится в {provider} по кнопке «Перевести» или Ctrl+Enter.',{provider:providerName})}</small>
   {provider==='mymemory'&&<small>{t('Без регистрации. До 500 байт за запрос и 5 000 символов в сутки; лимит сервиса общий для IP.')}</small>}
-  {(provider==='deepl'||isSoniox)&&<>
+  {(provider==='deepl'||(isSoniox&&config?.sonioxConfigured))&&<>
    {provider==='deepl'&&!config?.configured&&<Notice>{t('Для DeepL нужен API-ключ. MyMemory работает без него.')}</Notice>}
    <button disabled={locked} onClick={()=>void configureKey()}>{configure.busy?t('Окно настройки открыто…'):isSoniox?t('Настроить ключ Soniox'):t('Настроить ключ DeepL')}</button>
-   {configure.error&&<Notice error>{configure.error}</Notice>}
   </>}
+  {configure.error&&<Notice error>{configure.error}</Notice>}
   <div className="form-row translation-languages">
    <label>{t('Исходный язык')}<select disabled={locked} value={source} onChange={e=>{select({...selection,source:e.target.value});rememberLanguages(e.target.value);}}>{recentOptions.map(languageOption)}{provider!=='mymemory'&&<option value="auto">{t('Определить автоматически')}</option>}{otherOptions.map(languageOption)}</select></label>
    <button type="button" className="translation-swap" aria-label={t('Поменять языки местами')} disabled={locked||source==='auto'} onClick={()=>{select({provider,source:target,target:source});rememberLanguages(source,target);if(!isSoniox&&result)setText(result);}}><Icon name="swap" size={20}/></button>
    <label>{t('Язык перевода')}<select disabled={locked} value={target} onChange={e=>{select({...selection,target:e.target.value});rememberLanguages(e.target.value);}}>{recentOptions.map(languageOption)}{otherOptions.map(languageOption)}</select></label>
   </div>
-  {isSoniox&&<>
-   <div className="actions">
-    <button className="primary" disabled={!active||configure.busy||!config?.sonioxConfigured}
+  {isSoniox&&!config?.sonioxConfigured&&<small>{t('Добавьте ключ Soniox API, чтобы начать запись.')}</small>}
+  <div className="actions">
+   {isSoniox&&!config?.sonioxConfigured?
+    <button className="primary" disabled={locked} onClick={()=>void configureKey(true)}>{configure.busy?t('Окно настройки открыто…'):t('Настроить ключ Soniox')}</button>:
+    <button className={isSoniox?'primary':undefined} disabled={!active||busy||configure.busy}
+     data-help={!isSoniox?t('Soniox расшифрует запись и добавит её в исходный текст. Для диктовки нужен ключ Soniox API.'):undefined}
      aria-disabled={voiceBusy&&!canSubmitVoice||undefined} onClick={()=>{
-      if(canSubmitVoice){setQr(false);void voice.translate();}
-      else if(!voiceBusy)void voice.start();
-     }}>{voice.phase==='ready'?t('Перевести запись'):voice.phase==='recording'?t('Стоп и перевести'):t('Начать запись')}</button>
-    {voiceBusy&&<button onClick={()=>voice.cancel()}>{voice.phase==='playing'?t('Остановить озвучивание'):t('Отмена')}</button>}
-   </div>
-   <small role="status" className={voiceStatus?undefined:'sr-only'}>{t(voiceStatus)}</small>
-   {voice.error&&<Notice error>{t(voice.error)}</Notice>}
-  </>}
+      if(canSubmitVoice){setQr(false);void voice.submit(isSoniox?undefined:appendTranscript);}
+      else if(!voiceBusy){
+       if(config?.sonioxConfigured)void voice.start();
+       else void configureKey(true);
+      }
+     }}>{t(recordLabel)}</button>}
+   {voiceBusy&&<button onClick={()=>voice.cancel()}>{voice.phase==='playing'?t('Остановить озвучивание'):t('Отмена')}</button>}
+  </div>
+  <small role="status" className={voiceStatus?undefined:'sr-only'}>{t(voiceStatus)}</small>
+  {voice.error&&<Notice error>{t(voice.error)}</Notice>}
   <div className="form-row translation-texts">
-   {isSoniox?<label>{t('Распознанная речь')}<textarea key="voice" readOnly rows={5} value={voice.value?.transcript??''}/></label>:<label>{t('Исходный текст')}<textarea key="text" autoFocus disabled={busy} rows={5} value={text} maxLength={textLimit} onChange={e=>{invalidate();setText(e.target.value);}} onKeyDown={e=>{
+   {isSoniox?<label>{t('Распознанная речь')}<textarea key="voice" readOnly rows={5} value={voice.value?.transcript??''}/></label>:<label>{t('Исходный текст')}<textarea key="text" autoFocus disabled={busy||voiceBusy} rows={5} value={text} maxLength={textLimit} onChange={e=>{invalidate();setText(e.target.value);}} onKeyDown={e=>{
     if(e.key!=='Enter'||!e.ctrlKey||e.altKey||e.shiftKey||e.metaKey||e.nativeEvent.isComposing)return;
     e.preventDefault();
     if(!e.repeat)void translate();

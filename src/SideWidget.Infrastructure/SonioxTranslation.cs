@@ -28,9 +28,9 @@ public sealed partial class OnlineServices
             throw new CommandFault("key", "Настройте ключ Soniox API");
     }
 
-    public Task<object> TranslateVoice(string encodedAudio, string source, string target, CancellationToken requestToken)
+    public Task<object> TranslateVoice(string encodedAudio, string source, string? target, CancellationToken requestToken)
     {
-        if (!SonioxLanguages.Contains(target) || (source != "auto" && !SonioxLanguages.Contains(source)))
+        if ((target is not null && !SonioxLanguages.Contains(target)) || (source != "auto" && !SonioxLanguages.Contains(source)))
             throw new CommandFault("language", "Выберите язык");
         byte[] audio;
         try { audio = Convert.FromBase64String(encodedAudio); }
@@ -44,15 +44,16 @@ public sealed partial class OnlineServices
             using var socket = new ClientWebSocket();
             socket.Options.SetRequestHeader("Authorization", "Bearer " + key);
             await socket.ConnectAsync(new("wss://stt-rt.soniox.com/transcribe-websocket"), cancellation);
-            var configuration = JsonSerializer.SerializeToUtf8Bytes(new
+            var settings = new Dictionary<string, object>
             {
-                model = "stt-rt-v6",
-                audio_format = "webm",
-                enable_language_identification = true,
-                language_hints = source == "auto" ? Array.Empty<string>() : new[] { source },
-                language_hints_strict = source != "auto",
-                translation = new { type = "one_way", target_language = target }
-            });
+                ["model"] = "stt-rt-v6",
+                ["audio_format"] = "webm",
+                ["enable_language_identification"] = true,
+                ["language_hints"] = source == "auto" ? Array.Empty<string>() : new[] { source },
+                ["language_hints_strict"] = source != "auto"
+            };
+            if (target is not null) settings["translation"] = new { type = "one_way", target_language = target };
+            var configuration = JsonSerializer.SerializeToUtf8Bytes(settings);
             await socket.SendAsync(configuration.AsMemory(), WebSocketMessageType.Text, true, cancellation);
             var receive = ReadSoniox(socket, target, cancellation);
             try
@@ -79,7 +80,7 @@ public sealed partial class OnlineServices
         }, requestToken);
     }
 
-    static async Task<object> ReadSoniox(ClientWebSocket socket, string target, CancellationToken cancellation)
+    static async Task<object> ReadSoniox(ClientWebSocket socket, string? target, CancellationToken cancellation)
     {
         var transcript = new StringBuilder();
         var translation = new StringBuilder();
@@ -122,6 +123,7 @@ public sealed partial class OnlineServices
             var translated = translation.ToString().Trim();
             if (spoken.Length == 0)
                 throw new CommandFault("soniox_speech", "Речь не распознана. Запишите фразу заново.");
+            if (target is null) return new { transcript = spoken };
             if (translated.Length == 0 && spoken == originalInTarget.ToString().Trim()) translated = spoken;
             if (translated.Length == 0)
                 throw new CommandFault("soniox_translation", "Soniox не вернул перевод. Проверьте выбранные языки.");

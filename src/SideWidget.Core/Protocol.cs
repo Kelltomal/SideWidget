@@ -49,6 +49,7 @@ public static class Protocol
             "internet.get"=>[],"internet.check"=>["method","target"],"links.open"=>["url"],
             "translation.configureSoniox" or "translation.microphone" or "translation.cancelSoniox"=>[],
             "translation.voice"=>["audio","source","target"],
+            "translation.dictate"=>["audio","source"],
             "translation.speak"=>["text","target"],
             "search.query"=>["text"],"search.open"=>["path","reveal"],"quick.open"=>["target"],"quick.power"=>["action"],"diary.draft"=>["text"],"weather.get"=>["city"],"translation.run"=>["text","source","target","provider"],
             "visualizer.settings"=>["enabled","showInHeader","brightness","sensitivity","style"],

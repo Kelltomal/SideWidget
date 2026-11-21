@@ -51,7 +51,9 @@ export function ButtonHelp(){
   if(!nativeAvailable||!nativeHelp)return;
   const source=help?.button.querySelector('svg');
   const path=source?Array.from(source.querySelectorAll('path')).map(node=>node.getAttribute('d')||'').join(' ').slice(0,4096):'';
-  const description=help?`${help.description}${help.button.disabled?' '+t("Сейчас недоступно."):''}`.slice(0,800):'';
+  const unavailable=t("Сейчас недоступно.");
+  const description=help?[help.description,help.button.disabled&&help.description!==unavailable?unavailable:'']
+   .filter(Boolean).join(' ').slice(0,800):'';
   void invoke('shell.tooltip',help?{visible:true,label:help.label.slice(0,180),description,path}:{visible:false}).catch(()=>setNativeHelp(false));
  },[help,nativeHelp]);
  if(!help)return null;

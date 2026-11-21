@@ -128,14 +128,14 @@ it('offers Soniox voice translation and keeps the API key in native settings',as
  vi.mocked(invoke).mockResolvedValue({configured:false,sonioxConfigured:false});
  await act(async()=>render(<Translation/>));
  fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:'soniox'}});
- const record=screen.getByRole<HTMLButtonElement>('button',{name:'Начать запись'});
- expect(record.disabled).toBe(true);
+ expect(screen.queryByRole('button',{name:'Начать запись'})).toBeNull();
+ expect(screen.getByText('Добавьте ключ Soniox API, чтобы начать запись.')).toBeTruthy();
  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Настроить ключ Soniox'})));
  expect(invoke).toHaveBeenCalledWith('translation.configureSoniox');
  expect(invoke).not.toHaveBeenCalledWith('translation.voice',expect.anything());
 });
 
-it('sends microphone audio only on stop and stops capture when the panel collapses',async()=>{
+it.each(['soniox','mymemory','google','yandex','deepl'])('uses the microphone with %s only on explicit submit and stops on collapse',async provider=>{
  const stop=vi.fn();
  const getUserMedia=vi.fn(async()=>({getTracks:()=>[{stop}]}));
  const mediaDevices=Object.getOwnPropertyDescriptor(navigator,'mediaDevices');
@@ -156,29 +156,53 @@ it('sends microphone audio only on stop and stops capture when the panel collaps
  vi.mocked(invoke).mockImplementation(async action=>{
   if(action==='translation.get')return {configured:false,sonioxConfigured:true} as never;
   if(action==='translation.voice')return {transcript:'Hello',text:'Привет'} as never;
+  if(action==='translation.dictate')return {transcript:'Hello'} as never;
   return {} as never;
  });
  try{
   const view=render(<Translation/>);
-  fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:'soniox'}});
+  const voice=provider==='soniox';
+  const command=voice?'translation.voice':'translation.dictate';
+  const recordLabel=voice?'Начать запись':'Диктовать текст';
+  fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:provider}});
+  if(!voice)fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Draft'}});
   await act(async()=>{});
-  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Начать запись'})));
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:recordLabel})));
   expect(getUserMedia).toHaveBeenCalledOnce();
-  expect(invoke).not.toHaveBeenCalledWith('translation.voice',expect.anything());
-  fireEvent.click(screen.getByRole('button',{name:'Стоп и перевести'}));
-  expect(await screen.findByDisplayValue('Привет')).toBeTruthy();
-  expect(screen.getByLabelText<HTMLTextAreaElement>('Распознанная речь').value).toBe('Hello');
-  expect(invoke).toHaveBeenCalledWith('translation.voice',{audio:'GkXfow==',source:'en',target:'ru'});
+  expect(invoke).not.toHaveBeenCalledWith(command,expect.anything());
+  fireEvent.click(screen.getByRole('button',{name:voice?'Стоп и перевести':'Стоп и вставить'}));
+  expect(await screen.findByDisplayValue(voice?'Привет':'Draft Hello')).toBeTruthy();
+  if(voice){
+   expect(screen.getByLabelText<HTMLTextAreaElement>('Распознанная речь').value).toBe('Hello');
+   expect(invoke).toHaveBeenCalledWith(command,{audio:'GkXfow==',source:'en',target:'ru'});
+  }else{
+   expect(invoke).toHaveBeenCalledWith(command,{audio:'GkXfow==',source:'en'});
+   expect(invoke).not.toHaveBeenCalledWith('translation.run',expect.anything());
+  }
   expect(stop).toHaveBeenCalled();
 
   stop.mockClear();
-  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Начать запись'})));
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:recordLabel})));
   view.rerender(<Translation active={false}/>);
   expect(stop).toHaveBeenCalled();
-  expect(vi.mocked(invoke).mock.calls.filter(([action])=>action==='translation.voice')).toHaveLength(1);
+  expect(vi.mocked(invoke).mock.calls.filter(([action])=>action===command)).toHaveLength(1);
  }finally{
   vi.unstubAllGlobals();
   if(mediaDevices)Object.defineProperty(navigator,'mediaDevices',mediaDevices);
   else Reflect.deleteProperty(navigator,'mediaDevices');
  }
+});
+
+it('switches from Soniox to typing with the previous text provider and draft',async()=>{
+ vi.mocked(invoke).mockImplementation(async action=>(action==='translation.get'?{configured:false}:{text:'Привет',provider:'Google'}) as never);
+ await act(async()=>render(<Translation/>));
+ fireEvent.change(screen.getByLabelText('Переводчик'),{target:{value:'google'}});
+ fireEvent.change(screen.getByLabelText('Исходный текст'),{target:{value:'Hello'}});
+ fireEvent.click(screen.getByRole('button',{name:'Голос'}));
+ expect(screen.getByLabelText<HTMLSelectElement>('Переводчик').value).toBe('soniox');
+ fireEvent.click(screen.getByRole('button',{name:'Текст'}));
+ expect(screen.getByLabelText<HTMLSelectElement>('Переводчик').value).toBe('google');
+ expect(screen.getByLabelText<HTMLTextAreaElement>('Исходный текст').value).toBe('Hello');
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Перевести'})));
+ expect(invoke).toHaveBeenCalledWith('translation.run',{text:'Hello',source:'en',target:'ru',provider:'google'});
 });

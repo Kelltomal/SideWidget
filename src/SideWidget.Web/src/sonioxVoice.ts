@@ -88,7 +88,7 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   }
  }
 
- async function translate(){
+ async function submit(onTranscript?: (transcript:string)=>void){
   const session=current.current;
   if(!session?.recording||!session.stop)return;
   const stop=session.stop;
@@ -102,10 +102,18 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
    const audio=await encode(blob);
    if(current.current!==session)return;
    session.request=true;
-   const result=await invoke<{transcript:string;text:string}>('translation.voice',{audio,source,target});
-   if(current.current===session){setValue(result);finish(session);}
+   if(onTranscript){
+    const result=await invoke<{transcript:string}>('translation.dictate',{audio,source});
+    if(current.current!==session)return;
+    onTranscript(result.transcript);
+   }else{
+    const result=await invoke<{transcript:string;text:string}>('translation.voice',{audio,source,target});
+    if(current.current!==session)return;
+    setValue(result);
+   }
+   finish(session);
   }catch(e){
-   finish(session,e instanceof Error?e.message:'Не удалось выполнить перевод');
+   finish(session,e instanceof Error?e.message:onTranscript?'Не удалось распознать речь.':'Не удалось выполнить перевод');
   }
  }
 
@@ -137,5 +145,5 @@ export function useSonioxVoice(active:boolean,source:string,target:string){
   }
  }
 
- return {phase,error,value,start,translate,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
+ return {phase,error,value,start,submit,speak,cancel,clear:()=>{setValue(undefined);setError('');}};
 }

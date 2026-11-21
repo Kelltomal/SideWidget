@@ -1068,5 +1068,16 @@
   "Запись готова к переводу": "Recording ready to translate",
   "Готовим озвучивание…": "Preparing spoken translation…",
   "Идёт озвучивание": "Playing translation",
-  "Озвучить перевод": "Play translation"
+  "Озвучить перевод": "Play translation",
+  "Способ ввода": "Input method",
+  "Текст": "Text",
+  "Голос": "Voice",
+  "Добавьте ключ Soniox API, чтобы начать запись.": "Add a Soniox API key to start recording.",
+  "Запись готова к распознаванию": "Recording ready to transcribe",
+  "Распознаём речь…": "Transcribing speech…",
+  "Распознать запись": "Transcribe recording",
+  "Стоп и вставить": "Stop and insert",
+  "Диктовать текст": "Dictate text",
+  "Не удалось распознать речь.": "Could not transcribe the speech.",
+  "Soniox расшифрует запись и добавит её в исходный текст. Для диктовки нужен ключ Soniox API.": "Soniox transcribes the recording and adds it to the source text. Dictation requires a Soniox API key."
 }

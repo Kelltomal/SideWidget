@@ -9,7 +9,8 @@ public sealed partial class MainWindow
     static bool startupUpdateStarted;
     object? startupUpdateOffer;
     readonly TextBlock updateLabel = new() { FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis };
-    readonly ProgressBar updateProgress = new() { Maximum = 100 };
+    readonly ColumnDefinition updateProgressFill = new();
+    readonly ColumnDefinition updateProgressRemaining = new();
     readonly Border updateHeader = new() { Visibility = Visibility.Collapsed };
     bool updateInProgress;
     int updateGeneration;
@@ -19,7 +20,13 @@ public sealed partial class MainWindow
     {
         updateLabel.FontFamily = font;
         updateLabel.Foreground = day.Foreground;
-        updateProgress.Foreground = clock.Foreground;
+        var progress = new Grid { Height = 3 };
+        progress.ColumnDefinitions.Add(updateProgressFill);
+        progress.ColumnDefinitions.Add(updateProgressRemaining);
+        var track = new Border { Background = day.Foreground, Opacity = .45, CornerRadius = new CornerRadius(2) };
+        Grid.SetColumnSpan(track, 2);
+        progress.Children.Add(track);
+        progress.Children.Add(new Border { Background = clock.Foreground, CornerRadius = new CornerRadius(2) });
         updateHeader.Background = root.Background;
         updateHeader.Padding = new Thickness(0, 0, 0, 3);
         updateHeader.Child = new StackPanel
@@ -27,7 +34,7 @@ public sealed partial class MainWindow
             VerticalAlignment = VerticalAlignment.Center,
             IsHitTestVisible = false,
             Spacing = 5,
-            Children = { updateLabel, updateProgress }
+            Children = { updateLabel, progress }
         };
         Grid.SetColumnSpan(updateHeader, 3);
         header.Children.Add(updateHeader);
@@ -63,7 +70,9 @@ public sealed partial class MainWindow
             ? DesktopLanguage.Text("Загружаем обновление… {0}%", value)
             : DesktopLanguage.Text("Устанавливаем обновление…");
         // The archive is fully downloaded during verification and installation.
-        updateProgress.Value = percent ?? 100;
+        var filled = percent ?? 100;
+        updateProgressFill.Width = new GridLength(filled, GridUnitType.Star);
+        updateProgressRemaining.Width = new GridLength(100 - filled, GridUnitType.Star);
     }
 
     void RestoreUpdatePrompt()
