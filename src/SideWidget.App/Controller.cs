@@ -22,6 +22,7 @@ sealed partial class Controller
     public Preferences Settings {get=>state.Settings;set=>state.Settings=value;}
     public LauncherService Launcher {get;}
     public OnlineServices Online {get;}
+    CancellationTokenSource? sonioxRequest;
     int sharing;
     public bool Ready {get;set;}
     public Func<string,string,Task<bool>> Confirm {get;set;}=(_,_)=>Task.FromResult(false);
@@ -32,7 +33,8 @@ sealed partial class Controller
     public Func<Task<object>> PickColor {get;set;}=()=>Task.FromResult<object>(new{});
     public Func<WebTranslationRequest,Task<object>> TranslateWebsite {get;set;}=_=>throw new CommandFault("unsupported","Переводчик недоступен");
     public Action CancelWebsiteTranslation {get;set;}=()=>{};
-    public Func<Task<object>> ConfigureTranslation {get;set;}=()=>Task.FromResult<object>(new{});
+    public Func<bool,Task<object>> ConfigureTranslation {get;set;}=_=>Task.FromResult<object>(new{});
+    public Action AllowTranslationMicrophone {get;set;}=()=>{};
     public Func<string,string,Task<object>> SaveQr {get;set;}=(_,_)=>Task.FromResult<object>(new{});
     public Func<string,Task<object>> PrintQr {get;set;}=_=>throw new CommandFault("print","Печать недоступна");
     public Action<string> CopyText {get;set;}=_=>{};
@@ -177,7 +179,18 @@ sealed partial class Controller
                 case "power.get" or "power.schedule" or "power.cancel":return (await HandlePowerSchedule(c))!;
                 case "quick.power":var action=Text("action",20);if(await Confirm("Выполнить системное действие?",QuickActions.Description(action))){QuickActions.Power(action);return new{executed=true};}return new{executed=false};
                 case "currency.get":return await Online.Currency();case "weather.get":return await Online.Weather(Text("city",120));
-                case "translation.get":return Online.TranslationInfo();case "translation.configure":return await ConfigureTranslation();
+                case "translation.get":return Online.TranslationInfo();
+                case "translation.configure":return await ConfigureTranslation(false);
+                case "translation.configureSoniox":return await ConfigureTranslation(true);
+                case "translation.microphone":
+                    Online.RequireSonioxKey();
+                    AllowTranslationMicrophone();
+                    return new{};
+                case "translation.voice":
+                    return await RunSoniox(token=>Online.TranslateVoice(Text("audio", (OnlineServices.SonioxRecordingLimit+2)/3*4),Text("source",10),Text("target",10),token));
+                case "translation.speak":
+                    return await RunSoniox(token=>Online.SpeakTranslation(Text("text",10000),Text("target",10),token));
+                case "translation.cancelSoniox":CancelSoniox();return new{cancelled=true};
                 case "translation.run":
                     var provider=p.TryGetProperty("provider",out _)?Text("provider",20):"mymemory";
                     Online.CancelTranslation();CancelWebsiteTranslation();
@@ -188,6 +201,15 @@ sealed partial class Controller
                 default:throw new CommandFault("unknown_action","Действие не поддерживается");
             }
         }finally{running--;}
+    }
+    internal void CancelSoniox()=>sonioxRequest?.Cancel();
+    async Task<object> RunSoniox(Func<CancellationToken,Task<object>> run)
+    {
+        CancelSoniox();
+        using var cancellation=new CancellationTokenSource();
+        sonioxRequest=cancellation;
+        try{return await run(cancellation.Token);}
+        finally{if(sonioxRequest==cancellation)sonioxRequest=null;}
     }
     static DesktopCleanup.CommandRule[] ReadDesktopRules(JsonElement values)
     {
@@ -238,7 +260,7 @@ sealed partial class Controller
         }
         return icons;
     }
-    public void Stop(){Ready=false;CancelWebsiteTranslation();if(ownsDesktopState)desktopState.Dispose();}
+    public void Stop(){Ready=false;CancelWebsiteTranslation();CancelSoniox();if(ownsDesktopState)desktopState.Dispose();}
     async Task<object> ShareApplication()
     {
         if(Interlocked.Exchange(ref sharing,1)!=0)throw new CommandFault("busy","Упаковка уже выполняется. Дождитесь готового архива.");

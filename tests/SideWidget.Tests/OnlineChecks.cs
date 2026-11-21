@@ -21,6 +21,7 @@ public static class OnlineChecks
             ("translation auto language and paid host", TranslationAutoLanguage),
             ("translation cancellation and late result", TranslationCancellation),
             ("translation provider failures and response limit", TranslationFailures),
+            ("Soniox credential isolation and speech synthesis", SonioxSpeech),
             ("weather encoding and persisted offline cache", WeatherCache),
             ("weather malformed response retains cached forecast", WeatherSchemaFailure),
         })
@@ -238,6 +239,39 @@ public static class OnlineChecks
         using var offlineClient = new HttpClient(offlineHandler);
         using var offlineService = new OnlineServices(fixture.Store, fixture.Vault, offlineClient);
         await checks.Fault(() => offlineService.Translate("Hello", "AUTO", "EN", "deepl"), "offline", "disconnected transport produces offline state");
+    }
+
+    static async Task SonioxSpeech(Checks checks)
+    {
+        using var fixture = new Fixture();
+        Request? captured = null;
+        byte[] audio = [0x49, 0x44, 0x33];
+        using var handler = new Handler(async (request, cancellation) => {
+            captured = await Request.Capture(request, cancellation);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(audio) };
+        });
+        using var client = new HttpClient(handler);
+        using var service = new OnlineServices(fixture.Store, fixture.Vault, client);
+        await checks.Fault(() => service.SpeakTranslation("Привет", "ru", default), "key", "speech requires a Soniox key");
+        service.ConfigureSoniox(SyntheticKey);
+        var info = Snapshot(service.TranslationInfo());
+        checks.That(info.GetProperty("sonioxConfigured").GetBoolean() && !info.GetProperty("configured").GetBoolean(),
+            "Soniox and DeepL are independently configured");
+        checks.That(!info.GetRawText().Contains(SyntheticKey), "status does not expose the Soniox key");
+        await checks.Fault(() => service.TranslateVoice("not valid base64", "en", "ru", default),
+            "soniox_audio", "invalid recording is rejected before opening a connection");
+        checks.That(handler.Calls == 0, "saving a key and checking configuration make no HTTP requests");
+
+        var response = Snapshot(await service.SpeakTranslation("Привет", "ru", default));
+        checks.That(captured is { Method: var method } && method == HttpMethod.Post &&
+            captured.Uri == new Uri("https://tts-rt.soniox.com/tts"), "speech uses the Soniox TTS endpoint");
+        checks.That(captured!.Authorization == "Bearer " + SyntheticKey && !captured.Body.Contains(SyntheticKey),
+            "Soniox credential stays in the authorization header");
+        using var body = JsonDocument.Parse(captured.Body);
+        checks.That(body.RootElement.GetProperty("text").GetString() == "Привет" &&
+            body.RootElement.GetProperty("language").GetString() == "ru" &&
+            body.RootElement.GetProperty("audio_format").GetString() == "mp3", "TTS requests the translated text and language");
+        checks.That(response.GetProperty("audio").GetBytesFromBase64().SequenceEqual(audio), "the bridge receives the audio bytes intact");
     }
 
     static async Task WeatherCache(Checks checks)

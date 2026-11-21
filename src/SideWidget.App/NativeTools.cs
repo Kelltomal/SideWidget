@@ -118,19 +118,24 @@ public sealed partial class MainWindow
         byte[] bytes;if(format=="svg"){ValidateSvg(data);bytes=Encoding.UTF8.GetBytes(data);}else if(format is "png" or "jpeg")bytes=ImageBytes(data);else throw new CommandFault("format","Выберите SVG, PNG или JPEG");
         dialogCount++;motion.Editing=true;EnterInteractive();try{var picker=new FileSavePicker{SuggestedFileName="SideWidget-QR"};WinRT.Interop.InitializeWithWindow.Initialize(picker,hwnd);picker.FileTypeChoices.Add(format.ToUpperInvariant(),new List<string>{format=="jpeg"?".jpg":"."+format});var file=await picker.PickSaveFileAsync();if(file==null)return new{saved=false};await FileIO.WriteBytesAsync(file,bytes);return new{saved=true};}finally{dialogCount--;motion.Editing=webEditing||dialogCount>0;}
     }
-    async Task<object> ConfigureTranslation()
+    async Task<object> ConfigureTranslation(bool soniox)
     {
         await dialogs.WaitAsync();dialogCount++;motion.Editing=true;OpenInteractive(true);
         try{
             var font=new Microsoft.UI.Xaml.Media.FontFamily("ms-appx:///Assets/Fonts/MedeoSans.ttf#Medeo Sans");
-            var key=new PasswordBox{Header=DesktopLanguage.Text("Ключ DeepL API"),FontFamily=font,MaxLength=200};
+            var key=new PasswordBox{Header=DesktopLanguage.Text(soniox?"Ключ Soniox API":"Ключ DeepL API"),FontFamily=font,MaxLength=200};
             var plan=new ComboBox{Header=DesktopLanguage.Text("Тариф API"),FontFamily=font,ItemsSource=new[]{"Free","Pro"},SelectedIndex=0};
             var stack=new StackPanel{Spacing=12};
-            stack.Children.Add(new TextBlock{Text=DesktopLanguage.Text("Текст отправляется в DeepL только по кнопке «Перевести». Ключ хранится в Windows DPAPI."),FontFamily=font,TextWrapping=TextWrapping.Wrap});
-            stack.Children.Add(key);stack.Children.Add(plan);
-            var dialog=new ContentDialog{XamlRoot=root.XamlRoot,Title=DesktopLanguage.Text("Перевод DeepL"),FontFamily=font,Content=stack,PrimaryButtonText=DesktopLanguage.Text("Сохранить"),CloseButtonText=DesktopLanguage.Text("Отмена"),IsPrimaryButtonEnabled=false,DefaultButton=ContentDialogButton.Close,RequestedTheme=ElementTheme.Dark};
+            stack.Children.Add(new TextBlock{Text=DesktopLanguage.Text(soniox?"Создайте ключ в Soniox Console с доступом к распознаванию речи и озвучиванию. Windows DPAPI защищает сохранённый ключ.":"Текст отправляется в DeepL только по кнопке «Перевести». Ключ хранится в Windows DPAPI."),FontFamily=font,TextWrapping=TextWrapping.Wrap});
+            stack.Children.Add(key);
+            if(!soniox)stack.Children.Add(plan);
+            var dialog=new ContentDialog{XamlRoot=root.XamlRoot,Title=DesktopLanguage.Text(soniox?"Перевод Soniox":"Перевод DeepL"),FontFamily=font,Content=stack,PrimaryButtonText=DesktopLanguage.Text("Сохранить"),CloseButtonText=DesktopLanguage.Text("Отмена"),IsPrimaryButtonEnabled=false,DefaultButton=ContentDialogButton.Close,RequestedTheme=ElementTheme.Dark};
             key.PasswordChanged+=(_,_)=>dialog.IsPrimaryButtonEnabled=!string.IsNullOrWhiteSpace(key.Password);
-            if(await ShowNativeDialog(dialog)==ContentDialogResult.Primary)controller.Online.ConfigureTranslation(key.Password,plan.SelectedIndex==0);
+            if(await ShowNativeDialog(dialog)==ContentDialogResult.Primary)
+            {
+                if(soniox)controller.Online.ConfigureSoniox(key.Password);
+                else controller.Online.ConfigureTranslation(key.Password,plan.SelectedIndex==0);
+            }
             return controller.Online.TranslationInfo();
         }finally{dialogCount--;motion.Editing=webEditing||dialogCount>0;dialogs.Release();}
     }

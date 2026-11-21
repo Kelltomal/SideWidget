@@ -10,7 +10,7 @@ namespace SideWidget.Infrastructure;
 public sealed record CurrencyRate(string Code,string Name,decimal Nominal,decimal Value,decimal Rate);
 public sealed record CurrencySnapshot(string Date,string Source,DateTimeOffset FetchedAt,bool Stale,List<CurrencyRate> Rates,string? Message=null);
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-public sealed class OnlineServices:IDisposable
+public sealed partial class OnlineServices:IDisposable
 {
     readonly Store store;readonly SecretVault vault;readonly HttpClient client;readonly bool ownsClient;
     CancellationTokenSource? translation;DateTimeOffset lastWeather;readonly SemaphoreSlim weatherGate=new(1);
@@ -53,7 +53,7 @@ public sealed class OnlineServices:IDisposable
             }catch(Exception e) when(e is HttpRequestException or TaskCanceledException or JsonException or CommandFault or KeyNotFoundException or InvalidOperationException or FormatException or IndexOutOfRangeException){if(cache.ValueKind==JsonValueKind.Object){var result=System.Text.Json.Nodes.JsonNode.Parse(cache.GetRawText())!;result["stale"]=true;return result;}if(e is CommandFault fault&&fault.Code=="city")throw;throw new CommandFault("offline","Погода недоступна. Проверьте соединение и повторите.");}
         }finally{weatherGate.Release();}
     }
-    public object TranslationInfo()=>new{configured=store.Read<string?>("personal.deepl.secret",null)!=null,provider="DeepL API",defaultProvider="mymemory",free=store.Read("personal.deepl.free",true)};
+    public object TranslationInfo()=>new{configured=store.Read<string?>("personal.deepl.secret",null)!=null,sonioxConfigured=store.Read<string?>(SonioxSecret,null)!=null,provider="DeepL API",defaultProvider="mymemory",free=store.Read("personal.deepl.free",true)};
     public void ConfigureTranslation(string key,bool free){if(string.IsNullOrWhiteSpace(key)||key.Length>200||key.Contains('\r')||key.Contains('\n'))throw new CommandFault("key","Введите действующий ключ DeepL API");store.Save("personal.deepl.secret",vault.Save(key.Trim()));store.Save("personal.deepl.free",free);}
     public void CancelTranslation(){translation?.Cancel();}
     public async Task<object> Translate(string text,string source,string target,string provider="mymemory")

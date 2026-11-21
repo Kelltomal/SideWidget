@@ -136,7 +136,7 @@ export function App(){
    {page==='sites'&&<SiteMonitorPanel/>}
    {page==='desktop'&&<DesktopCleanup/>}
    {page==='calculator'&&<Calculator {...localProps} sessionExpression={[calculatorExpression,setCalculatorExpression]}/>}{page==='qr'&&<QrTool sessionText={[qrText,setQrText]}/>}{page==='units'&&<Units {...localProps}/>}{page==='colors'&&<Colors {...localProps}/>}
-   {page==='translation'&&<Translation sessionText={[translationText,setTranslationText]} sessionResult={[translationResult,setTranslationResult]}/>}{page==='currency'&&<Currency/>}{page==='diary'&&<Diary {...localProps}/>}
+   {page==='translation'&&<Translation active={expanded} sessionText={[translationText,setTranslationText]} sessionResult={[translationResult,setTranslationResult]}/>}{page==='currency'&&<Currency/>}{page==='diary'&&<Diary {...localProps}/>}
    {page==='apps'&&<Apps {...localProps}/>}{page==='audio'&&<div className="stack"><Audio expanded={expanded}/><PhoneRemoteSettings active={expanded}/></div>}{page==='calendar'&&<Calendar/>}{page==='weather'&&<Weather/>}
    {page==='music'&&<Music expanded={expanded} openAudio={()=>go('audio')}/>}
    {page==='system'&&<div className="stack"><Internet expanded={expanded}/><Metrics expanded={expanded}/></div>}{page==='quick'&&<QuickActions/>}{page==='settings'&&<SettingsPage state={state} setState={setState}/>}

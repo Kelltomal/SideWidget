@@ -50,7 +50,7 @@ public sealed partial class MainWindow
     }
     void UpdateCompactSurface()
     {
-        var strip=compactPanel.StripVisible&&dialogCount==0&&!dragging&&!resizing;
+        var strip=!updateInProgress&&compactPanel.StripVisible&&dialogCount==0&&!dragging&&!resizing;
         if(strip)
         {
             compactStrip??=new CompactStripWindow(compactPanel,OpenCompactStrip,UpdateCompactClockMode,DismissCompactSignal);

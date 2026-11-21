@@ -16,7 +16,7 @@ public sealed partial class MainWindow
     readonly uint taskbarCreated=Native.RegisterWindowMessage("TaskbarCreated");
     void OpenInteractive(bool immediate=false)
     {
-        if(compactPanel.StripVisible)return;
+        if(updateInProgress||compactPanel.StripVisible)return;
         UpdateCompactSurface();
         outsideMs=0;motion.Suspended=false;EnterInteractive();
         var instant=immediate||ReducedMotion();motion.Target(true,MaximumHeight(),instant);
@@ -24,7 +24,14 @@ public sealed partial class MainWindow
         else previous=watch.ElapsedMilliseconds;
         SendEvent("panel",new{expanded=true,pinned=motion.Pinned});
     }
-    void Collapse(){if(dialogCount>0)return;pendingSearchFocus=false;outsideMs=0;webEditing=false;motion.Editing=false;motion.Pinned=false;motion.Target(false,immediate:true);ApplyGeometry();SendEvent("panel",new{expanded=false,pinned=false});RestoreFocus();compactPanel.Fold();UpdateCompactSurface();}
+    long translationMicrophoneUntil;
+    void AllowTranslationMicrophone()
+    {
+        if(closing||dialogCount>0||motion.State==PanelState.Collapsed)
+            throw new CommandFault("microphone","Откройте панель перевода и повторите запись.");
+        translationMicrophoneUntil=Environment.TickCount64+5000;
+    }
+    void Collapse(){if(dialogCount>0)return;translationMicrophoneUntil=0;pendingSearchFocus=false;outsideMs=0;webEditing=false;motion.Editing=false;motion.Pinned=false;motion.Target(false,immediate:true);ApplyGeometry();SendEvent("panel",new{expanded=false,pinned=false});RestoreFocus();compactPanel.Fold();UpdateCompactSurface();}
     void Shell(string action)
     {
         switch(action){case "interactive":EnterInteractive();break;case "editing":webEditing=true;break;case "idle":webEditing=false;break;case "pin":motion.Pinned=!motion.Pinned;SendEvent("panel",new{expanded=true,pinned=motion.Pinned});break;case "collapse":Collapse();break;}
@@ -32,7 +39,7 @@ public sealed partial class MainWindow
     }
     internal void CheckFullscreen(nint foreground,Native.Rect monitor)
     {
-        if(dialogCount>0||dragging||resizing||startupUpdateOffer is not null)return;
+        if(updateInProgress||dialogCount>0||dragging||resizing||startupUpdateOffer is not null)return;
         var wasCovered=compactPanel.Covered;
         compactPanel.ObserveWindow(true,CoversDisplay(foreground,monitor));
         if(wasCovered!=compactPanel.Covered)UpdateCompactSurface();
@@ -78,6 +85,7 @@ public sealed partial class MainWindow
     }
     internal void ToggleFromHotkey(long receivedAt)
     {
+        if(updateInProgress)return;
         if(motion.State!=PanelState.Collapsed){Collapse();return;}
         compactPanel.Reveal();
         searchOpenedAt=receivedAt;
@@ -172,7 +180,18 @@ public sealed partial class MainWindow
             
             core.NavigationStarting+=(_,e)=>{if(!e.Uri.StartsWith(Protocol.Origin+"/",StringComparison.Ordinal))e.Cancel=true;else controller.Ready=false;};
             core.NewWindowRequested+=(_,e)=>e.Handled=true;
-            core.PermissionRequested+=(_,e)=>e.State=CoreWebView2PermissionState.Deny;
+            core.PermissionRequested+=(_,e)=>
+            {
+                e.SavesInProfile=false;
+                e.State=CoreWebView2PermissionState.Deny;
+                if(e.PermissionKind!=CoreWebView2PermissionKind.Microphone ||
+                   !Uri.TryCreate(e.Uri,UriKind.Absolute,out var uri) ||
+                   uri.GetLeftPart(UriPartial.Authority)!=Protocol.Origin || uri.UserInfo!="" ||
+                   closing || dialogCount>0 || motion.State==PanelState.Collapsed ||
+                   translationMicrophoneUntil<=Environment.TickCount64)return;
+                translationMicrophoneUntil=0;
+                e.State=CoreWebView2PermissionState.Allow;
+            };
             core.DownloadStarting+=(_,e)=>e.Cancel=true;
             core.WebMessageReceived+=(_,e)=>{
                 // Finish the WebView2 callback before opening native modal UI.

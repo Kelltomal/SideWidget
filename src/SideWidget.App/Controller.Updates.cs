@@ -11,6 +11,8 @@ sealed partial class Controller
     static int installingUpdate;
     GitHubUpdateResult? offeredUpdate;
     public Action<ProcessStartInfo> RestartForUpdate { get; set; } = _ => { };
+    public Func<IProgress<int?>> BeginUpdate { get; set; } = () => new Progress<int?>();
+    public Action RestoreUpdatePrompt { get; set; } = () => { };
 
     internal async Task<GitHubUpdateResult> CheckUpdate()
     {
@@ -46,16 +48,17 @@ sealed partial class Controller
             throw new CommandFault("update_archive", "Откройте релиз на GitHub, чтобы скачать архив.");
         if (Interlocked.Exchange(ref installingUpdate, 1) != 0)
             throw new CommandFault("update_busy", "Обновление уже загружается.");
+        var restartScheduled = false;
         try
         {
+            var progress = BeginUpdate();
             if (asset.IsLite && !LiteInstallation.IsLite &&
                 !await Task.Run(LiteDependencies.AreAvailable))
                 throw new InvalidDataException("Shared Lite dependencies are unavailable.");
 
             using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(30));
-            Emit("updates.progress", new { percent = 0 });
             var executable = await portableUpdate.PrepareAsync(asset, Version.Parse(versionText),
-                Path.Combine(Store.DirectoryPath, "Versions"), percent => Emit("updates.progress", new { percent }),
+                Path.Combine(Store.DirectoryPath, "Versions"), progress.Report,
                 asset.IsLite, deadline.Token);
             if (asset.IsLite)
             {
@@ -66,6 +69,7 @@ sealed partial class Controller
                 if (launcher.ExitCode != 0) throw new IOException("Could not prepare Lite dependencies.");
             }
             RestartForUpdate(new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)! });
+            restartScheduled = true;
         }
         catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or HttpRequestException or OperationCanceledException or BadImageFormatException or System.ComponentModel.Win32Exception or System.Text.Json.JsonException)
         {
@@ -74,6 +78,7 @@ sealed partial class Controller
         finally
         {
             Interlocked.Exchange(ref installingUpdate, 0);
+            if (!restartScheduled) RestoreUpdatePrompt();
         }
     }
 }

@@ -6,6 +6,10 @@ import {bridge} from './bridge';
 import {invoke} from './ui';
 
 vi.mock('./ui', async original => ({...await original<typeof import('./ui')>(), nativeAvailable: true, invoke: vi.fn()}));
+if(!HTMLDialogElement.prototype.showModal)
+ HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+if(!HTMLDialogElement.prototype.close)
+ HTMLDialogElement.prototype.close=function(){this.open=false;};
 afterEach(() => {cleanup(); vi.restoreAllMocks(); vi.resetAllMocks();});
 
 it('offers the GitHub release after checking for a newer version', async () => {
@@ -27,11 +31,24 @@ it.each([
 ] as const)('handles startup choice %s', async (label,action,parameters) => {
  let emit: ((event:unknown)=>void)|undefined;
  vi.spyOn(bridge,'subscribe').mockImplementation(listener=>{emit=listener; return ()=>{};});
- if(!HTMLDialogElement.prototype.showModal)
-  HTMLDialogElement.prototype.showModal=function(){this.open=true;};
  vi.mocked(invoke).mockResolvedValue({});
  render(<StartupUpdate/>);
  await act(()=>emit?.({type:'updates.available',data:{latestVersion:'0.4.0',portableAsset:{}}}));
  fireEvent.click(screen.getByRole('button',{name:label}));
  await waitFor(()=>expect(invoke).toHaveBeenCalledWith(action,...parameters));
+});
+
+it('closes the startup prompt during installation and restores it if installation fails', async () => {
+ let emit: ((event:unknown)=>void)|undefined;
+ vi.spyOn(bridge,'subscribe').mockImplementation(listener=>{emit=listener; return ()=>{};});
+ let rejectInstall: (error:Error)=>void=()=>{};
+ vi.mocked(invoke).mockImplementation(()=>new Promise((_,reject)=>{rejectInstall=reject;}));
+ render(<StartupUpdate/>);
+ await act(()=>emit?.({type:'updates.available',data:{latestVersion:'0.4.0',portableAsset:{}}}));
+ const dialog=screen.getByRole('dialog') as HTMLDialogElement;
+ fireEvent.click(screen.getByRole('button',{name:'Обновить сейчас'}));
+ expect(dialog.open).toBe(false);
+ await act(()=>rejectInstall(new Error('Сбой обновления')));
+ expect(dialog.open).toBe(true);
+ expect(screen.getByRole('alert').textContent).toBe('Сбой обновления');
 });

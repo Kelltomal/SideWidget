@@ -115,7 +115,7 @@ public sealed partial class MainWindow
         if (visualizerCanvas is null || visualizerStopped) return;
         var settings = controller.Settings.Visualizer ?? DefaultHeaderVisualizer;
         var brightness = double.IsFinite(settings.Brightness) ? Math.Clamp(settings.Brightness, 0, 1) : .35;
-        var visible = !closing && !compactHidden && motion.State == PanelState.Collapsed && settings.Enabled && settings.ShowInHeader && brightness > 0 && visualizerWidth > 0;
+        var visible = !closing && !updateInProgress && !compactHidden && motion.State == PanelState.Collapsed && settings.Enabled && settings.ShowInHeader && brightness > 0 && visualizerWidth > 0;
         if (!visible)
         {
             ReleaseAudioVisualizerRendering();
