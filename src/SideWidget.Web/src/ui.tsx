@@ -56,7 +56,7 @@ export function useAction() {
 }
 export function CopyButton({text,label=t("Копировать")}:{text:string;label?:string}) {
  const [copied,setCopied]=useState(false);const {error,run}=useAction();
- return <><button disabled={!text} onClick={()=>void run(async()=>{
+ return <><button type="button" disabled={!text} onClick={()=>void run(async()=>{
   if(nativeAvailable)await invoke('clipboard.text',{text});else await navigator.clipboard.writeText(text);
   setCopied(true);setTimeout(()=>setCopied(false),1800);
  })}><Icon name={copied?'check':'copy'} size={15}/>{copied?t("Скопировано"):label}</button>{error&&<Notice error>{error}</Notice>}</>;

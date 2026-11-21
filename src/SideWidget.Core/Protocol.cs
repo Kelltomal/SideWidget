@@ -58,6 +58,7 @@ public static class Protocol
             "clock.fullscreen"=>[],
             "settings.language"=>["language"],
             "app.share" or "startup.get" or "updates.check" or "updates.defer"=>[],"startup.set"=>["enabled"],
+            "updates.github.status" or "updates.github.connect" or "updates.github.cancel" or "updates.github.disconnect"=>[],
             "updates.skip" or "updates.install"=>["version"],
             "remote.get" or "remote.invite"=>[],
             "remote.configure"=>["enabled","adapterId","port","setupPort","startup"],

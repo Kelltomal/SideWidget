@@ -155,5 +155,9 @@
   "Выберите язык записи.": "Choose the recording language.",
   "Модель распознавания недоступна. Начните запись заново.": "The speech model is unavailable. Start a new recording.",
   "Не удалось распознать речь на компьютере. Повторите запись.": "Could not transcribe the recording on this computer. Try recording again.",
-  "Запрос отменён.": "Request canceled."
+  "Запрос отменён.": "Request canceled.",
+  "Не удалось подключиться к GitHub. Попробуйте ещё раз.": "Could not connect to GitHub. Try again.",
+  "Код GitHub истёк. Начните вход заново.": "The GitHub code expired. Start sign-in again.",
+  "Вход в GitHub отменён.": "GitHub sign-in was cancelled.",
+  "Вход в GitHub уже открыт.": "A GitHub sign-in is already in progress."
 }

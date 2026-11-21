@@ -63,6 +63,10 @@ sealed partial class Controller
                 case "startup.get":return LiteInstallation.Startup().Get();
                 case "app.share":return await ShareApplication();
                 case "updates.check":return await CheckUpdate();
+                case "updates.github.status":return new{connected=desktopState.GitHub.Connected};
+                case "updates.github.connect":return await ConnectGitHub();
+                case "updates.github.cancel":githubSignIn?.Cancel();return new{};
+                case "updates.github.disconnect":return await DisconnectGitHub();
                 case "updates.defer":return new{};
                 case "updates.skip":SkipUpdate(Text("version",32));return new{};
                 case "updates.install":await InstallUpdate(Text("version",32));return new{};
@@ -277,7 +281,7 @@ sealed partial class Controller
         }
         return icons;
     }
-    public void Stop(){Ready=false;CancelWebsiteTranslation();CancelSpeech();if(ownsDesktopState)desktopState.Dispose();}
+    public void Stop(){Ready=false;CancelWebsiteTranslation();CancelSpeech();githubSignIn?.Cancel();if(ownsDesktopState)desktopState.Dispose();}
     async Task<object> ShareApplication()
     {
         if(Interlocked.Exchange(ref sharing,1)!=0)throw new CommandFault("busy","Упаковка уже выполняется. Дождитесь готового архива.");

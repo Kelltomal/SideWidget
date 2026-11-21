@@ -15,6 +15,12 @@ public enum GitHubUpdateStatus
     Unpublished,
     [JsonStringEnumMemberName("unavailable")]
     Unavailable,
+    [JsonStringEnumMemberName("rate_limited")]
+    RateLimited,
+    [JsonStringEnumMemberName("forbidden")]
+    Forbidden,
+    [JsonStringEnumMemberName("auth_required")]
+    AuthRequired,
 }
 
 public sealed record GitHubUpdateResult(
@@ -23,7 +29,8 @@ public sealed record GitHubUpdateResult(
     string? LatestVersion = null,
     string? ReleaseUrl = null,
     bool HasPortableAsset = false,
-    GitHubPortableAsset? PortableAsset = null);
+    GitHubPortableAsset? PortableAsset = null,
+    DateTimeOffset? RetryAt = null);
 
 public sealed record GitHubPortableAsset(string Tag, string Name, long Size, string Sha256)
 {
@@ -41,6 +48,7 @@ public sealed record GitHubPortableAsset(string Tag, string Name, long Size, str
 public sealed class GitHubUpdates(HttpClient? transport = null)
 {
     const string Repository = "Kelltomal/SideWidget";
+    public const string ReleasesPage = $"https://github.com/{Repository}/releases/latest";
     const int ResponseLimit = 1024 * 1024;
     static readonly Uri LatestRelease = new($"https://api.github.com/repos/{Repository}/releases/latest");
     static readonly HttpClient PublicClient = new(new SocketsHttpHandler
@@ -54,7 +62,7 @@ public sealed class GitHubUpdates(HttpClient? transport = null)
         CheckAsync(currentVersion, lite: false, cancellationToken);
 
     public async Task<GitHubUpdateResult> CheckAsync(Version currentVersion, bool lite, CancellationToken cancellationToken = default,
-        bool preferLite = false)
+        bool preferLite = false, string? accessToken = null)
     {
         // Assembly versions generally add a fourth, zero revision component.
         var current = currentVersion.Revision > 0
@@ -70,9 +78,26 @@ public sealed class GitHubUpdates(HttpClient? transport = null)
             request.Headers.UserAgent.ParseAdd("SideWidget");
             request.Headers.Accept.ParseAdd("application/vnd.github+json");
             request.Headers.Add("X-GitHub-Api-Version", "2026-03-10");
+            if (accessToken is not null)
+                request.Headers.Authorization = new("Bearer", accessToken);
             using var response = await (transport ?? PublicClient)
                 .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
 
+            if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
+            {
+                var depleted = response.Headers.TryGetValues("X-RateLimit-Remaining", out var values) &&
+                    values.Contains("0", StringComparer.Ordinal);
+                var limited = response.StatusCode == HttpStatusCode.TooManyRequests ||
+                    depleted || response.Headers.RetryAfter is not null;
+                return unavailable with
+                {
+                    Status = limited ? GitHubUpdateStatus.RateLimited : GitHubUpdateStatus.Forbidden,
+                    ReleaseUrl = ReleasesPage,
+                    RetryAt = limited ? ReadRetryTime(response, depleted) : null,
+                };
+            }
+            if (response.StatusCode == HttpStatusCode.Unauthorized && accessToken is not null)
+                return unavailable with { Status = GitHubUpdateStatus.AuthRequired, ReleaseUrl = ReleasesPage };
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return unavailable with { Status = GitHubUpdateStatus.Unpublished };
             if (response.StatusCode != HttpStatusCode.OK)
@@ -117,6 +142,24 @@ public sealed class GitHubUpdates(HttpClient? transport = null)
         {
             return unavailable;
         }
+    }
+
+    static DateTimeOffset? ReadRetryTime(HttpResponseMessage response, bool depleted)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var retryAfter = response.Headers.RetryAfter;
+        var retryAt = retryAfter?.Date;
+        if (retryAfter?.Delta is { } delta && delta > TimeSpan.Zero && delta <= TimeSpan.FromDays(1))
+            retryAt = now + delta;
+        if (depleted && response.Headers.TryGetValues("X-RateLimit-Reset", out var values) &&
+            long.TryParse(values.FirstOrDefault(), System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out var unix) &&
+            unix > now.ToUnixTimeSeconds() && unix <= now.AddDays(1).ToUnixTimeSeconds())
+        {
+            var reset = DateTimeOffset.FromUnixTimeSeconds(unix);
+            if (retryAt is null || reset > retryAt) retryAt = reset;
+        }
+        return retryAt > now ? retryAt : null;
     }
 
     static (bool Uploaded, GitHubPortableAsset? Verified) FindPortable(JsonElement release, string tag, string name)

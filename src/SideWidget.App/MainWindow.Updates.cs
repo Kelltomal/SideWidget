@@ -107,7 +107,7 @@ public sealed partial class MainWindow
             OpenInteractive(true);
             SendEvent("updates.available", update);
         }
-        catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or System.IO.IOException or UnauthorizedAccessException)
+        catch (Exception error) when (error is SideWidget.Core.CommandFault or Microsoft.Data.Sqlite.SqliteException or System.IO.IOException or UnauthorizedAccessException)
         {
             // Checking once at startup must never interrupt use of local tools.
         }

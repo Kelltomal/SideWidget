@@ -10,6 +10,7 @@ sealed partial class Controller
     static readonly PortableUpdate portableUpdate = new();
     static int installingUpdate;
     GitHubUpdateResult? offeredUpdate;
+    CancellationTokenSource? githubSignIn;
     public Action<ProcessStartInfo> RestartForUpdate { get; set; } = _ => { };
     public Func<IProgress<int?>> BeginUpdate { get; set; } = () => new Progress<int?>();
     public Action RestoreUpdatePrompt { get; set; } = () => { };
@@ -18,8 +19,47 @@ sealed partial class Controller
     {
         var lite = LiteInstallation.IsLite;
         var preferLite = !lite && await Task.Run(LiteDependencies.AreAvailable);
-        offeredUpdate = await githubUpdates.CheckAsync(currentAppVersion, lite, preferLite: preferLite);
-        return offeredUpdate;
+        var connection = desktopState.GitHub;
+        var (token, reauthenticate) = await connection.AccessAsync();
+        if (reauthenticate)
+        {
+            offeredUpdate = null;
+            return new(GitHubUpdateStatus.AuthRequired, appVersion, ReleaseUrl: GitHubUpdates.ReleasesPage);
+        }
+        var update = await githubUpdates.CheckAsync(currentAppVersion, lite, preferLite: preferLite, accessToken: token);
+        if (update.Status == GitHubUpdateStatus.AuthRequired)
+            await connection.DisconnectAsync(token);
+        offeredUpdate = update;
+        return update;
+    }
+
+    async Task<object> ConnectGitHub()
+    {
+        if (githubSignIn is not null) throw new CommandFault("github_busy", "Вход в GitHub уже открыт.");
+        using var cancellation = new CancellationTokenSource();
+        githubSignIn = cancellation;
+        IProgress<string> progress = new Progress<string>(code =>
+        {
+            if (!cancellation.IsCancellationRequested)
+                Emit("updates.github.code", new { code });
+        });
+        try
+        {
+            await desktopState.GitHub.ConnectAsync(progress.Report, cancellation.Token);
+            return new { connected = true };
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            return new { connected = desktopState.GitHub.Connected };
+        }
+        finally { githubSignIn = null; }
+    }
+
+    async Task<object> DisconnectGitHub()
+    {
+        githubSignIn?.Cancel();
+        await desktopState.GitHub.DisconnectAsync();
+        return new { connected = false };
     }
 
     internal async Task<GitHubUpdateResult?> CheckStartupUpdate()

@@ -155,11 +155,68 @@ public static class GitHubUpdateChecks
 
         Check((await Respond(current, new HttpResponseMessage(HttpStatusCode.NotFound))).Status == GitHubUpdateStatus.Unpublished,
             "GitHub 404 maps to no published stable release");
-        foreach (var status in new[] { HttpStatusCode.Found, HttpStatusCode.Forbidden, HttpStatusCode.TooManyRequests, HttpStatusCode.ServiceUnavailable })
+        foreach (var status in new[] { HttpStatusCode.Found, HttpStatusCode.ServiceUnavailable })
         {
             var result = await Respond(current, new HttpResponseMessage(status));
             Check(result is { Status: GitHubUpdateStatus.Unavailable, ReleaseUrl: null }, "GitHub failures and redirects report unavailable");
         }
+
+        using var exhausted = new HttpResponseMessage(HttpStatusCode.Forbidden);
+        exhausted.Headers.Add("X-RateLimit-Remaining", "0");
+        var reset = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.AddMinutes(10).ToUnixTimeSeconds());
+        exhausted.Headers.Add("X-RateLimit-Reset", reset.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var rateLimited = await Respond(current, exhausted);
+        Check(rateLimited.Status == GitHubUpdateStatus.RateLimited && rateLimited.RetryAt == reset &&
+            rateLimited.ReleaseUrl == "https://github.com/Kelltomal/SideWidget/releases/latest",
+            "exhausted public quota has a distinct status and manual download");
+        using var backoff = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        backoff.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(30));
+        Check((await Respond(current, backoff)).Status == GitHubUpdateStatus.RateLimited, "429 reports rate limit");
+        using var denied = new HttpResponseMessage(HttpStatusCode.Forbidden);
+        Check((await Respond(current, denied)).Status == GitHubUpdateStatus.Forbidden, "403 without quota evidence reports forbidden");
+
+        var bearerRequests = 0;
+        using var rejected = new HttpClient(new Handler((request, _) =>
+        {
+            bearerRequests++;
+            Check(request.RequestUri?.Host == "api.github.com" &&
+                request.Headers.Authorization is { Scheme: "Bearer", Parameter: "fixture_token" },
+                "bearer token is sent only with the GitHub API request");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+        }));
+        var rejectedResult = await new GitHubUpdates(rejected).CheckAsync(current, lite: false, accessToken: "fixture_token");
+        Check(rejectedResult.Status == GitHubUpdateStatus.AuthRequired && bearerRequests == 1,
+            "invalid bearer token reports reauthentication without redirect or retry");
+
+        var deviceReplies = new Queue<string>([
+            """{"device_code":"fixture_device","user_code":"AB12-XY34","verification_uri":"https://github.com/login/device","expires_in":900,"interval":1}""",
+            """{"error":"authorization_pending"}""",
+            """{"access_token":"fixture_access","token_type":"bearer","scope":"","expires_in":28800,"refresh_token":"fixture_refresh"}""",
+            """{"access_token":"fixture_renewed","token_type":"bearer","scope":"","expires_in":28800,"refresh_token":"fixture_rotated"}"""
+        ]);
+        var requests = new List<(string Path, string Form)>();
+        using var deviceTransport = new HttpClient(new Handler(async (request, token) =>
+        {
+            Check(request.RequestUri?.Host == "github.com" && request.Method == HttpMethod.Post &&
+                 request.Headers.Authorization is null, "device requests use GitHub HTTPS without bearer headers");
+            requests.Add((request.RequestUri!.AbsolutePath, await request.Content!.ReadAsStringAsync(token)));
+            return Json(deviceReplies.Dequeue());
+        }));
+        string? deviceUserCode = null;
+        var oauth = new GitHubOAuth(deviceTransport);
+        var deviceCredential = await oauth.AuthorizeAsync(code => deviceUserCode = code, CancellationToken.None);
+        Check(deviceUserCode == "AB12-XY34" && deviceCredential is
+            { AccessToken: "fixture_access", RefreshToken: "fixture_refresh" } && requests.Count == 3,
+            "device authorization displays only the user code and handles pending approval");
+        Check(requests[0].Path == "/login/device/code" && !requests[0].Form.Contains("scope", StringComparison.Ordinal) &&
+            requests.Skip(1).All(request => request.Path == "/login/oauth/access_token" &&
+                request.Form.Contains("device_code=fixture_device", StringComparison.Ordinal) &&
+                !request.Form.Contains("client_secret", StringComparison.Ordinal)),
+            "device authorization requests no additional GitHub permissions or client secret");
+        var renewed = await oauth.RefreshAsync("fixture_refresh", CancellationToken.None);
+        Check(renewed is { AccessToken: "fixture_renewed", RefreshToken: "fixture_rotated" } &&
+            requests.Last().Form.Contains("grant_type=refresh_token&refresh_token=fixture_refresh", StringComparison.Ordinal),
+            "device credentials can rotate without a client secret");
 
         using var offline = new HttpClient(new Handler((_, _) => throw new HttpRequestException("test connection unavailable")));
         Check((await new GitHubUpdates(offline).CheckAsync(current)).Status == GitHubUpdateStatus.Unavailable,

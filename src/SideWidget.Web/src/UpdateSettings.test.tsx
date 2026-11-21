@@ -14,7 +14,7 @@ afterEach(() => {cleanup(); vi.restoreAllMocks(); vi.resetAllMocks();});
 
 it('offers the GitHub release after checking for a newer version', async () => {
  const releaseUrl = 'https://github.com/Kelltomal/SideWidget/releases/tag/v0.3.0';
- vi.mocked(invoke).mockResolvedValueOnce({status: 'available', currentVersion: '0.2.0', latestVersion: '0.3.0',
+ vi.mocked(invoke).mockResolvedValueOnce({connected:false}).mockResolvedValueOnce({status: 'available', currentVersion: '0.2.0', latestVersion: '0.3.0',
   hasPortableAsset: true, releaseUrl}).mockResolvedValueOnce({opened: true});
  render(<UpdateSettings/>);
  fireEvent.click(screen.getByRole('button', {name: 'Проверить обновления'}));
@@ -51,4 +51,36 @@ it('closes the startup prompt during installation and restores it if installatio
  await act(()=>rejectInstall(new Error('Сбой обновления')));
  expect(dialog.open).toBe(true);
  expect(screen.getByRole('alert').textContent).toBe('Сбой обновления');
+});
+
+it('offers manual download and optional sign-in when GitHub rate limits checks', async () => {
+ const releaseUrl='https://github.com/Kelltomal/SideWidget/releases/latest';
+ vi.mocked(invoke).mockImplementation(async action=>(action==='updates.check'
+  ? {status:'rate_limited', releaseUrl}
+  : {connected:false}) as never);
+ render(<UpdateSettings/>);
+ fireEvent.click(screen.getByRole('button',{name:'Проверить обновления'}));
+ expect(await screen.findByText('Достигнут лимит запросов GitHub.')).toBeTruthy();
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Открыть релиз на GitHub'})));
+ expect(invoke).toHaveBeenCalledWith('links.open',{url:releaseUrl});
+ fireEvent.click(screen.getByRole('button',{name:'Войти в GitHub'}));
+ expect(screen.getByRole('dialog',{name:'Вход в GitHub'})).toBeTruthy();
+ expect(invoke).not.toHaveBeenCalledWith('updates.github.connect');
+});
+
+it('shows the GitHub device code and cancels polling when the dialog closes',async()=>{
+ let emit:((event:unknown)=>void)|undefined;
+ vi.spyOn(bridge,'subscribe').mockImplementation(listener=>{emit=listener;return ()=>{};});
+ vi.mocked(invoke).mockImplementation(action=>action==='updates.github.connect'
+  ? new Promise(()=>{})
+  : Promise.resolve({connected:false}) as never);
+ render(<UpdateSettings/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Войти в GitHub'}));
+ fireEvent.click(screen.getByRole('button',{name:'Получить код'}));
+ await act(()=>emit?.({type:'updates.github.code',data:{code:'AB12-XY34'}}));
+ expect(screen.getByText('AB12-XY34')).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'Открыть GitHub в браузере'}));
+ expect(invoke).toHaveBeenCalledWith('links.open',{url:'https://github.com/login/device'});
+ fireEvent.click(screen.getByRole('button',{name:'Отмена'}));
+ expect(invoke).toHaveBeenCalledWith('updates.github.cancel');
 });
