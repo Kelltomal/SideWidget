@@ -19,6 +19,12 @@ From the repository root in PowerShell 7:
 
 Exit SideWidget from its notification-area menu before rebuilding a running copy in `artifacts/release`. The test script runs the C# and web checks. For changes to WinUI behavior or system integration, also exercise the relevant flow in the Windows app.
 
+## Publish a release on GitHub
+
+Push the matching `vX.Y.Z` tag to run the Windows release workflow. In GitHub's **Assets** block, the first two entries must be `00-SideWidget-X.Y.Z-portable-win-x64.zip` and `01-SideWidget-X.Y.Z-lite-win-x64.zip`, in that order. The workflow makes byte-for-byte copies of the verified archives so GitHub's alphabetical sort places them above the libraries.
+
+Keep the regular Portable and Lite ZIPs, the `SideWidget-X.Y.Z-deps-*` bundles, and their checksum files under their exact names. Older SideWidget versions and the Lite launcher use those names to find updates and dependencies. Verify the published order and check that a previous version can download and validate the new release before announcing it.
+
 ## Submit a pull request
 
 Keep the change focused. Explain the user-facing behavior or bug and list the checks you ran. Include a screenshot or recording when it helps reviewers understand a visual change. Use sample data in screenshots, logs, and fixtures. Follow the [code of conduct](CODE_OF_CONDUCT.md).

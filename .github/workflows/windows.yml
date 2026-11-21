@@ -160,7 +160,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          files=()
+          portable="SideWidget-$version-portable-win-x64.zip"
+          lite="SideWidget-$version-lite-win-x64.zip"
+          # GitHub sorts Assets by name. Keep exact-name assets for older updaters.
+          ln "$portable" "00-$portable"
+          ln "$lite" "01-$lite"
+          files=("00-$portable" "01-$lite")
           for edition in '-portable' '-lite' '-deps-dotnet' '-deps-desktop' '-deps-webview2'; do
             archive="SideWidget-$version$edition-win-x64.zip"
             files+=("$archive" "$archive.sha256")
